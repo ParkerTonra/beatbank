@@ -1,0 +1,56 @@
+body {
+  background: #16161a;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #fffffe;
+  padding: 18px;
+  padding-bottom: 26px;
+}
+
+h1 {
+  font-size: 2.2rem;
+}
+
+button, input, optgroup, select, textarea {
+  margin: 0;
+  padding: 5px;
+  border: none;
+  font: inherit;
+  color: inherit;
+  appearance: none;
+}
+
+button {
+  appearance: none;
+  font-family: Arial, sans-serif;
+  font-size: 16px;
+  font-weight: normal;
+  color: #fffffe;
+  background-color: #7f5af0;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+  display: inline-block;
+  text-decoration: none;
+  box-shadow: 0 2px 4px #010101;
+  transition: background-color 0.3s;
+  margin-top: 10px;
+}
+
+input, select, textarea {
+  font-size: 100%;
+  line-height: 1.15;
+  width: 100%;
+}
+
+.icon {
+  width: 64px;
+  height: 64px;
+}
+
+div {
+  vertical-align: middle;
+}

@@ -1,0 +1,50 @@
+@import 'reset.css';
+/* Tailwind CSS */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+
+/* Your custom styles */
+@layer base {
+  
+  body {
+    height: 100vh;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    overflow-y: hidden;
+    background: #16161a;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #fffffe;
+    padding: 18px;
+    padding-bottom: 26px;
+  }
+
+  h1 {
+    font-size: 2.2rem;
+  }
+}
+
+@layer components {
+  .icon {
+    width: 96px;
+    height: 96px;
+  }
+
+  button {
+    @apply font-sans text-base font-normal text-white bg-purple-600 rounded cursor-pointer shadow-md transition-colors duration-300 px-2.5 py-2;
+  }
+
+  button:hover {
+    @apply bg-blue-500 scale-110 transition duration-300;
+  }
+
+  button:focus {
+    @apply outline-none;
+  }
+
+  input, select, textarea {
+    @apply text-base leading-normal w-full p-1.5;
+  }
+}
