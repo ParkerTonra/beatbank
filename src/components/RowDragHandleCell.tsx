@@ -10,7 +10,7 @@ export const RowDragHandleCell = ({ rowId }: RowDragHandleCellProps) => {
   });
   return (
     <button {...attributes} {...listeners}>
-      🟰
+      ≡
     </button>
   );
 };

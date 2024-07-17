@@ -40,17 +40,62 @@ interface BeatTableProps {
 function BeatTable({ setAudioSrc }: BeatTableProps) {
   // table data state
   const [data, setData] = useState<Beat[]>([]);
-  const [columnVisibility, setColumnVisibility] = useState<ColumnVis>({
-    title: true,
-    bpm: true,
-    key: true,
-    duration: true,
-    artist: true,
-    date_added: true,
-    file_path: true,
-  });
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVis>();
   // row selection state
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({}) 
+
+  // key press state
+  const [lastSelectedRow, setLastSelectedRow] = useState<string | null>(null);
+  const [isCtrlPressed, setIsCtrlPressed] = useState(false);
+  const [isShiftPressed, setIsShiftPressed] = useState(false);
+
+  // react based on key press state:
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Control') setIsCtrlPressed(true);
+      if (e.key === 'Shift') setIsShiftPressed(true);
+    };
+  
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Control') setIsCtrlPressed(false);
+      if (e.key === 'Shift') setIsShiftPressed(false);
+    };
+  
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+  
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  const handleRowSelection = (rowId: string) => {
+    setRowSelection((prev) => {
+      if (isCtrlPressed) {
+        // Toggle the selected row
+        const newSelection = { ...prev };
+        newSelection[rowId] = !newSelection[rowId];
+        setLastSelectedRow(rowId);
+        return newSelection;
+      } else if (isShiftPressed && lastSelectedRow) {
+        // Select all rows between last selected and current
+        const newSelection = { ...prev };
+        const rowIds = tableInstance.getRowModel().rows.map(row => row.id);
+        const startIndex = rowIds.indexOf(lastSelectedRow);
+        const endIndex = rowIds.indexOf(rowId);
+        const [start, end] = startIndex < endIndex ? [startIndex, endIndex] : [endIndex, startIndex];
+        for (let i = start; i <= end; i++) {
+          newSelection[rowIds[i]] = true;
+        }
+        return newSelection;
+      } else {
+        // Select only the clicked row
+        setLastSelectedRow(rowId);
+        return { [rowId]: true };
+      }
+    });
+  };
 
   //once the component renders, fetch the beats and column visibility from the database.
   useEffect(() => {
@@ -78,6 +123,7 @@ function BeatTable({ setAudioSrc }: BeatTableProps) {
         
         // Ensure all expected properties are present
         const defaultVis: ColumnVis = {
+          id: false,
           title: true,
           bpm: true,
           key: true,
@@ -130,6 +176,7 @@ function BeatTable({ setAudioSrc }: BeatTableProps) {
       columnVisibility,
     },
     enableRowSelection: true,
+    enableMultiRowSelection: true,
     onColumnVisibilityChange: handleColumnVisibilityChange,
     debugTable: true,
     debugHeaders: true,
@@ -160,7 +207,7 @@ function BeatTable({ setAudioSrc }: BeatTableProps) {
   }
 
   return (
-    <>
+    <div className="flex flex-col">
     <DndContext
       collisionDetection={closestCenter}
       modifiers={[restrictToVerticalAxis]}
@@ -172,7 +219,8 @@ function BeatTable({ setAudioSrc }: BeatTableProps) {
           {tableInstance.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((columnElement) => (
-                <th key={columnElement.id} colSpan={columnElement.colSpan}>
+                <th className="border-b border-black text-left pr-7"
+                  key={columnElement.id} colSpan={columnElement.colSpan}>
                   {flexRender(
                     columnElement.column.columnDef.header,
                     columnElement.getContext(),
@@ -188,7 +236,10 @@ function BeatTable({ setAudioSrc }: BeatTableProps) {
             strategy={verticalListSortingStrategy}
           >
             {tableInstance.getRowModel().rows.map((rowElement) => (
-              <DraggableRow key={rowElement.id} row={rowElement} />
+              <DraggableRow 
+              key={rowElement.id} 
+              row={rowElement}
+              onRowSelection={handleRowSelection} />
             ))}
           </SortableContext>
         </tbody>
@@ -221,7 +272,7 @@ function BeatTable({ setAudioSrc }: BeatTableProps) {
   })}
 </div>
     
-    </>
+</div>
     
   )
 }

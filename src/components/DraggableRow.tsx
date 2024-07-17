@@ -3,7 +3,12 @@ import { CSS } from '@dnd-kit/utilities';
 import { flexRender, Row, Cell } from '@tanstack/react-table';
 import { Beat } from '../bindings';
 
-const DraggableRow = ({ row }: { row: Row<Beat> }) => {
+interface DraggableRowProps {
+  row: Row<Beat>;
+  onRowSelection: (rowId: string) => void;
+}
+
+function DraggableRow({ row, onRowSelection }: DraggableRowProps) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.original.id,
   });
@@ -25,8 +30,11 @@ const DraggableRow = ({ row }: { row: Row<Beat> }) => {
     <tr
       ref={setNodeRef}
       style={style}
+      
       draggable
       onDragStart={handleDragStart}
+      onClick={() => onRowSelection(row.id)}
+      className={row.getIsSelected() ? 'bg-blue-100' : ''}
     >
       {row.getVisibleCells().map((cell: Cell<Beat, unknown>) => (
         <td key={cell.id} style={{ width: cell.column.getSize() }}>

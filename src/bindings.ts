@@ -10,6 +10,7 @@ export type Beat = {
   };
 
   export type ColumnVis = {
+    id: boolean;
     title: boolean;
     bpm: boolean;
     key: boolean;

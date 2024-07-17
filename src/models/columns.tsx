@@ -13,7 +13,7 @@ export const columnDef: ColumnDef<Beat>[] = [
     accessorKey: "drag-handle",
     header: "Move",
     cell: ({ row }: { row: Row }) => <RowDragHandleCell rowId={row.id} />,
-    size: 60,
+    size: 20,
     enableHiding: false,
   },
   {
@@ -53,7 +53,7 @@ export const columnDef: ColumnDef<Beat>[] = [
     accessorKey: "play-handle",
     header: "Play",
     cell: ({ row }) => <RowPlayHandleCell rowId={row.id.toString()} setAudioSrc={() => {}} />,
-    size: 60,
+    size: 20,
   },
 ];
 // function setAudioSrc(src: string): void {
