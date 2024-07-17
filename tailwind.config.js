@@ -46,6 +46,6 @@ export default {
       // Add more font families if needed
     },
   },
-  plugins: [],
+  plugins: [require('@tailwindcss/forms')],
 }
 

@@ -8,3 +8,13 @@ export type Beat = {
     date_added: string;
     file_path: string;
   };
+
+  export type ColumnVis = {
+    title: boolean;
+    bpm: boolean;
+    key: boolean;
+    duration: boolean;
+    artist: boolean;
+    date_added: boolean;
+    file_path: boolean;
+};

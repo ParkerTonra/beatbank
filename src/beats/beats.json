@@ -1,6 +1,52 @@
-[{"id":1,"title":"Go Time","bpm":120,"key":"Fm","duration":"1:44","artist":"Dreaddy Bear","date_added":"07/11/2024","file_path":"Go Time.wav"},
-{"id":2,"title":"Hugtempo","bpm":140,"key":"E","duration":"3:18","artist":"Dreaddy Bear","date_added":"07/11/2024","file_path":"hugtempo.flac"},
-{"id":3,"title":"eclipse","bpm":140,"key":"E","duration":"3:18","artist":"Dreaddy Bear","date_added":"07/11/2024","file_path":"eclipse.wav"},
-{"id":4,"title":"Hugtempo","bpm":140,"key":"E","duration":"2:06","artist":"Dreaddy Bear","date_added":"07/11/2024","file_path":"trust.wav"},
-{"id":5,"title":"Banana Bump","bpm":140,"key":"E","duration":"2:06","artist":"Dreaddy Bear","date_added":"07/13/2024","file_path":"Banana Bump.wav"}
+[
+  {
+    "id": 1,
+    "title": "Go Time",
+    "bpm": 120,
+    "key": "Fm",
+    "duration": "1:44",
+    "artist": "Dreaddy Bear",
+    "date_added": "07/11/2024",
+    "file_path": "Go Time.wav"
+  },
+  {
+    "id": 2,
+    "title": "Hugtempo",
+    "bpm": 140,
+    "key": "E",
+    "duration": "3:18",
+    "artist": "Dreaddy Bear",
+    "date_added": "07/11/2024",
+    "file_path": "hugtempo.flac"
+  },
+  {
+    "id": 3,
+    "title": "eclipse",
+    "bpm": 140,
+    "key": "E",
+    "duration": "2:58",
+    "artist": "Dreaddy Bear",
+    "date_added": "07/11/2024",
+    "file_path": "eclipse.wav"
+  },
+  {
+    "id": 4,
+    "title": "Trust",
+    "bpm": 140,
+    "key": "E",
+    "duration": "2:06",
+    "artist": "Dreaddy Bear",
+    "date_added": "07/11/2024",
+    "file_path": "trust.wav"
+  },
+  {
+    "id": 5,
+    "title": "Banana Bump",
+    "bpm": 140,
+    "key": "E",
+    "duration": "2:28",
+    "artist": "Dreaddy Bear",
+    "date_added": "07/13/2024",
+    "file_path": "Banana Bump.wav"
+  }
 ]

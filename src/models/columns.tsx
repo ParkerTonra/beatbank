@@ -14,6 +14,7 @@ export const columnDef: ColumnDef<Beat>[] = [
     header: "Move",
     cell: ({ row }: { row: Row }) => <RowDragHandleCell rowId={row.id} />,
     size: 60,
+    enableHiding: false,
   },
   {
     accessorKey: "id",
@@ -39,10 +40,7 @@ export const columnDef: ColumnDef<Beat>[] = [
     accessorKey: "artist",
     header: "Artist",
   },
-  {
-    accessorKey: "notes",
-    header: "Notes",
-  },
+  
   {
     accessorKey: "date_added",
     header: "Date Added",

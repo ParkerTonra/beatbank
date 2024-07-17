@@ -16,8 +16,6 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 dirs = "5.0.1"
 rusqlite = { version = "0.31.0", features = ["bundled"] }
-diesel = { version = "2.2.0", features = ["sqlite"] }
-diesel_migrations = "2.2.0"
 dotenvy = "0.15"
 
 [features]
