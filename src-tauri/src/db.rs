@@ -1,5 +1,5 @@
 use std::fs;
-use rusqlite::{Connection, Result};
+use rusqlite::{params, Connection, Result};
 use std::env;
 use std::path::{Path, PathBuf};
 
@@ -14,7 +14,7 @@ pub struct Beat {
     date_added: String,
     file_path: String,
 }
-#[derive(serde::Serialize)]
+    #[derive(serde::Serialize)]
 pub struct ColumnVisibility {
     title: bool,
     bpm: bool,
@@ -106,6 +106,26 @@ pub fn fetch_column_vis() -> Result<Vec<ColumnVisibility>> {
 
     let column_vis: Vec<ColumnVisibility> = column_vis_iter.filter_map(Result::ok).collect();
     Ok(column_vis)
+}
+
+pub fn fetch_beat(id: String) -> Result<Beat> {
+    let conn = establish_db_connection();
+    let mut stmt = conn.prepare("SELECT id, title, bpm, key, duration, artist, date_added, file_path FROM beats WHERE id = ?")?;
+    let beat_iter = stmt.query_map(params![id], |row| {
+        Ok(Beat {
+            id: row.get(0)?,
+            title: row.get(1)?,
+            bpm: row.get(2)?,
+            key: row.get(3)?,
+            duration: row.get(4)?,
+            artist: row.get(5)?,
+            date_added: row.get(6)?,
+            file_path: row.get(7)?,
+        })
+    })?;
+    let beat: Beat = beat_iter.filter_map(Result::ok).next().unwrap();
+    println!("Beat fetched.");
+    Ok(beat)
 }
 
 pub fn fetch_beats() -> Result<Vec<Beat>> {

@@ -1,6 +1,5 @@
 import BeatTable from 'components/BeatTable';
 import { useState, useEffect } from 'react';
-import AudioPlayer from "components/AudioPlayer";
 const Home = () => {
   const [audioSrc, setAudioSrc] = useState<string>("");
 
@@ -9,9 +8,8 @@ const Home = () => {
   }, [audioSrc]);
 
   return (
-    <div className="p-4 h-full w-full bg-secondary justify-center border">
+    <div className="p-4 h-full w-full bg-secondary border">
       <BeatTable setAudioSrc={setAudioSrc} />
-      <AudioPlayer audioSrc={audioSrc} />
     </div>
   );
 };

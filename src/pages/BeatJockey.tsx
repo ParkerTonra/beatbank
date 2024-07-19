@@ -1,11 +1,11 @@
-import PlayerControls from 'components/JockeyControls';
+import JockeyControls from 'components/JockeyControls';
 
-const Player = () => {
+const BeatJockey = () => {
   return (
     <div className="fixed bottom-0 w-full">
-      <PlayerControls />
+      <JockeyControls />
     </div>
   );
 };
 
-export default Player;
+export default BeatJockey;

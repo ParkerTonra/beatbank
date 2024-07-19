@@ -9,7 +9,9 @@ export const RowDragHandleCell = ({ rowId }: RowDragHandleCellProps) => {
     id: rowId,
   });
   return (
-    <button {...attributes} {...listeners}>
+    <button {...attributes} {...listeners}
+    className="bg-transparent"
+    >
       ≡
     </button>
   );

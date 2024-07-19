@@ -28,7 +28,9 @@ import {
 } from "@dnd-kit/sortable";
 import DraggableRow from "./DraggableRow";
 import { invoke } from "@tauri-apps/api/tauri";
+import BeatJockey from "./BeatJockey.tsx";
 
+//test
 
 interface BeatTableProps {
   setAudioSrc: (src: string) => void;
@@ -207,14 +209,14 @@ function BeatTable({ setAudioSrc }: BeatTableProps) {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col h-full w-full overflow-y-auto">
     <DndContext
       collisionDetection={closestCenter}
       modifiers={[restrictToVerticalAxis]}
       onDragEnd={handleDragEnd}
       sensors={sensors}
     >
-      <table>
+      <table className="w-full mb-96">
         <thead>
           {tableInstance.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
@@ -256,6 +258,7 @@ function BeatTable({ setAudioSrc }: BeatTableProps) {
       Toggle All
     </label>
   </div>
+  
   {tableInstance.getAllLeafColumns().map(column => {
     return (
       <div key={column.id} className="px-1">
@@ -271,6 +274,7 @@ function BeatTable({ setAudioSrc }: BeatTableProps) {
     )
   })}
 </div>
+
     
 </div>
     

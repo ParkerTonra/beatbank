@@ -37,7 +37,7 @@
   }
 
   button:hover {
-    @apply bg-blue-500 scale-110 transition duration-300;
+    @apply bg-purple-light scale-110 transition duration-300;
   }
 
   button:focus {
@@ -47,4 +47,24 @@
   input, select, textarea {
     @apply text-base leading-normal w-full p-1.5;
   }
+
+  /* // make the sliders look nice */
+  input[type="range"] {
+    @apply appearance-none bg-gray-200 rounded-full p-0;
+  }
+
+  /* make the scrollbars look nice */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2 ;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-200 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-700 rounded-full ;
+  }
+  
+
 }
