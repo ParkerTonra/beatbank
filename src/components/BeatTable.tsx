@@ -7,7 +7,7 @@ import {
   VisibilityState,
   Updater,
 } from "@tanstack/react-table";
-import { columnDef } from "../models/columns.tsx";
+import { createColumnDef } from "../models/columns.tsx";
 // db location: "C:\Users\parke\code\beatbank\beatbank-tauri\beatbank\src-tauri\.config\beatbank.db"
 import { Beat, ColumnVis } from "./../bindings.ts";
 import {
@@ -28,18 +28,16 @@ import {
 } from "@dnd-kit/sortable";
 import DraggableRow from "./DraggableRow";
 import { invoke } from "@tauri-apps/api/tauri";
-import BeatJockey from "./BeatJockey.tsx";
-
-//test
 
 interface BeatTableProps {
-  setAudioSrc: (src: string) => void;
+
+  onBeatPlay: (beat: Beat) => void;
 }
 
 
 
 //function BeatTable({ setAudioSrc }) {
-function BeatTable({ setAudioSrc }: BeatTableProps) {
+function BeatTable({  onBeatPlay }: BeatTableProps) {
   // table data state
   const [data, setData] = useState<Beat[]>([]);
   const [columnVisibility, setColumnVisibility] = useState<ColumnVis>();
@@ -144,7 +142,7 @@ function BeatTable({ setAudioSrc }: BeatTableProps) {
   }, []);
 
   const finalData = useMemo(() => data, [data]);
-  const finalColumnDef = useMemo(() => columnDef, [setAudioSrc]);
+  const finalColumnDef = useMemo(() => createColumnDef(onBeatPlay), [onBeatPlay]);
 
   useEffect(() => {
     console.log("row selection:", rowSelection);

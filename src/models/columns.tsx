@@ -5,10 +5,10 @@ import { Beat } from "../bindings";
 
 interface Row {
   id: string;
-  // TODO: Add other properties 
+  original: Beat;
 }
 
-export const columnDef: ColumnDef<Beat>[] = [
+export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Beat>[] => [
   {
     accessorKey: "drag-handle",
     header: "Move",
@@ -52,7 +52,10 @@ export const columnDef: ColumnDef<Beat>[] = [
   {
     accessorKey: "play-handle",
     header: "Play",
-    cell: ({ row }) => <RowPlayHandleCell rowId={row.id.toString()} setAudioSrc={() => {}} />,
+    cell: ({ row }) => <RowPlayHandleCell 
+    rowId={row.id.toString()} 
+    onPlay={() => onBeatPlay(row.original)}
+    />,
     size: 20,
   },
 ];

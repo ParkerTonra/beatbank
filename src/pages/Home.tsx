@@ -1,15 +1,16 @@
 import BeatTable from 'components/BeatTable';
-import { useState, useEffect } from 'react';
-const Home = () => {
-  const [audioSrc, setAudioSrc] = useState<string>("");
+import { Beat } from 'src/bindings';
 
-  useEffect(() => {
-    console.log("audioSrc:", audioSrc);
-  }, [audioSrc]);
+interface HomeProps {
+  onBeatSelect: (beat: Beat) => void;
+  onBeatPlay: (beat: Beat) => void;
+}
+
+const Home: React.FC<HomeProps> = ({ onBeatPlay }) => {
 
   return (
     <div className="p-4 h-full w-full bg-secondary border">
-      <BeatTable setAudioSrc={setAudioSrc} />
+      <BeatTable onBeatPlay={onBeatPlay} />
     </div>
   );
 };

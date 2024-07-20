@@ -1,21 +1,21 @@
 import React, { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
-import { convertFileSrc } from "@tauri-apps/api/tauri";
 
 interface Beat {
   id: string;
   file_path: string;
+  title: string;
   // Add other properties as needed
 }
 
 interface RowPlayHandleCellProps {
   rowId: string;
-  setAudioSrc: (src: string) => void;
+  onPlay: (beat: Beat) => void;
 }
 
 const RowPlayHandleCell: React.FC<RowPlayHandleCellProps> = ({
   rowId,
-  setAudioSrc,
+  onPlay,
 }) => {
   const playButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -41,8 +41,7 @@ const RowPlayHandleCell: React.FC<RowPlayHandleCellProps> = ({
           }
 
           if (filePath) {
-            const convertedPath = convertFileSrc(filePath);
-            setAudioSrc(convertedPath);
+            onPlay(beat);
           } else {
             console.error("file_path is undefined on beat object");
           }
@@ -61,7 +60,7 @@ const RowPlayHandleCell: React.FC<RowPlayHandleCellProps> = ({
         playButton.removeEventListener("click", handlePlayButtonClick);
       }
     };
-  }, [rowId, setAudioSrc]);
+  }, [rowId, onPlay]);
 
   return (
     <button ref={playButtonRef} className="bg-transparent">

@@ -1,7 +1,7 @@
 use std::fs;
 use rusqlite::{params, Connection, Result};
 use std::env;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 #[derive(serde::Serialize)]
 pub struct Beat {
@@ -14,7 +14,7 @@ pub struct Beat {
     date_added: String,
     file_path: String,
 }
-    #[derive(serde::Serialize)]
+#[derive(serde::Serialize)]
 pub struct ColumnVisibility {
     title: bool,
     bpm: bool,
@@ -148,19 +148,19 @@ pub fn fetch_beats() -> Result<Vec<Beat>> {
     Ok(beats)
 }
 
-fn normalize_path(path: &str) -> String {
-    Path::new(path)
-        .components()
-        .collect::<PathBuf>()
-        .to_str()
-        .unwrap()
-        .to_string()
-}
-pub fn get_audio_path(conn: &Connection, id: u32) -> Result<String> {
-    let mut stmt = conn.prepare("SELECT file_path FROM beats WHERE id = ?1")?;
-    let file_path: String = stmt.query_row([id], |row| row.get(0))?;
-    Ok(normalize_path(&file_path))
-}
+// fn normalize_path(path: &str) -> String {
+//     Path::new(path)
+//         .components()
+//         .collect::<PathBuf>()
+//         .to_str()
+//         .unwrap()
+//         .to_string()
+// }
+// pub fn get_audio_path(conn: &Connection, id: u32) -> Result<String> {
+//     let mut stmt = conn.prepare("SELECT file_path FROM beats WHERE id = ?1")?;
+//     let file_path: String = stmt.query_row([id], |row| row.get(0))?;
+//     Ok(normalize_path(&file_path))
+// }
 
 fn create_db_file() {
     let db_path = get_db_path();

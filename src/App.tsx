@@ -1,18 +1,30 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
+import { useState } from 'react';
 import icon from './assets/icons/db_logo.png';
-import './Main.css';
 import BeatJockey from './components/BeatJockey';
 import BeatSet from './pages/BeatSet';
 import Search from './pages/Search';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import Home from './pages/Home';
+import { Beat } from './bindings';
+import './Main.css';
 
 function App() {
+  const [currentBeat, setCurrentBeat] = useState<Beat | null>(null);
+
+  const handleBeatSelection = (beat: Beat) => {
+    setCurrentBeat(beat);
+  };
+
+  const handleBeatPlay = (beat: Beat) => {
+    setCurrentBeat(beat);
+  };
+  
   return (
-    <div className='container w-full h-full'>
+    <div className='h-full'>
       <Router>
-        <div className="flex h-screen text-xl font-sans w-screen">
+        <div className="flex h-screen text-xl font-sans w-full">
           <div className=" w-64 p-4  bg-background-dark">
             <Sidebar />
           </div>
@@ -23,13 +35,15 @@ function App() {
 
             <main className="h-full w-full">
               <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<Home onBeatSelect={handleBeatSelection} onBeatPlay={handleBeatPlay} />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/set/:id" element={<BeatSet />} />
 
               </Routes>
-              <BeatJockey />
-            </main>
+              <div className="flex-grow flex-col">
+                <BeatJockey currentBeat={currentBeat} />
+              </div>
+            </main> 
             
           </div>
         </div>

@@ -8,7 +8,7 @@ interface DraggableRowProps {
   onRowSelection: (rowId: string) => void;
 }
 
-function DraggableRow({ row, onRowSelection }: DraggableRowProps) {
+function DraggableRow({ row, onRowSelection}: DraggableRowProps) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
     id: row.original.id,
   });
@@ -20,6 +20,7 @@ function DraggableRow({ row, onRowSelection }: DraggableRowProps) {
     zIndex: isDragging ? 1 : 0,
     position: 'relative',
   };
+
 
   const handleDragStart = (event: any) => {
     event.dataTransfer.setData('text/plain', JSON.stringify(row.original));

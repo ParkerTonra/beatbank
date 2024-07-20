@@ -170,6 +170,8 @@ version = "0.0.0"
 dependencies = [
  "dirs",
  "dotenvy",
+ "lazy_static",
+ "once_cell",
  "rodio",
  "rusqlite",
  "serde",
