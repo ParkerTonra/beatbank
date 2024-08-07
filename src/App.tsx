@@ -11,14 +11,14 @@ import { Beat } from './bindings';
 import './Main.css';
 
 function App() {
-  const [currentBeat, setCurrentBeat] = useState<Beat | null>(null);
+  const [playThisBeat, setPlayThisBeat] = useState<Beat | null>(null);
 
-  const handleBeatSelection = (beat: Beat) => {
-    setCurrentBeat(beat);
-  };
+  // const handleBeatSelection = (beat: Beat) => {
+  //   setCurrentBeat(beat);
+  // };
 
   const handleBeatPlay = (beat: Beat) => {
-    setCurrentBeat(beat);
+    setPlayThisBeat(beat);
   };
   
   return (
@@ -35,13 +35,13 @@ function App() {
 
             <main className="h-full w-full">
               <Routes>
-                <Route path="/" element={<Home onBeatSelect={handleBeatSelection} onBeatPlay={handleBeatPlay} />} />
+                <Route path="/" element={<Home onBeatPlay={handleBeatPlay} />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/set/:id" element={<BeatSet />} />
 
               </Routes>
               <div className="flex-grow flex-col">
-                <BeatJockey currentBeat={currentBeat} />
+                <BeatJockey playThisBeat={playThisBeat} />
               </div>
             </main> 
             

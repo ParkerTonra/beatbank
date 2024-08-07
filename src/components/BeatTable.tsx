@@ -1,4 +1,4 @@
-import  { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   useReactTable,
   flexRender,
@@ -10,6 +10,7 @@ import {
 import { createColumnDef } from "../models/columns.tsx";
 // db location: "C:\Users\parke\code\beatbank\beatbank-tauri\beatbank\src-tauri\.config\beatbank.db"
 import { Beat, ColumnVis } from "./../bindings.ts";
+import { UniqueIdentifier } from '@dnd-kit/core';
 import {
   DndContext,
   DragEndEvent,
@@ -27,22 +28,29 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import DraggableRow from "./DraggableRow";
-import { invoke } from "@tauri-apps/api/tauri";
+import { useBeats } from "src/hooks/useBeats.tsx";
 
 interface BeatTableProps {
-
   onBeatPlay: (beat: Beat) => void;
 }
 
 
-
-//function BeatTable({ setAudioSrc }) {
-function BeatTable({  onBeatPlay }: BeatTableProps) {
+function BeatTable({ onBeatPlay }: BeatTableProps) {
   // table data state
-  const [data, setData] = useState<Beat[]>([]);
-  const [columnVisibility, setColumnVisibility] = useState<ColumnVis>();
+  const {
+    beats,
+    columnVisibility,
+    //@ts-ignore
+    loading,
+    //@ts-ignore
+    error,
+    fetchData,
+    setBeats,
+    setColumnVisibility,
+  } = useBeats();
+
   // row selection state
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({}) 
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   // key press state
   const [lastSelectedRow, setLastSelectedRow] = useState<string | null>(null);
@@ -52,21 +60,21 @@ function BeatTable({  onBeatPlay }: BeatTableProps) {
   // react based on key press state:
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Control') setIsCtrlPressed(true);
-      if (e.key === 'Shift') setIsShiftPressed(true);
+      if (e.key === "Control") setIsCtrlPressed(true);
+      if (e.key === "Shift") setIsShiftPressed(true);
     };
-  
+
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Control') setIsCtrlPressed(false);
-      if (e.key === 'Shift') setIsShiftPressed(false);
+      if (e.key === "Control") setIsCtrlPressed(false);
+      if (e.key === "Shift") setIsShiftPressed(false);
     };
-  
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-  
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
     };
   }, []);
 
@@ -81,10 +89,13 @@ function BeatTable({  onBeatPlay }: BeatTableProps) {
       } else if (isShiftPressed && lastSelectedRow) {
         // Select all rows between last selected and current
         const newSelection = { ...prev };
-        const rowIds = tableInstance.getRowModel().rows.map(row => row.id);
+        const rowIds = tableInstance.getRowModel().rows.map((row) => row.id);
         const startIndex = rowIds.indexOf(lastSelectedRow);
         const endIndex = rowIds.indexOf(rowId);
-        const [start, end] = startIndex < endIndex ? [startIndex, endIndex] : [endIndex, startIndex];
+        const [start, end] =
+          startIndex < endIndex
+            ? [startIndex, endIndex]
+            : [endIndex, startIndex];
         for (let i = start; i <= end; i++) {
           newSelection[rowIds[i]] = true;
         }
@@ -97,65 +108,23 @@ function BeatTable({  onBeatPlay }: BeatTableProps) {
     });
   };
 
-  //once the component renders, fetch the beats and column visibility from the database.
-  useEffect(() => {
-    async function fetchBeats() {
-      try {
-        const result = await invoke<string>("fetch_beats");
-        const beats: Beat[] = JSON.parse(result);
-        setData(beats);
-      } catch (error) {
-        console.error("Error fetching beats:", error);
-      }
-    }
-    fetchBeats();
-  }, []);
-
-  useEffect(() => {
-    async function fetchColumnVisibility() {
-      try {
-        const result = await invoke<string>("fetch_column_vis");
-        let columnVis: ColumnVis = JSON.parse(result);
-        
-        if (columnVis && typeof columnVis === 'object' && '0' in columnVis) {
-          columnVis = (columnVis as { 0: ColumnVis })[0];
-        }
-        
-        // Ensure all expected properties are present
-        const defaultVis: ColumnVis = {
-          id: false,
-          title: true,
-          bpm: true,
-          key: true,
-          duration: true,
-          artist: true,
-          date_added: true,
-          file_path: true,
-        };
-        
-        setColumnVisibility({ ...defaultVis, ...columnVis });
-      } catch (error) {
-        console.error("Error fetching column visibility:", error);
-      }
-    }
-    fetchColumnVisibility();
-  }, []);
-
-  const finalData = useMemo(() => data, [data]);
+  const finalData = useMemo(() => beats, [beats]);
   const finalColumnDef = useMemo(() => createColumnDef(onBeatPlay), [onBeatPlay]);
 
+  // Fetch data when the component mounts
   useEffect(() => {
-    console.log("row selection:", rowSelection);
-  }, [rowSelection]);
+    fetchData();
+  }, [fetchData]);
 
-  const dataIds = useMemo(
+  const dataIds: UniqueIdentifier[] = useMemo(
     () => finalData?.map(({ id }) => id),
     [finalData]
   );
 
-  console.log("columnVisibility:", columnVisibility);
+  //console.log("columnVisibility:", columnVisibility);
 
   const handleColumnVisibilityChange = (updaterOrValue: Updater<VisibilityState>) => {
+    console.log("handleColumnVisibilityChange:", updaterOrValue);
     setColumnVisibility((prev) => {
       if (typeof updaterOrValue === 'function') {
         const newState = updaterOrValue(prev as VisibilityState);
@@ -183,14 +152,12 @@ function BeatTable({  onBeatPlay }: BeatTableProps) {
     debugColumns: true,
   });
 
-  
-
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (active && over && active.id !== over.id) {
-      setData((data) => {
-        const oldIndex = dataIds.indexOf(active.id as number);
-        const newIndex = dataIds.indexOf(over.id as number);
+      setBeats((data) => {
+        const oldIndex = dataIds.indexOf(active.id);
+        const newIndex = dataIds.indexOf(over.id);
         return arrayMove(data, oldIndex, newIndex);
       });
     }
@@ -208,75 +175,77 @@ function BeatTable({  onBeatPlay }: BeatTableProps) {
 
   return (
     <div className="flex flex-col h-full w-full overflow-y-auto">
-    <DndContext
-      collisionDetection={closestCenter}
-      modifiers={[restrictToVerticalAxis]}
-      onDragEnd={handleDragEnd}
-      sensors={sensors}
-    >
-      <table className="w-full mb-96">
-        <thead>
-          {tableInstance.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((columnElement) => (
-                <th className="border-b border-black text-left pr-7"
-                  key={columnElement.id} colSpan={columnElement.colSpan}>
-                  {flexRender(
-                    columnElement.column.columnDef.header,
-                    columnElement.getContext(),
-                  )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          <SortableContext
-            items={dataIds}
-            strategy={verticalListSortingStrategy}
-          >
-            {tableInstance.getRowModel().rows.map((rowElement) => (
-              <DraggableRow 
-              key={rowElement.id} 
-              row={rowElement}
-              onRowSelection={handleRowSelection} />
+      <DndContext
+        collisionDetection={closestCenter}
+        modifiers={[restrictToVerticalAxis]}
+        onDragEnd={handleDragEnd}
+        sensors={sensors}
+      >
+        <table className="w-full mb-96">
+          <thead>
+            {tableInstance.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((columnElement) => (
+                  <th
+                    className="border-b border-black text-left pr-7"
+                    key={columnElement.id}
+                    colSpan={columnElement.colSpan}
+                  >
+                    {flexRender(
+                      columnElement.column.columnDef.header,
+                      columnElement.getContext()
+                    )}
+                  </th>
+                ))}
+              </tr>
             ))}
-          </SortableContext>
-        </tbody>
-      </table>
-    </DndContext>
-    <div className="flex px-4 border border-black shadow rounded mt-12">
-  <div className="px-1 border-b border-black ">
-    <label>
-      <input className="border border-black flex-row"
-        type="checkbox"
-        checked={tableInstance.getIsAllColumnsVisible()}
-        onChange={tableInstance.getToggleAllColumnsVisibilityHandler()}
-      />{' '}
-      Toggle All
-    </label>
-  </div>
-  
-  {tableInstance.getAllLeafColumns().map(column => {
-    return (
-      <div key={column.id} className="px-1">
-        <label>
-          <input
-            type="checkbox"
-            checked={column.getIsVisible()}
-            onChange={column.getToggleVisibilityHandler()}
-          />{' '}
-          {column.id}
-        </label>
-      </div>
-    )
-  })}
-</div>
+          </thead>
+          <tbody>
+            <SortableContext
+              items={dataIds}
+              strategy={verticalListSortingStrategy}
+            >
+              {tableInstance.getRowModel().rows.map((rowElement) => (
+                <DraggableRow
+                  key={rowElement.id}
+                  row={rowElement}
+                  onRowSelection={handleRowSelection}
+                />
+              ))}
+            </SortableContext>
+          </tbody>
+        </table>
+      </DndContext>
+      <div className="flex px-4 border border-black shadow rounded mt-12">
+        <div className="px-1 border-b border-black ">
+          <label>
+            <input
+              className="border border-black flex-row"
+              type="checkbox"
+              checked={tableInstance.getIsAllColumnsVisible()}
+              onChange={tableInstance.getToggleAllColumnsVisibilityHandler()}
+            />{" "}
+            Toggle All
+          </label>
+        </div>
 
-    
-</div>
-    
-  )
+        {tableInstance.getAllLeafColumns().map((column) => {
+          return (
+            <div key={column.id} className="px-1">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={column.getIsVisible()}
+                  onChange={column.getToggleVisibilityHandler()}
+                />{" "}
+                {column.id}
+              </label>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 export default BeatTable;

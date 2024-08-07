@@ -2,7 +2,6 @@ import BeatTable from 'components/BeatTable';
 import { Beat } from 'src/bindings';
 
 interface HomeProps {
-  onBeatSelect: (beat: Beat) => void;
   onBeatPlay: (beat: Beat) => void;
 }
 

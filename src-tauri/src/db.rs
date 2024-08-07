@@ -2,6 +2,8 @@ use std::fs;
 use rusqlite::{params, Connection, Result};
 use std::env;
 use std::path::Path;
+use lazy_static::lazy_static;
+use std::sync::Mutex;
 
 #[derive(serde::Serialize)]
 pub struct Beat {
@@ -25,6 +27,11 @@ pub struct ColumnVisibility {
     file_path: bool,
 }
 
+lazy_static! {
+    static ref DB_PATH: String = get_db_path();
+    static ref CONNECTION: Mutex<Connection> = Mutex::new(establish_db_connection());
+}
+
 // Check if a database file exists, and create one if it does not.
 pub fn init() {
     println!("Initializing database...");
@@ -34,7 +41,7 @@ pub fn init() {
     } else {
         println!("Database file already exists.");
     }
-    let conn = establish_db_connection();
+    let conn = CONNECTION.lock().unwrap();
     create_beat_table(&conn);
     init_column_vis(&conn);
 }
@@ -42,13 +49,13 @@ pub fn init() {
 
 
 fn establish_db_connection() -> Connection {
-    let db_path = get_db_path();
-    println!("Establishing database connection. DB PATH: {}", db_path);
-    Connection::open(&db_path)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", db_path))
+    println!("Establishing database connection. DB PATH: {}", *DB_PATH);
+    Connection::open(&*DB_PATH)
+        .unwrap_or_else(|_| panic!("Error connecting to {}", *DB_PATH))
 }
 
 fn create_beat_table(conn: &Connection) {
+    println!("Creating beats table...\n");
     let create_table_sql = "
         CREATE TABLE IF NOT EXISTS beats (
             id INTEGER PRIMARY KEY,
@@ -69,8 +76,7 @@ fn create_beat_table(conn: &Connection) {
 }
 
 fn init_column_vis(conn: &Connection) {
-    // if table exists, return
-    
+    println!("Creating column visibility table...\n");
     let create_table_sql = "
         CREATE TABLE IF NOT EXISTS column_visibility (
             title BOOLEAN NOT NULL DEFAULT TRUE,
@@ -90,7 +96,8 @@ fn init_column_vis(conn: &Connection) {
 }
 
 pub fn fetch_column_vis() -> Result<Vec<ColumnVisibility>> {
-    let conn = establish_db_connection();
+    println!("Fetching column visibility... \n");
+    let conn = CONNECTION.lock().unwrap();
     let mut stmt = conn.prepare("SELECT title, bpm, key, duration, artist, date_added, file_path FROM column_visibility")?;
     let column_vis_iter = stmt.query_map([], |row| {
         Ok(ColumnVisibility {
@@ -109,7 +116,8 @@ pub fn fetch_column_vis() -> Result<Vec<ColumnVisibility>> {
 }
 
 pub fn fetch_beat(id: String) -> Result<Beat> {
-    let conn = establish_db_connection();
+    println!("Fetching beat... \n");
+    let conn = CONNECTION.lock().unwrap();
     let mut stmt = conn.prepare("SELECT id, title, bpm, key, duration, artist, date_added, file_path FROM beats WHERE id = ?")?;
     let beat_iter = stmt.query_map(params![id], |row| {
         Ok(Beat {
@@ -129,7 +137,8 @@ pub fn fetch_beat(id: String) -> Result<Beat> {
 }
 
 pub fn fetch_beats() -> Result<Vec<Beat>> {
-    let conn = establish_db_connection();
+    println!("Fetching beats... \n");
+    let conn = CONNECTION.lock().unwrap();
     let mut stmt = conn.prepare("SELECT id, title, bpm, key, duration, artist, date_added, file_path FROM beats")?;
     let beat_iter = stmt.query_map([], |row| {
         Ok(Beat {
@@ -163,6 +172,7 @@ pub fn fetch_beats() -> Result<Vec<Beat>> {
 // }
 
 fn create_db_file() {
+    println!("Creating database file...\n");
     let db_path = get_db_path();
     let db_dir = Path::new(&db_path).parent().unwrap();
     if !db_dir.exists() {
@@ -174,14 +184,17 @@ fn create_db_file() {
 }
 
 fn db_file_exists() -> bool {
-    let db_path = get_db_path();
+    println!("Checking if database file exists...\n");
+    let db_path = &*DB_PATH;
     let exists = Path::new(&db_path).exists();
-    println!("Checking if database file exists: {} ({})", db_path, exists);
     exists
 }
 
 
+
+// Check if a database file exists, and create one if it does not.
 fn get_db_path() -> String {
+    println!("Getting database path...\n");
     let current_dir = env::current_dir().unwrap();
     let db_path = current_dir.join(".config/beatbank.db");
     let db_path_str = db_path.to_str().unwrap().to_string();

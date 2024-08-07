@@ -52,12 +52,14 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
   {
     accessorKey: "play-handle",
     header: "Play",
-    cell: ({ row }) => <RowPlayHandleCell 
-    rowId={row.id.toString()} 
-    onPlay={() => onBeatPlay(row.original)}
-    />,
+    cell: ({ row }) => (
+      <RowPlayHandleCell
+        rowId={row.id.toString()}
+        onPlay={() => onBeatPlay(row.original)}
+      />
+    ),
     size: 20,
-  },
+  }
 ];
 // function setAudioSrc(src: string): void {
 //   // Implement the function here

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { Beat } from "src/bindings";
 import {
@@ -11,50 +11,33 @@ import {
 } from "lucide-react";
 
 interface BeatJockeyProps {
-  currentBeat: Beat | null;
+  playThisBeat: Beat | null;
 }
 
-const BeatJockey: React.FC<BeatJockeyProps> = ({ currentBeat }) => {
-  const [currentTime, setCurrentTime] = useState<number>(0);
-  const [beatPlaying, setBeatPlaying] = useState<Beat | null>(null);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [beatQueue, setBeatQueue] = useState<Beat[]>([]);
-  const [beatIndex, setBeatIndex] = useState<number>(0);
+const BeatJockey: React.FC<BeatJockeyProps> = ({ playThisBeat }) => {
   const [playbackState, setPlaybackState] = useState<{
     currentTime: number;
     isPlaying: boolean;
   }>({ currentTime: 0, isPlaying: false });
+  const [beatQueue, setBeatQueue] = useState<Beat[]>([]);
+  const [beatIndex, setBeatIndex] = useState<number>(0);
 
-  // debugging
-  useEffect(() => {
-    console.log("currentTime updated:", currentTime);
-  }, [currentTime]);
-
-  useEffect(() => {
-    console.log("isPlaying updated:", isPlaying);
-  }, [isPlaying]);
-
-  useEffect(() => {
-    console.log("currentBeat updated:", currentBeat);
-  }, [currentBeat]);
-
-  useEffect(() => {
-    if (currentBeat) {
-      console.log("Current beat changed:", currentBeat);
-      setBeatQueue([currentBeat]);
-      setBeatIndex(0);
-
-      invoke("play_beat", { filePath: currentBeat.file_path })
-        .then(() => {
-          setPlaybackState((prev) => ({ ...prev, isPlaying: true, currentTime: 0 }));
-          setIsPlaying(true);
-        })
-        .catch((error) => {
-          console.error("Error playing beat:", error);
-        });
-      setBeatPlaying(currentBeat);
+  const startPlayback = useCallback(async (beat: Beat) => {
+    try {
+      await invoke("play_beat", { filePath: beat.file_path });
+      setPlaybackState({ currentTime: 0, isPlaying: true });
+    } catch (error) {
+      console.error("Error playing beat:", error);
     }
-  }, [currentBeat]);
+  }, []);
+
+  useEffect(() => {
+    if (playThisBeat) {
+      setBeatQueue([playThisBeat]);
+      setBeatIndex(0);
+      startPlayback(playThisBeat);
+    }
+  }, [playThisBeat, startPlayback]);
 
   interface PlaybackStatus {
     pos: number;
@@ -65,22 +48,13 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({ currentBeat }) => {
     const updatePlaybackStatus = async () => {
       try {
         const statusString = await invoke("get_playback_state");
-        console.log("Playback status string:", statusString);
+        const status = JSON.parse(statusString as string) as PlaybackStatus;
 
-        // Parse the JSON string into an object
-        const status = JSON.parse(statusString) as PlaybackStatus;
-        console.log("Parsed playback status:", status);
-        console.log("pos:", status.pos);
-
-        // Check if pos is defined
         if (typeof status.pos !== "undefined") {
-          setPlaybackState((prev) => ({
-            ...prev,
+          setPlaybackState({
             currentTime: status.pos,
             isPlaying: status.is_playing,
-          }));
-          setCurrentTime(status.pos);
-          setIsPlaying(status.is_playing);
+          });
         } else {
           console.error("pos is undefined");
         }
@@ -93,49 +67,48 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({ currentBeat }) => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleSliderChange = async (value: number) => {
-    setCurrentTime(value);
+  const handleSliderChange = (value: number) => {
+    setPlaybackState((prev) => ({ ...prev, currentTime: value }));
+  };
+
+  const handleSliderChangeComplete = async (value: number) => {
     try {
       await invoke("seek_audio", { seconds: value });
-      setPlaybackState((prev) => ({ ...prev, currentTime: value }));
     } catch (error) {
       console.error("Error seeking audio:", error);
     }
   };
 
   const handlePlayPause = async () => {
-    if (isPlaying) {
+    if (playbackState.isPlaying) {
       await invoke("pause_beat");
     } else if (beatQueue[beatIndex]) {
       await invoke("play_beat", { filePath: beatQueue[beatIndex].file_path });
     }
     setPlaybackState((prev) => ({ ...prev, isPlaying: !prev.isPlaying }));
-    setIsPlaying(!isPlaying);
   };
 
   const handleNext = async () => {
     if (beatIndex < beatQueue.length - 1) {
       const nextIndex = beatIndex + 1;
       setBeatIndex(nextIndex);
-      await invoke("play_beat", { filePath: beatQueue[nextIndex].file_path });
-      setIsPlaying(true);
+      await startPlayback(beatQueue[nextIndex]);
     }
   };
 
   const handlePrev = async () => {
-    if (currentTime > 3) {
+    if (playbackState.currentTime > 3) {
       await invoke("restart_beat");
     } else if (beatIndex > 0) {
       const prevIndex = beatIndex - 1;
       setBeatIndex(prevIndex);
-      await invoke("play_beat", { filePath: beatQueue[prevIndex].file_path });
-      setIsPlaying(true);
+      await startPlayback(beatQueue[prevIndex]);
     }
   };
 
   const handleStop = async () => {
     await invoke("stop_beat");
-    setIsPlaying(false);
+    setPlaybackState((prev) => ({ ...prev, isPlaying: false }));
   };
 
   const handleVolumeChange = (value: number) => {
@@ -157,7 +130,7 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({ currentBeat }) => {
               onClick={handlePlayPause}
               className="p-1 sm:p-2 hover:bg-gray-700 rounded transition-colors"
             >
-              {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+              {playbackState.isPlaying ? <Pause size={20} /> : <Play size={20} />}
             </button>
             <button
               onClick={handlePrev}
@@ -185,9 +158,11 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({ currentBeat }) => {
               className="w-full sm:w-64 md:w-96"
               type="range"
               min={0}
-              max={currentBeat ? getDurationInSeconds(currentBeat.duration) : 0}
-              value={currentTime}
+              max={playThisBeat ? getDurationInSeconds(playThisBeat.duration) : 0}
+              value={playbackState.currentTime}
               onChange={(e) => handleSliderChange(parseFloat(e.target.value))}
+              onMouseUp={(e) => handleSliderChangeComplete(parseFloat(e.currentTarget.value))}
+              onTouchEnd={(e) => handleSliderChangeComplete(parseFloat(e.currentTarget.value))}
             />
             <div className="flex items-center space-x-2">
               <Volume2 size={20} />
@@ -208,10 +183,10 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({ currentBeat }) => {
               {playbackState.currentTime < 60
                 ? Math.floor(playbackState.currentTime)
                 : `${Math.floor(playbackState.currentTime / 60)}:${String(Math.floor(playbackState.currentTime % 60)).padStart(2, "0")}`}{" "}
-              / {beatPlaying?.duration || "0.00"}
+              / {playThisBeat?.duration || "0.00"}
             </p>
             <p className="truncate max-w-[150px] sm:max-w-[200px] md:max-w-[300px]">
-              Now playing: {beatPlaying?.title || "No beat selected"}
+              Now playing: {playThisBeat?.title || "No beat selected"}
             </p>
           </div>
         </div>
