@@ -32,6 +32,7 @@ import { useBeats } from "src/hooks/useBeats.tsx";
 
 interface BeatTableProps {
   onBeatPlay: (beat: Beat) => void;
+  onBeatSelect: (beat: Beat) => void;
 }
 
 
@@ -207,8 +208,8 @@ function BeatTable({ onBeatPlay }: BeatTableProps) {
             >
               {tableInstance.getRowModel().rows.map((rowElement) => (
                 <DraggableRow
-                  key={rowElement.id}
                   row={rowElement}
+                  key={rowElement.id}
                   onRowSelection={handleRowSelection}
                 />
               ))}

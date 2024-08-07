@@ -13,9 +13,9 @@ import './Main.css';
 function App() {
   const [playThisBeat, setPlayThisBeat] = useState<Beat | null>(null);
 
-  // const handleBeatSelection = (beat: Beat) => {
-  //   setCurrentBeat(beat);
-  // };
+  const handleBeatSelection = (beat: Beat) => {
+    console.log("beat selected:", beat);
+  };
 
   const handleBeatPlay = (beat: Beat) => {
     setPlayThisBeat(beat);
@@ -35,7 +35,7 @@ function App() {
 
             <main className="h-full w-full">
               <Routes>
-                <Route path="/" element={<Home onBeatPlay={handleBeatPlay} />} />
+                <Route path="/" element={<Home onBeatPlay={handleBeatPlay} onBeatSelect={handleBeatSelection} />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/set/:id" element={<BeatSet />} />
 

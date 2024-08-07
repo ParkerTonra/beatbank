@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { Beat } from "src/bindings";
 import {
@@ -6,7 +6,6 @@ import {
   Pause,
   SkipBack,
   SkipForward,
-  Square,
   Volume2,
 } from "lucide-react";
 
@@ -21,23 +20,35 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({ playThisBeat }) => {
   }>({ currentTime: 0, isPlaying: false });
   const [beatQueue, setBeatQueue] = useState<Beat[]>([]);
   const [beatIndex, setBeatIndex] = useState<number>(0);
+  const hasPlayedRef = useRef(false);
+
+  const stopPlayback = useCallback(async () => {
+    try {
+      await invoke("stop_beat");
+      setPlaybackState({ currentTime: 0, isPlaying: false });
+    } catch (error) {
+      console.error("Error stopping beat:", error);
+    }
+  }, []);
 
   const startPlayback = useCallback(async (beat: Beat) => {
     try {
+      await stopPlayback();
       await invoke("play_beat", { filePath: beat.file_path });
       setPlaybackState({ currentTime: 0, isPlaying: true });
     } catch (error) {
       console.error("Error playing beat:", error);
     }
-  }, []);
+  }, [stopPlayback]);
 
   useEffect(() => {
-    if (playThisBeat) {
+    if (playThisBeat && (!hasPlayedRef.current || beatQueue[beatIndex]?.file_path !== playThisBeat.file_path)) {
       setBeatQueue([playThisBeat]);
       setBeatIndex(0);
       startPlayback(playThisBeat);
+      hasPlayedRef.current = true;
     }
-  }, [playThisBeat, startPlayback]);
+  }, [playThisBeat, startPlayback, beatIndex, beatQueue]);
 
   interface PlaybackStatus {
     pos: number;
@@ -49,20 +60,22 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({ playThisBeat }) => {
       try {
         const statusString = await invoke("get_playback_state");
         const status = JSON.parse(statusString as string) as PlaybackStatus;
-
-        if (typeof status.pos !== "undefined") {
-          setPlaybackState({
-            currentTime: status.pos,
-            isPlaying: status.is_playing,
-          });
-        } else {
-          console.error("pos is undefined");
-        }
+  
+        setPlaybackState(prevState => {
+          // Only update state if there's a change
+          if (prevState.currentTime !== status.pos || prevState.isPlaying !== status.is_playing) {
+            return {
+              currentTime: status.pos,
+              isPlaying: status.is_playing,
+            };
+          }
+          return prevState;
+        });
       } catch (error) {
         console.error("Error updating playback status:", error);
       }
     };
-
+  
     const interval = setInterval(updatePlaybackStatus, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -83,7 +96,7 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({ playThisBeat }) => {
     if (playbackState.isPlaying) {
       await invoke("pause_beat");
     } else if (beatQueue[beatIndex]) {
-      await invoke("play_beat", { filePath: beatQueue[beatIndex].file_path });
+      await invoke("resume_beat");
     }
     setPlaybackState((prev) => ({ ...prev, isPlaying: !prev.isPlaying }));
   };
@@ -105,12 +118,7 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({ playThisBeat }) => {
       await startPlayback(beatQueue[prevIndex]);
     }
   };
-
-  const handleStop = async () => {
-    await invoke("stop_beat");
-    setPlaybackState((prev) => ({ ...prev, isPlaying: false }));
-  };
-
+  
   const handleVolumeChange = (value: number) => {
     invoke("set_volume", { volume: value / 100 });
   };
@@ -143,12 +151,6 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({ playThisBeat }) => {
               className="p-1 sm:p-2 hover:bg-gray-700 rounded transition-colors"
             >
               <SkipForward size={20} />
-            </button>
-            <button
-              onClick={handleStop}
-              className="p-1 sm:p-2 hover:bg-gray-700 rounded transition-colors"
-            >
-              <Square size={20} />
             </button>
           </div>
 
@@ -183,10 +185,10 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({ playThisBeat }) => {
               {playbackState.currentTime < 60
                 ? Math.floor(playbackState.currentTime)
                 : `${Math.floor(playbackState.currentTime / 60)}:${String(Math.floor(playbackState.currentTime % 60)).padStart(2, "0")}`}{" "}
-              / {playThisBeat?.duration || "0.00"}
+              / {beatQueue[beatIndex]?.duration || "0.00"}
             </p>
             <p className="truncate max-w-[150px] sm:max-w-[200px] md:max-w-[300px]">
-              Now playing: {playThisBeat?.title || "No beat selected"}
+              Now playing: {beatQueue[beatIndex]?.title || "No beat selected"}
             </p>
           </div>
         </div>
