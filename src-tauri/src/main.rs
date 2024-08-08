@@ -66,6 +66,11 @@ async fn get_playback_state() -> Result<String, String> {
 async fn seek_audio(seconds: f32) -> Result<(), String> {
     audio::seek(seconds)
 }
+#[tauri::command]
+async fn save_row_order(rowOrder: Vec<db::RowOrder>) -> Result<(), String> {
+    println!("save_row_order");
+    db::save_row_order(rowOrder).map_err(|e| e.to_string())
+}
 
 fn main() {
     tauri::Builder::default()
@@ -86,7 +91,8 @@ fn main() {
             stop_beat,
             set_volume,
             get_playback_state,
-            seek_audio
+            seek_audio,
+            save_row_order
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

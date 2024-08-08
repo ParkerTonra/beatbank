@@ -4,6 +4,8 @@ use std::env;
 use std::path::Path;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
+use rusqlite::Error as SqliteError;
+
 
 #[derive(serde::Serialize)]
 pub struct Beat {
@@ -15,6 +17,7 @@ pub struct Beat {
     artist: String,
     date_added: String,
     file_path: String,
+    row_number: i32,
 }
 #[derive(serde::Serialize)]
 pub struct ColumnVisibility {
@@ -25,6 +28,12 @@ pub struct ColumnVisibility {
     artist: bool,
     date_added: bool,
     file_path: bool,
+}
+
+#[derive(serde::Deserialize)]
+pub struct RowOrder {
+    row_id: String,
+    row_number: i32,
 }
 
 lazy_static! {
@@ -65,7 +74,8 @@ fn create_beat_table(conn: &Connection) {
             duration TEXT NOT NULL,
             artist TEXT NOT NULL,
             date_added TEXT NOT NULL,
-            file_path TEXT NOT NULL
+            file_path TEXT NOT NULL,
+            row_number INTEGER NOT NULL
         );
     ";
 
@@ -119,27 +129,6 @@ pub fn fetch_beat(id: String) -> Result<Beat> {
     println!("Fetching beat... \n");
     let conn = CONNECTION.lock().unwrap();
     let mut stmt = conn.prepare("SELECT id, title, bpm, key, duration, artist, date_added, file_path FROM beats WHERE id = ?")?;
-    let beat_iter = stmt.query_map(params![id], |row| {
-        Ok(Beat {
-            id: row.get(0)?,
-            title: row.get(1)?,
-            bpm: row.get(2)?,
-            key: row.get(3)?,
-            duration: row.get(4)?,
-            artist: row.get(5)?,
-            date_added: row.get(6)?,
-            file_path: row.get(7)?,
-        })
-    })?;
-    let beat: Beat = beat_iter.filter_map(Result::ok).next().unwrap();
-    println!("Beat fetched.");
-    Ok(beat)
-}
-
-pub fn fetch_beats() -> Result<Vec<Beat>> {
-    println!("Fetching beats... \n");
-    let conn = CONNECTION.lock().unwrap();
-    let mut stmt = conn.prepare("SELECT id, title, bpm, key, duration, artist, date_added, file_path FROM beats")?;
     let beat_iter = stmt.query_map([], |row| {
         Ok(Beat {
             id: row.get(0)?,
@@ -150,11 +139,44 @@ pub fn fetch_beats() -> Result<Vec<Beat>> {
             artist: row.get(5)?,
             date_added: row.get(6)?,
             file_path: row.get(7)?,
+            row_number: row.get(8)?,
+        })
+    })?;
+    let beat: Beat = beat_iter.filter_map(Result::ok).next().unwrap();
+    println!("Beat fetched.");
+    Ok(beat)
+}
+
+pub fn fetch_beats() -> Result<Vec<Beat>> {
+    println!("Fetching beats... \n");
+    let conn = CONNECTION.lock().unwrap();
+    let mut stmt = conn.prepare("SELECT id, title, bpm, key, duration, artist, date_added, file_path, row_number FROM beats ORDER BY row_number")?;
+    let beat_iter = stmt.query_map([], |row| {
+        Ok(Beat {
+            id: row.get(0)?,
+            title: row.get(1)?,
+            bpm: row.get(2)?,
+            key: row.get(3)?,
+            duration: row.get(4)?,
+            artist: row.get(5)?,
+            date_added: row.get(6)?,
+            file_path: row.get(7)?,
+            row_number: row.get(8)?,
         })
     })?;
 
     let beats: Vec<Beat> = beat_iter.filter_map(Result::ok).collect();
     Ok(beats)
+}
+
+
+pub fn save_row_order(row_order: Vec<RowOrder>) -> Result<(), rusqlite::Error> {
+    let conn = CONNECTION.lock().unwrap();
+    let mut stmt = conn.prepare("UPDATE beats SET row_number = ?1 WHERE id = ?2")?;
+    for row in row_order {
+        stmt.execute(params![row.row_number, row.row_id])?;
+    }
+    Ok(())
 }
 
 // fn normalize_path(path: &str) -> String {

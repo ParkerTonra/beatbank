@@ -25,7 +25,7 @@ function App() {
     <div className='h-full'>
       <Router>
         <div className="flex h-screen text-xl font-sans w-full">
-          <div className=" w-64 p-4  bg-background-dark">
+          <div className=" w-64 p-4  bg-gray-800">
             <Sidebar />
           </div>
           <div className="flex-2 flex-col py-4 w-full h-full"> {/* right container */}
@@ -40,7 +40,7 @@ function App() {
                 <Route path="/set/:id" element={<BeatSet />} />
 
               </Routes>
-              <div className="flex-grow flex-col">
+              <div className="flex-grow flex-col justify-center">
                 <BeatJockey playThisBeat={playThisBeat} />
               </div>
             </main> 

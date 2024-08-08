@@ -1,5 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, Dispatch, SetStateAction } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
+import { Beat } from "./../bindings";
 
 const defaultColumnVisibility = {
   title: true,
@@ -12,8 +13,11 @@ const defaultColumnVisibility = {
 };
 
 export const useBeats = () => {
-  const [beats, setBeats] = useState([]);
-  const [columnVisibility, setColumnVisibility] = useState(defaultColumnVisibility);
+    const [beats, setBeats]: [Beat[], Dispatch<SetStateAction<Beat[]>>] =
+    useState<Beat[]>([]);
+  const [columnVisibility, setColumnVisibility] = useState(
+    defaultColumnVisibility
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 

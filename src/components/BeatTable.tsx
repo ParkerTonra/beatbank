@@ -8,9 +8,8 @@ import {
   Updater,
 } from "@tanstack/react-table";
 import { createColumnDef } from "../models/columns.tsx";
-// db location: "C:\Users\parke\code\beatbank\beatbank-tauri\beatbank\src-tauri\.config\beatbank.db"
 import { Beat, ColumnVis } from "./../bindings.ts";
-import { UniqueIdentifier } from '@dnd-kit/core';
+import { UniqueIdentifier } from "@dnd-kit/core";
 import {
   DndContext,
   DragEndEvent,
@@ -29,12 +28,12 @@ import {
 } from "@dnd-kit/sortable";
 import DraggableRow from "./DraggableRow";
 import { useBeats } from "src/hooks/useBeats.tsx";
+import { invoke } from "@tauri-apps/api/tauri";
 
 interface BeatTableProps {
   onBeatPlay: (beat: Beat) => void;
   onBeatSelect: (beat: Beat) => void;
 }
-
 
 function BeatTable({ onBeatPlay }: BeatTableProps) {
   // table data state
@@ -110,7 +109,10 @@ function BeatTable({ onBeatPlay }: BeatTableProps) {
   };
 
   const finalData = useMemo(() => beats, [beats]);
-  const finalColumnDef = useMemo(() => createColumnDef(onBeatPlay), [onBeatPlay]);
+  const finalColumnDef = useMemo(
+    () => createColumnDef(onBeatPlay),
+    [onBeatPlay]
+  );
 
   // Fetch data when the component mounts
   useEffect(() => {
@@ -124,10 +126,12 @@ function BeatTable({ onBeatPlay }: BeatTableProps) {
 
   //console.log("columnVisibility:", columnVisibility);
 
-  const handleColumnVisibilityChange = (updaterOrValue: Updater<VisibilityState>) => {
+  const handleColumnVisibilityChange = (
+    updaterOrValue: Updater<VisibilityState>
+  ) => {
     console.log("handleColumnVisibilityChange:", updaterOrValue);
     setColumnVisibility((prev) => {
-      if (typeof updaterOrValue === 'function') {
+      if (typeof updaterOrValue === "function") {
         const newState = updaterOrValue(prev as VisibilityState);
         return newState as ColumnVis;
       }
@@ -153,16 +157,34 @@ function BeatTable({ onBeatPlay }: BeatTableProps) {
     debugColumns: true,
   });
 
-  function handleDragEnd(event: DragEndEvent) {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (active && over && active.id !== over.id) {
-      setBeats((data) => {
-        const oldIndex = dataIds.indexOf(active.id);
-        const newIndex = dataIds.indexOf(over.id);
-        return arrayMove(data, oldIndex, newIndex);
+      setBeats((prevBeats) => {
+        const oldIndex = prevBeats.findIndex((beat) => beat.id === active.id);
+        const newIndex = prevBeats.findIndex((beat) => beat.id === over.id);
+        const newBeats = arrayMove(prevBeats, oldIndex, newIndex);
+
+        // Save the new order
+        saveRowOrder(newBeats);
+
+        return newBeats;
       });
     }
-  }
+  };
+
+  const saveRowOrder = async (beatsToSave: Beat[]) => {
+    const rowOrder = beatsToSave.map((beat, index) => ({
+      row_id: beat.id.toString(),
+      row_number: index + 1 // Changed from row_order to row_number
+    }));
+    try {
+      await invoke('save_row_order', { rowOrder }) // Changed from row_order to rowOrder
+      console.log('Row order saved successfully');
+    } catch (error) {
+      console.error('Error saving row order:', error);
+    }
+  };
 
   const sensors = useSensors(
     useSensor(MouseSensor, {}),

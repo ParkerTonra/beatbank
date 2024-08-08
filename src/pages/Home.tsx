@@ -9,7 +9,7 @@ interface HomeProps {
 const Home: React.FC<HomeProps> = ({ onBeatPlay, onBeatSelect }) => {
 
   return (
-    <div className="p-4 h-full w-full bg-secondary border">
+    <div className="p-4 h-full w-full bg-secondary">
       <BeatTable onBeatPlay={onBeatPlay} onBeatSelect={onBeatSelect} />
     </div>
   );
