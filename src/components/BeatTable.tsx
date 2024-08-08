@@ -239,7 +239,7 @@ function BeatTable({ onBeatPlay }: BeatTableProps) {
           </tbody>
         </table>
       </DndContext>
-      <div className="flex px-4 border border-black shadow rounded mt-12">
+      <div className="flex px-4 border border-black shadow rounded mt-12 text-sm space-x-4">
         <div className="px-1 border-b border-black ">
           <label>
             <input
@@ -254,7 +254,7 @@ function BeatTable({ onBeatPlay }: BeatTableProps) {
 
         {tableInstance.getAllLeafColumns().map((column) => {
           return (
-            <div key={column.id} className="px-1">
+            <div key={column.id} className="mb-36">
               <label>
                 <input
                   type="checkbox"

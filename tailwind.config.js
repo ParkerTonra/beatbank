@@ -41,10 +41,8 @@ export default {
       },
     },
     // Optionally, you can override the default font family
-    fontFamily: {
-      sans: ['Arial', 'sans-serif'],
-      // Add more font families if needed
-    },
+    fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui'] },
+
   },
   plugins: [require('@tailwindcss/forms')],
 }

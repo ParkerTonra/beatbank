@@ -4,15 +4,19 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+@import "@fontsource/inter/400.css"; /* Regular */
+@import "@fontsource/inter/500.css"; /* Medium */
+@import "@fontsource/inter/700.css"; /* Bold */
+
 
 /* Your custom styles */
 @layer base {
   
   body {
     height: 100vh;
-    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
     overflow-y: hidden;
-    background: #100f18f1;
+    scrollbar-gutter: stable both-edges;
+    @apply bg-gray-800;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -30,6 +34,8 @@
   .icon {
     width: 96px;
     height: 96px;
+    margin-top: auto;
+    margin-bottom: 28px;
   }
 
   button {
@@ -50,7 +56,7 @@
 
   /* // make the sliders look nice */
   input[type="range"] {
-    @apply appearance-none bg-gray-200 rounded-full p-0;
+    @apply appearance-none bg-gray-200 rounded-full p-0 opacity-15;
   }
 
   /* make the scrollbars look nice */
@@ -59,11 +65,11 @@
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-gray-200 rounded-full;
+    @apply bg-gray-200 rounded-full opacity-15;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-700 rounded-full ;
+    @apply bg-slate-700 rounded-full opacity-15;
   }
   
   

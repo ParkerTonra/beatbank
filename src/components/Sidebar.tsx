@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 const Sidebar = () => {
   return (
-    <div className="h-full flex flex-col border-[24px] rounded-2xl border-black border-opacity-20 bg-gray-800 w-56">
+    <div className="h-full flex flex-col border-[8px] rounded bg-gray-800 w-56 border-gray-900 border-opacity-55 p-1.5">
         <Link to="/" className="py-2">
           <button type="button" className="w-full">Home</button>
         </Link>

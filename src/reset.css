@@ -23,7 +23,6 @@ button, input, optgroup, select, textarea {
 
 button {
   appearance: none;
-  font-family: Arial, sans-serif;
   font-size: 16px;
   font-weight: normal;
   color: #fffffe;
