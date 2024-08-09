@@ -3,8 +3,6 @@ import { useParams } from 'react-router-dom';
 const BeatSet: React.FC = () => {
   const { id } = useParams<{ id: string }>();
 
-  
-
   // Use the id to fetch the correct set data
   // ...
 

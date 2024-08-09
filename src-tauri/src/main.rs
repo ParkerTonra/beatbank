@@ -56,9 +56,24 @@ async fn set_volume(volume: f32) -> Result<(), String> {
 }
 
 #[tauri::command]
+async fn add_set(name: String) -> Result<i64, String> {
+    println!("Adding set: {}", name);
+    db::create_set(&name)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 async fn get_playback_state() -> Result<String, String> {
     audio::get_state()
         .map(|state| serde_json::to_string(&state).unwrap())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn get_sets() -> Result<String, String> {
+    println!("getting sets from the database...");
+    db::get_sets()
+        .map(|sets| serde_json::to_string(&sets).unwrap())
         .map_err(|e| e.to_string())
 }
 
@@ -67,9 +82,15 @@ async fn seek_audio(seconds: f32) -> Result<(), String> {
     audio::seek(seconds)
 }
 #[tauri::command]
-async fn save_row_order(rowOrder: Vec<db::RowOrder>) -> Result<(), String> {
+async fn save_row_order(row_order: Vec<db::RowOrder>) -> Result<(), String> {
     println!("save_row_order");
-    db::save_row_order(rowOrder).map_err(|e| e.to_string())
+    db::save_row_order(row_order).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn delete_set(set_id: i64) -> Result<(), String> {
+    println!("deleting set with id: {}", set_id);
+    db::delete_set(set_id).map_err(|e| e.to_string())
 }
 
 fn main() {
@@ -92,7 +113,10 @@ fn main() {
             set_volume,
             get_playback_state,
             seek_audio,
-            save_row_order
+            save_row_order,
+            add_set,
+            get_sets,
+            delete_set
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

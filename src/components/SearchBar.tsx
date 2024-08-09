@@ -11,7 +11,7 @@ const SearchBar = () => {
     <div>
       <input
         type="text"
-        placeholder="Search for songs, artists, albums..."
+        placeholder="Search beats..."
         value={query}
         onChange={handleSearch}
         className="w-full p-2 border rounded"

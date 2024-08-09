@@ -53,8 +53,99 @@ pub fn init() {
     let conn = CONNECTION.lock().unwrap();
     create_beat_table(&conn);
     init_column_vis(&conn);
+    create_set_tables(&conn);
 }
 
+fn create_set_tables(conn: &Connection) {
+    println!("Creating set tables...\n");
+    let create_set_name_table_sql = "
+        CREATE TABLE IF NOT EXISTS set_name (
+            id INTEGER PRIMARY KEY,
+            set_name TEXT NOT NULL
+        );
+    ";
+
+    let create_set_beat_table_sql = "
+        CREATE TABLE IF NOT EXISTS set_beat (
+            set_id INTEGER,
+            beat_id INTEGER,
+            PRIMARY KEY (set_id, beat_id),
+            FOREIGN KEY (set_id) REFERENCES set_name(id),
+            FOREIGN KEY (beat_id) REFERENCES beats(id)
+        );
+    ";
+
+    match conn.execute(create_set_name_table_sql, []) {
+        Ok(_) => println!("set_name table created successfully."),
+        Err(e) => println!("Error creating set_name table: {}", e),
+    }
+
+    match conn.execute(create_set_beat_table_sql, []) {
+        Ok(_) => println!("set_beat table created successfully."),
+        Err(e) => println!("Error creating set_beat table: {}", e),
+    }
+}
+
+pub fn create_set(set_name: &str) -> Result<i64> {
+    let conn = CONNECTION.lock().unwrap();
+    conn.execute("INSERT INTO set_name (set_name) VALUES (?1)", params![set_name])?;
+    Ok(conn.last_insert_rowid())
+}
+
+pub fn delete_set(set_id: i64) -> Result<()> {
+    let mut conn = CONNECTION.lock().unwrap();
+    let tx = conn.transaction()?;
+    tx.execute("DELETE FROM set_beat WHERE set_id = ?1", params![set_id])?;
+    tx.execute("DELETE FROM set_name WHERE id = ?1", params![set_id])?;
+    tx.commit()?;
+    Ok(())
+}
+
+pub fn add_beat_to_set(set_id: i64, beat_id: i64) -> Result<()> {
+    let conn = CONNECTION.lock().unwrap();
+    conn.execute("INSERT INTO set_beat (set_id, beat_id) VALUES (?1, ?2)", params![set_id, beat_id])?;
+    Ok(())
+}
+
+pub fn remove_beat_from_set(set_id: i64, beat_id: i64) -> Result<()> {
+    let conn = CONNECTION.lock().unwrap();
+    conn.execute("DELETE FROM set_beat WHERE set_id = ?1 AND beat_id = ?2", params![set_id, beat_id])?;
+    Ok(())
+}
+
+pub fn get_sets() -> Result<Vec<(i64, String)>> {
+    let conn = CONNECTION.lock().unwrap();
+    let mut stmt = conn.prepare("SELECT id, set_name FROM set_name")?;
+    let sets_iter = stmt.query_map([], |row| {
+        Ok((row.get(0)?, row.get(1)?))
+    })?;
+    sets_iter.collect()
+}
+
+pub fn get_beats_in_set(set_id: i64) -> Result<Vec<Beat>> {
+    let conn = CONNECTION.lock().unwrap();
+    let mut stmt = conn.prepare("
+        SELECT b.id, b.title, b.bpm, b.key, b.duration, b.artist, b.date_added, b.file_path, b.row_number
+        FROM beats b
+        JOIN set_beat sb ON b.id = sb.beat_id
+        WHERE sb.set_id = ?1
+        ORDER BY b.row_number
+    ")?;
+    let beat_iter = stmt.query_map(params![set_id], |row| {
+        Ok(Beat {
+            id: row.get(0)?,
+            title: row.get(1)?,
+            bpm: row.get(2)?,
+            key: row.get(3)?,
+            duration: row.get(4)?,
+            artist: row.get(5)?,
+            date_added: row.get(6)?,
+            file_path: row.get(7)?,
+            row_number: row.get(8)?,
+        })
+    })?;
+    beat_iter.collect()
+}
 
 
 fn establish_db_connection() -> Connection {
