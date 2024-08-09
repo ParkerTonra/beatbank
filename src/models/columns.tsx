@@ -11,30 +11,37 @@ interface Row {
 export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Beat>[] => [
   {
     accessorKey: "drag-handle",
-    header: "Move",
+    header: "",
     cell: ({ row }: { row: Row }) => <RowDragHandleCell rowId={row.id} />,
-    size: 20,
+    size: 35,
     enableHiding: false,
+    enableResizing: false,
   },
   {
     accessorKey: "id",
     header: "ID",
+    maxSize: 1,
   },
   {
     accessorKey: "title",
     header: "Title",
+    size:260
   },
   {
     accessorKey: "bpm",
     header: "BPM",
+    size:35,
   },
   {
     accessorKey: "key",
     header: "Key",
+    size:35,
+    enableResizing: false,
   },
   {
     accessorKey: "duration",
     header: "Duration",
+    size:35,
   },
   {
     accessorKey: "artist",

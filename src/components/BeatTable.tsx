@@ -6,6 +6,8 @@ import {
   RowSelectionState,
   VisibilityState,
   Updater,
+  ColumnResizeMode,
+  ColumnSizingState,
 } from "@tanstack/react-table";
 import { createColumnDef } from "../models/columns.tsx";
 import { Beat, ColumnVis } from "./../bindings.ts";
@@ -31,11 +33,13 @@ import { useBeats } from "src/hooks/useBeats.tsx";
 import { invoke } from "@tauri-apps/api/tauri";
 
 interface BeatTableProps {
+  refresh: boolean;
+  onRefreshHandled: () => void;
   onBeatPlay: (beat: Beat) => void;
   onBeatSelect: (beat: Beat) => void;
 }
 
-function BeatTable({ onBeatPlay }: BeatTableProps) {
+function BeatTable({ onBeatPlay, refresh, onRefreshHandled }: BeatTableProps) {
   // table data state
   const {
     beats,
@@ -49,6 +53,13 @@ function BeatTable({ onBeatPlay }: BeatTableProps) {
     setColumnVisibility,
   } = useBeats();
 
+  useEffect(() => {
+    if (refresh) {
+      fetchData();
+      onRefreshHandled(); // Notify App that refresh is complete
+    }
+  }, [refresh, fetchData, onRefreshHandled]);
+
   // row selection state
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
@@ -56,6 +67,8 @@ function BeatTable({ onBeatPlay }: BeatTableProps) {
   const [lastSelectedRow, setLastSelectedRow] = useState<string | null>(null);
   const [isCtrlPressed, setIsCtrlPressed] = useState(false);
   const [isShiftPressed, setIsShiftPressed] = useState(false);
+
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
   // react based on key press state:
   useEffect(() => {
@@ -143,11 +156,15 @@ function BeatTable({ onBeatPlay }: BeatTableProps) {
     columns: finalColumnDef,
     data: finalData,
     getCoreRowModel: getCoreRowModel(),
+    enableColumnResizing: true,
+    columnResizeMode: "onChange" as ColumnResizeMode,
+    onColumnSizingChange: setColumnSizing,
     getRowId: (row: Record<string, any>) => row.id,
     onRowSelectionChange: setRowSelection,
     state: {
       rowSelection,
       columnVisibility,
+      columnSizing,
     },
     enableRowSelection: true,
     enableMultiRowSelection: true,
@@ -176,13 +193,13 @@ function BeatTable({ onBeatPlay }: BeatTableProps) {
   const saveRowOrder = async (beatsToSave: Beat[]) => {
     const rowOrder = beatsToSave.map((beat, index) => ({
       row_id: beat.id.toString(),
-      row_number: index + 1 // Changed from row_order to row_number
+      row_number: index + 1, // Changed from row_order to row_number
     }));
     try {
-      await invoke('save_row_order', { rowOrder }) // Changed from row_order to rowOrder
-      console.log('Row order saved successfully');
+      await invoke("save_row_order", { rowOrder }); // Changed from row_order to rowOrder
+      console.log("Row order saved successfully");
     } catch (error) {
-      console.error('Error saving row order:', error);
+      console.error("Error saving row order:", error);
     }
   };
 
@@ -208,15 +225,30 @@ function BeatTable({ onBeatPlay }: BeatTableProps) {
           <thead>
             {tableInstance.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
-                {headerGroup.headers.map((columnElement) => (
+                {headerGroup.headers.map((header) => (
                   <th
-                    className="border-b border-black text-left pr-7"
-                    key={columnElement.id}
-                    colSpan={columnElement.colSpan}
+                    key={header.id}
+                    className="relative pr-4 text-left border-gray-800 border-b-4" // Add text-left class
+                    style={{
+                      width: header.getSize(),
+                    }}
                   >
-                    {flexRender(
-                      columnElement.column.columnDef.header,
-                      columnElement.getContext()
+                    <div className="flex items-center truncate">
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </div>
+                    {header.column.getCanResize() && (
+                      <div
+                        onMouseDown={header.getResizeHandler()}
+                        onTouchStart={header.getResizeHandler()}
+                        className={`resizer ${
+                          header.column.getIsResizing() ? "isResizing" : ""
+                        }`}
+                      />
                     )}
                   </th>
                 ))}

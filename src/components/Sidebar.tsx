@@ -1,7 +1,7 @@
 //Sidebar.tsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { X } from 'lucide-react';
+import { X, Star, LucideHome } from 'lucide-react';
 
 interface SidebarProps {
   iconPath: string;
@@ -35,19 +35,18 @@ const Sidebar: React.FC<SidebarProps> = ({ iconPath, sets, addNewSet, deleteSet 
       </div>
       {/* Links */}
       <Link to="/" className="py-2">
-        <button type="button" className="w-full">Home</button>
+      
+        <button type="button" className="flex justify-center items-center w-full space-x-1"><LucideHome className="mx-2" /> <span className="px-4">Home</span></button>
       </Link>
       <Link to="/bank" className="py-2">
-        <button type="button" className="w-full">My Beats</button>
+      <button type="button" className="flex justify-center items-center w-full space-x-1"><Star className="mx-2" /> <span className="px-1">Favorites</span></button>
       </Link>
-      <Link to="/search" className="py-2">
-        <button type="button" className="w-full">Search</button>
-      </Link>
+      <div className='border-2 my-2'> </div>
       {/* Dynamic Sets */}
       {sets.map((set) => (
         <div
           key={set.id}
-          className="relative group" // Added group class
+          className="relative group my-2" // Added group class
           onMouseEnter={() => setHoveredSet(set.id)}
           onMouseLeave={() => setHoveredSet(null)}
         >

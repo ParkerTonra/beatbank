@@ -1,10 +1,16 @@
 use std::fs;
 use rusqlite::{params, Connection, Result};
 use std::env;
-use std::path::Path;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
-use rusqlite::Error as SqliteError;
+use chrono::Local;
+use std::path::Path;
+use std::fs::File;
+use symphonia::core::formats::FormatOptions;
+use symphonia::core::io::MediaSourceStream;
+use symphonia::core::meta::MetadataOptions;
+use symphonia::core::probe::Hint;
+use symphonia::core::units::Time;
 
 
 #[derive(serde::Serialize)]
@@ -12,7 +18,7 @@ pub struct Beat {
     id: u32,
     title: String,
     bpm: u32,
-    key: String,
+    musical_key: String,
     duration: String,
     artist: String,
     date_added: String,
@@ -125,7 +131,7 @@ pub fn get_sets() -> Result<Vec<(i64, String)>> {
 pub fn get_beats_in_set(set_id: i64) -> Result<Vec<Beat>> {
     let conn = CONNECTION.lock().unwrap();
     let mut stmt = conn.prepare("
-        SELECT b.id, b.title, b.bpm, b.key, b.duration, b.artist, b.date_added, b.file_path, b.row_number
+        SELECT b.id, b.title, b.bpm, b.musical_key, b.duration, b.artist, b.date_added, b.file_path, b.row_number
         FROM beats b
         JOIN set_beat sb ON b.id = sb.beat_id
         WHERE sb.set_id = ?1
@@ -136,7 +142,7 @@ pub fn get_beats_in_set(set_id: i64) -> Result<Vec<Beat>> {
             id: row.get(0)?,
             title: row.get(1)?,
             bpm: row.get(2)?,
-            key: row.get(3)?,
+            musical_key: row.get(3)?,
             duration: row.get(4)?,
             artist: row.get(5)?,
             date_added: row.get(6)?,
@@ -159,12 +165,12 @@ fn create_beat_table(conn: &Connection) {
     let create_table_sql = "
         CREATE TABLE IF NOT EXISTS beats (
             id INTEGER PRIMARY KEY,
-            title TEXT NOT NULL,
-            bpm INTEGER NOT NULL,
-            key TEXT NOT NULL,
-            duration TEXT NOT NULL,
-            artist TEXT NOT NULL,
-            date_added TEXT NOT NULL,
+            title VARCHAR(255) NOT NULL,
+            bpm INTEGER
+            musical_key VARCHAR(2),
+            duration varchar(255) NOT NULL,
+            artist varchar(255),
+            date_added varchar(10) NOT NULL,
             file_path TEXT NOT NULL,
             row_number INTEGER NOT NULL
         );
@@ -182,7 +188,7 @@ fn init_column_vis(conn: &Connection) {
         CREATE TABLE IF NOT EXISTS column_visibility (
             title BOOLEAN NOT NULL DEFAULT TRUE,
             bpm BOOLEAN NOT NULL DEFAULT TRUE,
-            key BOOLEAN NOT NULL DEFAULT TRUE,
+            `key` BOOLEAN NOT NULL DEFAULT TRUE,
             duration BOOLEAN NOT NULL DEFAULT TRUE,
             artist BOOLEAN NOT NULL DEFAULT FALSE,
             date_added BOOLEAN NOT NULL DEFAULT FALSE,
@@ -199,7 +205,7 @@ fn init_column_vis(conn: &Connection) {
 pub fn fetch_column_vis() -> Result<Vec<ColumnVisibility>> {
     println!("Fetching column visibility... \n");
     let conn = CONNECTION.lock().unwrap();
-    let mut stmt = conn.prepare("SELECT title, bpm, key, duration, artist, date_added, file_path FROM column_visibility")?;
+    let mut stmt = conn.prepare("SELECT title, bpm, `key`, duration, artist, date_added, file_path FROM column_visibility")?;
     let column_vis_iter = stmt.query_map([], |row| {
         Ok(ColumnVisibility {
             title: row.get(0)?,
@@ -215,39 +221,39 @@ pub fn fetch_column_vis() -> Result<Vec<ColumnVisibility>> {
     let column_vis: Vec<ColumnVisibility> = column_vis_iter.filter_map(Result::ok).collect();
     Ok(column_vis)
 }
-
-pub fn fetch_beat(id: String) -> Result<Beat> {
-    println!("Fetching beat... \n");
-    let conn = CONNECTION.lock().unwrap();
-    let mut stmt = conn.prepare("SELECT id, title, bpm, key, duration, artist, date_added, file_path FROM beats WHERE id = ?")?;
-    let beat_iter = stmt.query_map([], |row| {
-        Ok(Beat {
-            id: row.get(0)?,
-            title: row.get(1)?,
-            bpm: row.get(2)?,
-            key: row.get(3)?,
-            duration: row.get(4)?,
-            artist: row.get(5)?,
-            date_added: row.get(6)?,
-            file_path: row.get(7)?,
-            row_number: row.get(8)?,
-        })
-    })?;
-    let beat: Beat = beat_iter.filter_map(Result::ok).next().unwrap();
-    println!("Beat fetched.");
-    Ok(beat)
-}
+// deprecated
+// pub fn fetch_beat(id: String) -> Result<Beat> {
+//     println!("Fetching beat... \n");
+//     let conn = CONNECTION.lock().unwrap();
+//     let mut stmt = conn.prepare("SELECT id, title, bpm, musical_key, duration, artist, date_added, file_path FROM beats WHERE id = ?")?;
+//     let beat_iter = stmt.query_map([], |row| {
+//         Ok(Beat {
+//             id: row.get(0)?,
+//             title: row.get(1)?,
+//             bpm: row.get(2)?,
+//             musical_key: row.get(3)?,
+//             duration: row.get(4)?,
+//             artist: row.get(5)?,
+//             date_added: row.get(6)?,
+//             file_path: row.get(7)?,
+//             row_number: row.get(8)?,
+//         })
+//     })?;
+//     let beat: Beat = beat_iter.filter_map(Result::ok).next().unwrap();
+//     println!("Beat fetched.");
+//     Ok(beat)
+// }
 
 pub fn fetch_beats() -> Result<Vec<Beat>> {
     println!("Fetching beats... \n");
     let conn = CONNECTION.lock().unwrap();
-    let mut stmt = conn.prepare("SELECT id, title, bpm, key, duration, artist, date_added, file_path, row_number FROM beats ORDER BY row_number")?;
+    let mut stmt = conn.prepare("SELECT id, title, bpm, musical_key, duration, artist, date_added, file_path, row_number FROM beats ORDER BY row_number")?;
     let beat_iter = stmt.query_map([], |row| {
         Ok(Beat {
             id: row.get(0)?,
             title: row.get(1)?,
             bpm: row.get(2)?,
-            key: row.get(3)?,
+            musical_key: row.get(3)?,
             duration: row.get(4)?,
             artist: row.get(5)?,
             date_added: row.get(6)?,
@@ -270,19 +276,81 @@ pub fn save_row_order(row_order: Vec<RowOrder>) -> Result<(), rusqlite::Error> {
     Ok(())
 }
 
-// fn normalize_path(path: &str) -> String {
-//     Path::new(path)
-//         .components()
-//         .collect::<PathBuf>()
-//         .to_str()
-//         .unwrap()
-//         .to_string()
-// }
-// pub fn get_audio_path(conn: &Connection, id: u32) -> Result<String> {
-//     let mut stmt = conn.prepare("SELECT file_path FROM beats WHERE id = ?1")?;
-//     let file_path: String = stmt.query_row([id], |row| row.get(0))?;
-//     Ok(normalize_path(&file_path))
-// }
+pub fn add_beat(file_path: String) -> Result<(), Box<dyn std::error::Error>> {
+    let path = Path::new(&file_path);
+    
+    // Extract title from file name
+    let title = path.file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("Unknown")
+        .to_string();
+
+    // Open the media source
+    let file = File::open(path)?;
+    let mss = MediaSourceStream::new(Box::new(file), Default::default());
+
+    // Create a hint to help the format registry guess what format reader is appropriate
+    let hint = Hint::new();
+
+    // Use the default options for metadata and format readers
+    let meta_opts: MetadataOptions = Default::default();
+    let fmt_opts: FormatOptions = Default::default();
+
+    // Probe the media source
+    let probed = symphonia::default::get_probe().format(&hint, mss, &fmt_opts, &meta_opts)?;
+
+    // Get the instantiated format reader
+    let format = probed.format;
+
+    // Get metadata from the format reader
+    let track = format.default_track().unwrap();
+    let bpm = 0;
+    let duration = track.codec_params.time_base
+        .map(|tb| tb.calc_time(track.codec_params.n_frames.unwrap_or(0)))
+        .map(|time| format_time(time))
+        .unwrap_or("0:00".to_string());
+
+    // Note: Depending on your metadata extraction needs, you may need to parse the artist and musical key differently.
+    let musical_key = "Unknown".to_string();
+    let artist = "Unknown".to_string();
+
+    // Call commit_beat with extracted information
+    commit_beat(file_path, title, bpm, musical_key, duration, artist)?;
+
+    Ok(())
+}
+
+fn format_time(time: Time) -> String {
+    let total_seconds = time.seconds;
+    let minutes = total_seconds / 60;
+    let seconds = total_seconds % 60;
+    format!("{}:{:02}", minutes, seconds)
+}
+
+pub fn commit_beat(file_path: String, title: String, bpm: u32, musical_key: String, duration: String, artist: String) -> Result<(), rusqlite::Error> {
+    let mut conn = CONNECTION.lock().unwrap();
+    let tx = conn.transaction()?;
+
+    // Get the current date in the format "MM/DD/YYYY"
+    let current_date = Local::now().format("%m/%d/%Y").to_string();
+
+    // Increment row_number for all existing beats
+    tx.execute("UPDATE beats SET row_number = row_number + 1", [])?;
+
+    // Insert the new beat at the top (row_number = 1)
+    tx.execute(
+        "INSERT INTO beats (title, bpm, musical_key, duration, artist, date_added, file_path, row_number) 
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 1)",
+        params![title, bpm, musical_key, duration, artist, current_date, file_path],
+    )?;
+
+    // Commit the transaction
+    tx.commit()?;
+
+    Ok(())
+}
+
+
 
 fn create_db_file() {
     println!("Creating database file...\n");

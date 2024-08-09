@@ -10,6 +10,7 @@ const defaultColumnVisibility = {
   artist: false,
   date_added: false,
   file_path: false,
+  id: false
 };
 
 export const useBeats = () => {

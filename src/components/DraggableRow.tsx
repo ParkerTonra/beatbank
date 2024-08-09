@@ -28,11 +28,20 @@ function DraggableRow({ row, onRowSelection}: DraggableRowProps) {
       draggable
       onDragOver={(e) => e.preventDefault()}
       onClick={() => onRowSelection(row.id)}
-      className={row.getIsSelected() ? "bg-blue-100" : ""}
+      className={`cursor-pointer ${
+        row.getIsSelected() ? "bg-gray-400" : ""
+      }`}
       data-row-id={row.original.id}
     >
       {row.getVisibleCells().map((cell: Cell<Beat, unknown>) => (
-        <td key={cell.id} style={{ width: cell.column.getSize() }}>
+        <td 
+        className="whitespace-nowrap overflow-hidden text-ellipsis" 
+        key={cell.id} 
+        style={{
+          width: cell.column.getSize(),
+          maxWidth: cell.column.getSize(),
+        }}
+        >
           {flexRender(cell.column.columnDef.cell, cell.getContext())}
         </td>
       ))}

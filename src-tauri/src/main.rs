@@ -12,13 +12,6 @@ fn fetch_beats() -> Result<String, String> {
 }
 
 #[tauri::command]
-fn fetch_beat(id: String) -> Result<String, String> {
-    db::fetch_beat(id)
-        .map(|beat| serde_json::to_string(&beat).unwrap())
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
 fn fetch_column_vis() -> Result<String, String> {
     db::fetch_column_vis()
         .map(|column_vis| serde_json::to_string(&column_vis).unwrap())
@@ -31,8 +24,9 @@ async fn play_beat(file_path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn append_beat(file_path: String) -> Result<(), String> {
-    audio::append(file_path)
+async fn add_beat(file_path: String) -> Result<(), String> {
+    println!("adding beat: {}", file_path);
+    db::add_beat(file_path).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -104,9 +98,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             fetch_beats,
             fetch_column_vis,
-            fetch_beat,
             play_beat,
-            append_beat,
+            add_beat,
             pause_beat,
             resume_beat,
             stop_beat,

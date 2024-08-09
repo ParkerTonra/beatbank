@@ -1,6 +1,6 @@
 //App.tsx
 import { MemoryRouter as Router, Routes, Route } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import icon from "./assets/icons/db_logo.png";
 import BeatJockey from "./components/BeatJockey";
 import BeatSet from "./pages/BeatSet";
@@ -18,6 +18,18 @@ interface BeatSet {
 }
 
 function App() {
+  const [refresh, setRefresh] = useState(false);
+
+  // Function to trigger a refresh
+  const triggerRefresh = useCallback(() => {
+    setRefresh(true);
+  }, []);
+
+  // Function to reset the refresh state
+  const resetRefresh = useCallback(() => {
+    setRefresh(false);
+  }, []);
+
   // get sets from db
   async function fetchSets() {
     try {
@@ -92,7 +104,7 @@ function App() {
           <div className="flex-2 flex-col py-4 w-full h-full">
             {/* right container */}
             <div className="flex w-full">
-              <Header onAddNewSet={handleAddNewSet} />
+              <Header onAddNewSet={handleAddNewSet} onTriggerRefresh={triggerRefresh} />
             </div>
             <main className="h-full w-full">
               <Routes>
@@ -102,6 +114,8 @@ function App() {
                     <Home
                       onBeatPlay={handleBeatPlay}
                       onBeatSelect={handleBeatSelection}
+                      refresh={refresh}
+                      onRefreshHandled={resetRefresh}
                     />
                   }
                 />

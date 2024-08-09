@@ -11,9 +11,10 @@ interface HeaderButtonProps {
 
 interface HeaderProps {
   onAddNewSet: (setName: string) => void;
+  onTriggerRefresh: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onAddNewSet }) => {
+const Header: React.FC<HeaderProps> = ({ onAddNewSet, onTriggerRefresh }) => {
   const [isAddingNewSet, setIsAddingNewSet] = useState(false);
   const [newSetName, setNewSetName] = useState('');
 
@@ -24,8 +25,15 @@ const Header: React.FC<HeaderProps> = ({ onAddNewSet }) => {
         extensions: ['wav', 'mp3', 'flac']
       }]
     });
-    console.log(filePath);
-    invoke('add_beat', { file_path: filePath });
+  
+    if (filePath) {  // Check if the filePath is not null
+      console.log("type: ", typeof filePath, filePath);
+      // Ensure that filePath is passed correctly, handling it as a string
+      await invoke('add_beat', { filePath: filePath.toString() });
+      onTriggerRefresh();
+    } else {
+      console.log("No file selected");
+    }
   }
 
   async function handleEditBeat() {

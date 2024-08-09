@@ -180,7 +180,7 @@ pub fn get_state() -> Result<AudioState, String> {
 }
 
 pub fn seek(seconds: f32) -> Result<(), String> {
-    let (sender, receiver) = channel();
+    let (_sender, receiver) = channel();
     AUDIO_SENDER
         .send(AudioMessage::Seek(seconds))
         .map_err(|e| format!("Failed to send seek message: {}", e))?;
