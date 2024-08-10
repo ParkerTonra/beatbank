@@ -87,6 +87,17 @@ async fn delete_set(set_id: i64) -> Result<(), String> {
     db::delete_set(set_id).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+async fn delete_beat(beat_id: i64) -> Result<(), String> {
+    db::delete_beat(beat_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn restart_beat() -> Result<(), String> {
+  println!("restarting beat");
+  audio::seek(0.0).map_err(|e| e.to_string())
+}
+
 fn main() {
     tauri::Builder::default()
         .setup(|_app| {
@@ -109,7 +120,9 @@ fn main() {
             save_row_order,
             add_set,
             get_sets,
-            delete_set
+            delete_set,
+            delete_beat,
+            restart_beat
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

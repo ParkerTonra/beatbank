@@ -39,7 +39,7 @@ interface BeatTableProps {
   onBeatSelect: (beat: Beat) => void;
 }
 
-function BeatTable({ onBeatPlay, refresh, onRefreshHandled }: BeatTableProps) {
+function BeatTable({ onBeatPlay, refresh, onRefreshHandled, onBeatSelect }: BeatTableProps) {
   // table data state
   const {
     beats,
@@ -91,7 +91,9 @@ function BeatTable({ onBeatPlay, refresh, onRefreshHandled }: BeatTableProps) {
     };
   }, []);
 
-  const handleRowSelection = (rowId: string) => {
+  const handleRowSelection = (beat: Beat) => {
+    const rowId = beat.id.toString();
+    console.log("handleRowSelection:", rowId);
     setRowSelection((prev) => {
       if (isCtrlPressed) {
         // Toggle the selected row
@@ -116,6 +118,8 @@ function BeatTable({ onBeatPlay, refresh, onRefreshHandled }: BeatTableProps) {
       } else {
         // Select only the clicked row
         setLastSelectedRow(rowId);
+        // get the beat object from the rowId
+        onBeatSelect(beat);
         return { [rowId]: true };
       }
     });

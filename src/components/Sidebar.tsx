@@ -1,7 +1,6 @@
-//Sidebar.tsx
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { X, Star, LucideHome } from 'lucide-react';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { X, Star, Home } from "lucide-react";
 
 interface SidebarProps {
   iconPath: string;
@@ -10,9 +9,15 @@ interface SidebarProps {
   deleteSet: (setId: number) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ iconPath, sets, addNewSet, deleteSet }) => {
+const Sidebar: React.FC<SidebarProps> = ({
+  iconPath,
+  sets,
+  addNewSet,
+  deleteSet,
+}) => {
   const navigate = useNavigate();
   const [hoveredSet, setHoveredSet] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSetClick = (setId: number) => {
     navigate(`/set/${setId}`);
@@ -21,6 +26,19 @@ const Sidebar: React.FC<SidebarProps> = ({ iconPath, sets, addNewSet, deleteSet 
   const handleDeleteClick = (event: React.MouseEvent, setId: number) => {
     event.stopPropagation();
     deleteSet(setId);
+  };
+
+  const handleAddNewSet = (setName: string) => {
+    const setExists = sets.some((set) => set.name === setName);
+    if (setExists) {
+      setError("This set already exists");
+      return;
+    }
+    addNewSet(setName);
+  };
+
+  const handleCloseError = () => {
+    setError(null);
   };
 
   return (
@@ -33,40 +51,62 @@ const Sidebar: React.FC<SidebarProps> = ({ iconPath, sets, addNewSet, deleteSet 
           <img className="w-8 h-8" alt="icon" src={iconPath} />
         </div>
       </div>
+
       {/* Links */}
-      <Link to="/" className="py-2">
-      
-        <button type="button" className="flex justify-center items-center w-full space-x-1"><LucideHome className="mx-2" /> <span className="px-4">Home</span></button>
-      </Link>
-      <Link to="/bank" className="py-2">
-      <button type="button" className="flex justify-center items-center w-full space-x-1"><Star className="mx-2" /> <span className="px-1">Favorites</span></button>
-      </Link>
-      <div className='border-2 my-2'> </div>
+      <button type="button" className="py-2 my-2 h-10 flex justify-center items-center">
+        <Link to="/" className="py-2 flex justify-center items-center">
+          <Home className="mr-1" /> <span className="px-4">Home</span>
+        </Link>
+      </button>
+      <button type="button" className="py-2 my-2 h-10 flex justify-center items-center">
+        <Link to="/bank" className="py-2 flex justify-center items-center">
+          <Star className="mr-1" /> <span className="px-2">Favorites</span>
+        </Link>
+      </button>
+
+      <div className="border-2 my-2"></div>
+
       {/* Dynamic Sets */}
       {sets.map((set) => (
         <div
           key={set.id}
-          className="relative group my-2" // Added group class
+          className="relative group my-2 flex items-center justify-center"
           onMouseEnter={() => setHoveredSet(set.id)}
           onMouseLeave={() => setHoveredSet(null)}
         >
-          <button 
-            type="button" 
-            className="w-full py-2 text-left px-2 flex items-center justify-between"
+          <button
+            type="button"
+            className="w-full py-2 text-center px-2 flex items-center justify-center"
             onClick={() => handleSetClick(set.id)}
           >
             <span>{set.name}</span>
-            {hoveredSet === set.id && (
-              <button
-                className="ml-2"
-                onClick={(e) => handleDeleteClick(e, set.id)}
-              >
-                <X size={16} />
-              </button>
-            )}
           </button>
+          {hoveredSet === set.id && (
+            <button
+              className="ml-2 p-1"
+              onClick={(e) => handleDeleteClick(e, set.id)}
+              aria-label={`Delete ${set.name}`}
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
       ))}
+
+      {/* Error Dialog */}
+      {error && (
+        <div className="absolute top-0 left-0 right-0 bottom-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-4 rounded">
+            <p>{error}</p>
+            <button
+              onClick={handleCloseError}
+              className="mt-2 bg-red-500 text-white py-1 px-3 rounded"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

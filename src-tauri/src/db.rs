@@ -320,6 +320,14 @@ pub fn add_beat(file_path: String) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+pub fn delete_beat(beat_id: i64) -> Result<()> {
+    let mut conn = CONNECTION.lock().unwrap();
+    let tx = conn.transaction()?;
+    tx.execute("DELETE FROM beats WHERE id = ?1", params![beat_id])?;
+    tx.commit()?;
+    Ok(())
+}
+
 fn format_time(time: Time) -> String {
     let total_seconds = time.seconds;
     let minutes = total_seconds / 60;

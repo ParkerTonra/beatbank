@@ -11,6 +11,7 @@ import Home from "./pages/Home";
 import { Beat } from "./bindings";
 import "./Main.css";
 import { invoke } from "@tauri-apps/api";
+import {  confirm, message } from "@tauri-apps/api/dialog";
 
 interface BeatSet {
   id: number;
@@ -19,6 +20,7 @@ interface BeatSet {
 
 function App() {
   const [refresh, setRefresh] = useState(false);
+  const [selectedBeat, setSelectedBeat] = useState<Beat | null>(null);
 
   // Function to trigger a refresh
   const triggerRefresh = useCallback(() => {
@@ -61,6 +63,7 @@ function App() {
 
   const handleBeatSelection = (beat: Beat) => {
     console.log("beat selected:", beat);
+    setSelectedBeat(beat);
   };
 
   const handleBeatPlay = (beat: Beat) => {
@@ -73,17 +76,84 @@ function App() {
   };
 
   const addNewSet = async (setName: string) => {
-    const newSet: BeatSet = { id: Date.now(), name: setName };
-    // invoke "add_set" to add new set to db
-    await invoke("add_set", { name: setName });
-    setSets((prevSets) => [...prevSets, newSet]);
+    // Trim whitespace and check if the name is empty
+    const trimmedSetName = setName.trim();
+    if (!trimmedSetName) {
+      await message("Set name cannot be empty", { title: "Error", type: "error" });
+      return;
+    }
+  
+    // Fetch the latest sets to ensure the most current state
+    const latestSets = await fetchSets();
+  
+    // Check if the set name already exists
+    const setNameExists = latestSets.some(
+      (set: BeatSet) => set.name.toLowerCase() === trimmedSetName.toLowerCase()
+    );
+  
+    if (setNameExists) {
+      await message("A set with this name already exists", { title: "Error", type: "error" });
+      return;
+    }
+  
+    try {
+      // Invoke the backend to add a new set and get the new ID
+      const newSetId: number = await invoke("add_set", { name: trimmedSetName });
+      const newSet: BeatSet = { id: newSetId, name: trimmedSetName };
+      setSets((prevSets) => [...prevSets, newSet]);
+    } catch (error) {
+      console.error("Failed to add new set:", error);
+      await message("Failed to add new set", { title: "Error", type: "error" });
+    }
   };
 
   const handleDeleteSet = (setId: number) => {
-    setSets((prevSets) => prevSets.filter((set) => set.id !== setId));
-    // invoke "delete_set" to delete set from db
-    invoke("delete_set", { setId });
+    confirm("Are you sure you want to delete this set?", {
+      title: "Delete Set",
+    }).then(async (confirmed) => {
+      if (confirmed) {
+        try {
+          await invoke("delete_set", { setId });
+          setSets((prevSets) => prevSets.filter((set) => set.id !== setId));
+        } catch (error) {
+          console.error("Failed to delete set:", error);
+          // Optionally, show an error message to the user
+        }
+      }
+    });
   };
+
+  const handleDeleteBeat = async () => {
+    console.log("handleDeleteBeat");
+    if (selectedBeat) {
+      console.log("Deleting beat: ", selectedBeat);
+      const confirmed = await confirm("This action cannot be reverted. Are you sure?", {
+        title: "Tauri",
+        type: "warning",
+      });
+      console.log(confirmed);
+      if (confirmed) {
+        console.log(`Deleting beat:${selectedBeat}`);
+        const beatId = selectedBeat.id;
+        try {
+          await invoke("delete_beat", { beatId });
+        } catch (error) {
+          console.error("Error deleting beat:", error);
+        }
+        setSelectedBeat(null);
+        // Refresh the table
+        triggerRefresh();
+      }
+    } else {
+      message("No beat selected", { title: "Error", type: "error" });
+    }
+  };
+
+  const handleEditBeat = () => {
+    console.log("Editing beat:");
+  };
+
+  const beatSetNames = sets.map((set) => set.name);
 
   if (!sets) {
     return <div>Loading...</div>; // Show loading state or error message
@@ -104,7 +174,7 @@ function App() {
           <div className="flex-2 flex-col py-4 w-full h-full">
             {/* right container */}
             <div className="flex w-full">
-              <Header onAddNewSet={handleAddNewSet} onTriggerRefresh={triggerRefresh} />
+              <Header onAddNewSet={handleAddNewSet} onTriggerRefresh={triggerRefresh} onDeleteBeat={handleDeleteBeat} onEditBeat={handleEditBeat} sets={beatSetNames} />
             </div>
             <main className="h-full w-full">
               <Routes>

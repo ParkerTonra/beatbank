@@ -5,7 +5,7 @@ import { Beat } from "../bindings";
 
 interface DraggableRowProps {
   row: Row<Beat>;
-  onRowSelection: (rowId: string) => void;
+  onRowSelection: (beat: Beat) => void;
 }
 
 function DraggableRow({ row, onRowSelection}: DraggableRowProps) {
@@ -27,7 +27,7 @@ function DraggableRow({ row, onRowSelection}: DraggableRowProps) {
       style={style}
       draggable
       onDragOver={(e) => e.preventDefault()}
-      onClick={() => onRowSelection(row.id)}
+      onClick={() => onRowSelection(row.original)}
       className={`cursor-pointer ${
         row.getIsSelected() ? "bg-gray-400" : ""
       }`}
