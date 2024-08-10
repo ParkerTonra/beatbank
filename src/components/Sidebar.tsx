@@ -12,7 +12,6 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({
   iconPath,
   sets,
-  addNewSet,
   deleteSet,
 }) => {
   const navigate = useNavigate();
@@ -28,14 +27,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     deleteSet(setId);
   };
 
-  const handleAddNewSet = (setName: string) => {
-    const setExists = sets.some((set) => set.name === setName);
-    if (setExists) {
-      setError("This set already exists");
-      return;
-    }
-    addNewSet(setName);
-  };
 
   const handleCloseError = () => {
     setError(null);

@@ -2,7 +2,7 @@ import SearchBar from "./SearchBar";
 import { message, open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api";
 import { useState } from "react";
-import { Settings, RefreshCcw } from "lucide-react";
+import { RefreshCcw } from "lucide-react";
 import SettingsDropdown from "./SettingsDropdown";
 
 interface HeaderButtonProps {
@@ -27,8 +27,9 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isAddingNewSet, setIsAddingNewSet] = useState(false);
   const [newSetName, setNewSetName] = useState("");
+  //@ts-ignore
   const [isEditing, setIsEditing] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  // const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   async function handleAddBeat() {
     try {
@@ -113,14 +114,14 @@ const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  const handleSettings = async () => {
-    try {
-      await message("TODO: Not yet implemented.");
-    } catch (error) {
-      console.error("Error opening settings:", error);
-      message("Failed to open settings. Please try again.");
-    }
-  };
+  // const handleSettings = async () => {
+  //   try {
+  //     await message("TODO: Not yet implemented.");
+  //   } catch (error) {
+  //     console.error("Error opening settings:", error);
+  //     message("Failed to open settings. Please try again.");
+  //   }
+  // };
 
   const handleAddToSet = async (setName: string) => {
     try {
