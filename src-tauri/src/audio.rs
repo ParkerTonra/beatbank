@@ -16,7 +16,6 @@ static AUDIO_SENDER: Lazy<Sender<AudioMessage>> = Lazy::new(|| {
 #[derive(Debug, Clone)]
 enum AudioMessage {
     Play(String),
-    Append(String),
     Pause,
     Resume,
     Stop,
@@ -112,12 +111,7 @@ fn audio_thread(receiver: Receiver<AudioMessage>) {
                 if let Err(e) = manager.play(&path) {
                     eprintln!("Error playing audio: {}", e);
                 }
-            }
-            AudioMessage::Append(path) => {
-                if let Err(e) = manager.append(&path) {
-                    eprintln!("Error appending audio: {}", e);
-                }
-            }
+            },
             AudioMessage::Pause => manager.pause(),
             AudioMessage::Resume => manager.play_sink(),
             AudioMessage::Stop => manager.stop(),
@@ -139,12 +133,6 @@ pub fn play_beat(file_path: String) -> Result<(), String> {
     AUDIO_SENDER
         .send(AudioMessage::Play(file_path))
         .map_err(|e| format!("Failed to send play message: {}", e))
-}
-
-pub fn append(file_path: String) -> Result<(), String> {
-    AUDIO_SENDER
-        .send(AudioMessage::Append(file_path))
-        .map_err(|e| format!("Failed to send append message: {}", e))
 }
 
 pub fn pause() -> Result<(), String> {

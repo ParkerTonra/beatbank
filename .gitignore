@@ -105,3 +105,11 @@ test_video.mp4
 # old cli directories
 /tooling/cli.js
 /tooling/cli.rs
+
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+src-tauri/target
+src-tauri/Cargo.lock
+src-tauri/.config/db.rs

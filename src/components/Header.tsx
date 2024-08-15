@@ -1,12 +1,11 @@
 import SearchBar from "./SearchBar";
 import { message, open } from "@tauri-apps/api/dialog";
-import { invoke, notification } from "@tauri-apps/api";
+import { invoke } from "@tauri-apps/api";
 import { useState } from "react";
 import { RefreshCcw } from "lucide-react";
 import SettingsDropdown from "./SettingsDropdown";
 import { Beat } from "src/bindings";
-import { sendNotification } from "@tauri-apps/api/notification";
-import { Slide, ToastContainer, toast, Bounce} from 'react-toastify';
+import { ToastContainer, toast, Bounce} from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
 
 interface HeaderButtonProps {

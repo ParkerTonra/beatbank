@@ -12,7 +12,6 @@ import { Beat } from "./bindings";
 import "./Main.css";
 import { invoke } from "@tauri-apps/api";
 import { confirm, message } from "@tauri-apps/api/dialog";
-import { useBeats } from "./hooks/useBeats";
 
 interface BeatSet {
   id: number;
@@ -20,6 +19,7 @@ interface BeatSet {
 }
 
 function App() {
+  //@ts-ignore
   const [refresh, setRefresh] = useState(false);
   const [selectedBeat, setSelectedBeat] = useState<Beat | null>(null);
 
@@ -29,12 +29,6 @@ function App() {
   const triggerRefresh = useCallback(() => {
     console.log("triggerRefresh");
     setRefresh(prev => !prev);
-  }, []);
-
-  // Function to reset the refresh state
-  const resetRefresh = useCallback(() => {
-    console.log("Resetting refresh state");
-    setRefresh(false);
   }, []);
 
   // get sets from db

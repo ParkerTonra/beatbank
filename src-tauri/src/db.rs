@@ -168,13 +168,13 @@ pub fn delete_set(set_id: i64) -> Result<()> {
     tx.commit()?;
     Ok(())
 }
-
+// TODO: Implement on frontend
 pub fn add_beat_to_set(set_id: i64, beat_id: i64) -> Result<()> {
     let conn = CONNECTION.lock().unwrap();
     conn.execute("INSERT INTO set_beat (set_id, beat_id) VALUES (?1, ?2)", params![set_id, beat_id])?;
     Ok(())
 }
-
+// TODO: Implement on frontend
 pub fn remove_beat_from_set(set_id: i64, beat_id: i64) -> Result<()> {
     let conn = CONNECTION.lock().unwrap();
     conn.execute("DELETE FROM set_beat WHERE set_id = ?1 AND beat_id = ?2", params![set_id, beat_id])?;
@@ -189,7 +189,7 @@ pub fn get_sets() -> Result<Vec<(i64, String)>> {
     })?;
     sets_iter.collect()
 }
-
+// TODO: Implement on frontend
 pub fn get_beats_in_set(set_id: i64) -> Result<Vec<Beat>> {
     let conn = CONNECTION.lock().unwrap();
     let mut stmt = conn.prepare("
