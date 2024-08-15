@@ -12,6 +12,8 @@ use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
 use symphonia::core::units::Time;
 
+use crate::EditThisBeat;
+
 
 #[derive(serde::Serialize)]
 pub struct Beat {
@@ -90,6 +92,66 @@ fn create_set_tables(conn: &Connection) {
         Ok(_) => println!("set_beat table created successfully."),
         Err(e) => println!("Error creating set_beat table: {}", e),
     }
+}
+
+pub fn add_beat(file_path: String) -> Result<(), Box<dyn std::error::Error>> {
+    let path = Path::new(&file_path);
+    
+    // Extract title from file name
+    let title = path.file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("Unknown")
+        .to_string();
+
+    // Open the media source
+    let file = File::open(path)?;
+    let mss = MediaSourceStream::new(Box::new(file), Default::default());
+
+    // Create a hint to help the format registry guess what format reader is appropriate
+    let hint = Hint::new();
+
+    // Use the default options for metadata and format readers
+    let meta_opts: MetadataOptions = Default::default();
+    let fmt_opts: FormatOptions = Default::default();
+
+    // Probe the media source
+    let probed = symphonia::default::get_probe().format(&hint, mss, &fmt_opts, &meta_opts)?;
+
+    // Get the instantiated format reader
+    let format = probed.format;
+
+    // Get metadata from the format reader
+    let track = format.default_track().unwrap();
+    let bpm = 0;
+    let duration = track.codec_params.time_base
+        .map(|tb| tb.calc_time(track.codec_params.n_frames.unwrap_or(0)))
+        .map(|time| format_time(time))
+        .unwrap_or("0:00".to_string());
+
+    // Note: Depending on your metadata extraction needs, you may need to parse the artist and musical key differently.
+    let musical_key = "Unknown".to_string();
+    let artist = "Unknown".to_string();
+
+    // Call commit_beat with extracted information
+    commit_beat(file_path, title, bpm, musical_key, duration, artist)?;
+
+    Ok(())
+}
+
+pub fn delete_beat(beat_id: i64) -> Result<()> {
+    let mut conn = CONNECTION.lock().unwrap();
+    let tx = conn.transaction()?;
+    tx.execute("DELETE FROM beats WHERE id = ?1", params![beat_id])?;
+    tx.commit()?;
+    Ok(())
+}
+
+pub fn update_beat(beat: EditThisBeat) -> Result<()> {
+    let mut conn = CONNECTION.lock().unwrap();
+    let tx = conn.transaction()?;
+    tx.execute("UPDATE beats SET title = ?1, bpm = ?2, musical_key = ?3, duration = ?4, artist = ?5 WHERE id = ?6", params![beat.title, beat.bpm, beat.key, beat.duration, beat.artist, beat.id])?;
+    tx.commit()?;
+    Ok(())
 }
 
 pub fn create_set(set_name: &str) -> Result<i64> {
@@ -276,57 +338,6 @@ pub fn save_row_order(row_order: Vec<RowOrder>) -> Result<(), rusqlite::Error> {
     Ok(())
 }
 
-pub fn add_beat(file_path: String) -> Result<(), Box<dyn std::error::Error>> {
-    let path = Path::new(&file_path);
-    
-    // Extract title from file name
-    let title = path.file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("Unknown")
-        .to_string();
-
-    // Open the media source
-    let file = File::open(path)?;
-    let mss = MediaSourceStream::new(Box::new(file), Default::default());
-
-    // Create a hint to help the format registry guess what format reader is appropriate
-    let hint = Hint::new();
-
-    // Use the default options for metadata and format readers
-    let meta_opts: MetadataOptions = Default::default();
-    let fmt_opts: FormatOptions = Default::default();
-
-    // Probe the media source
-    let probed = symphonia::default::get_probe().format(&hint, mss, &fmt_opts, &meta_opts)?;
-
-    // Get the instantiated format reader
-    let format = probed.format;
-
-    // Get metadata from the format reader
-    let track = format.default_track().unwrap();
-    let bpm = 0;
-    let duration = track.codec_params.time_base
-        .map(|tb| tb.calc_time(track.codec_params.n_frames.unwrap_or(0)))
-        .map(|time| format_time(time))
-        .unwrap_or("0:00".to_string());
-
-    // Note: Depending on your metadata extraction needs, you may need to parse the artist and musical key differently.
-    let musical_key = "Unknown".to_string();
-    let artist = "Unknown".to_string();
-
-    // Call commit_beat with extracted information
-    commit_beat(file_path, title, bpm, musical_key, duration, artist)?;
-
-    Ok(())
-}
-
-pub fn delete_beat(beat_id: i64) -> Result<()> {
-    let mut conn = CONNECTION.lock().unwrap();
-    let tx = conn.transaction()?;
-    tx.execute("DELETE FROM beats WHERE id = ?1", params![beat_id])?;
-    tx.commit()?;
-    Ok(())
-}
 
 fn format_time(time: Time) -> String {
     let total_seconds = time.seconds;

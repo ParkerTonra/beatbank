@@ -11,7 +11,8 @@ import Home from "./pages/Home";
 import { Beat } from "./bindings";
 import "./Main.css";
 import { invoke } from "@tauri-apps/api";
-import {  confirm, message } from "@tauri-apps/api/dialog";
+import { confirm, message } from "@tauri-apps/api/dialog";
+import { useBeats } from "./hooks/useBeats";
 
 interface BeatSet {
   id: number;
@@ -22,13 +23,17 @@ function App() {
   const [refresh, setRefresh] = useState(false);
   const [selectedBeat, setSelectedBeat] = useState<Beat | null>(null);
 
+  const [isEditing, setIsEditing] = useState(false);
+
   // Function to trigger a refresh
   const triggerRefresh = useCallback(() => {
-    setRefresh(true);
+    console.log("triggerRefresh");
+    setRefresh(prev => !prev);
   }, []);
 
   // Function to reset the refresh state
   const resetRefresh = useCallback(() => {
+    console.log("Resetting refresh state");
     setRefresh(false);
   }, []);
 
@@ -82,20 +87,20 @@ function App() {
       await message("Set name cannot be empty", { title: "Error", type: "error" });
       return;
     }
-  
+
     // Fetch the latest sets to ensure the most current state
     const latestSets = await fetchSets();
-  
+
     // Check if the set name already exists
     const setNameExists = latestSets.some(
       (set: BeatSet) => set.name.toLowerCase() === trimmedSetName.toLowerCase()
     );
-  
+
     if (setNameExists) {
       await message("A set with this name already exists", { title: "Error", type: "error" });
       return;
     }
-  
+
     try {
       // Invoke the backend to add a new set and get the new ID
       const newSetId: number = await invoke("add_set", { name: trimmedSetName });
@@ -149,9 +154,6 @@ function App() {
     }
   };
 
-  const handleEditBeat = () => {
-    console.log("Editing beat:");
-  };
 
   const beatSetNames = sets.map((set) => set.name);
 
@@ -174,7 +176,14 @@ function App() {
           <div className="flex-2 flex-col py-4 w-full h-full">
             {/* right container */}
             <div className="flex w-full">
-              <Header onAddNewSet={handleAddNewSet} onTriggerRefresh={triggerRefresh} onDeleteBeat={handleDeleteBeat} onEditBeat={handleEditBeat} sets={beatSetNames} />
+              <Header
+                onAddNewSet={handleAddNewSet}
+                onTriggerRefresh={triggerRefresh}
+                onDeleteBeat={handleDeleteBeat}
+                setIsEditing={setIsEditing}
+                sets={beatSetNames}
+                selectedBeat={selectedBeat}
+              />
             </div>
             <main className="h-full w-full">
               <Routes>
@@ -184,8 +193,11 @@ function App() {
                     <Home
                       onBeatPlay={handleBeatPlay}
                       onBeatSelect={handleBeatSelection}
-                      refresh={refresh}
-                      onRefreshHandled={resetRefresh}
+                      onTriggerRefresh={triggerRefresh}
+                      isEditing={isEditing}
+                      setIsEditing={setIsEditing}
+                      selectedBeat={selectedBeat}
+                      setSelectedBeat={setSelectedBeat}
                     />
                   }
                 />

@@ -4,15 +4,18 @@ import { Beat } from 'src/bindings';
 interface HomeProps {
   onBeatSelect: (beat: Beat) => void;
   onBeatPlay: (beat: Beat) => void;
-  refresh: boolean;
-  onRefreshHandled: () => void;
+  onTriggerRefresh: () => void;
+  isEditing: boolean;
+  setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
+  selectedBeat: Beat | null;
+  setSelectedBeat: React.Dispatch<React.SetStateAction<Beat | null>>;
 }
 
-const Home: React.FC<HomeProps> = ({ onBeatPlay, onBeatSelect, refresh, onRefreshHandled }) => {
+const Home: React.FC<HomeProps> = ({ onBeatPlay, onBeatSelect, isEditing, setIsEditing, selectedBeat, setSelectedBeat , onTriggerRefresh }) => {
 
   return (
     <div className="p-4 h-full w-full bg-secondary">
-      <BeatTable onBeatPlay={onBeatPlay} onBeatSelect={onBeatSelect} refresh={refresh} onRefreshHandled={onRefreshHandled} />
+      <BeatTable onBeatPlay={onBeatPlay} onBeatSelect={onBeatSelect} isEditing={isEditing} setIsEditing={setIsEditing} selectedBeat={selectedBeat} setSelectedBeat={setSelectedBeat} onTriggerRefresh={onTriggerRefresh} />
     </div>
   );
 };

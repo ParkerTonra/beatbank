@@ -7,7 +7,7 @@ Beatbank is an open-source organizational tool for managing and analyzing audio 
 
 - **🎛️ Table View for Beats**
   - Display all your audio files in a clean, sortable table.
-  
+
 - **📁 Organize Beats into Sets**
   - Plan your upcoming gigs by organizing your beats into custom sets.
 

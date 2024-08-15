@@ -31,15 +31,28 @@ import {
 import DraggableRow from "./DraggableRow";
 import { useBeats } from "src/hooks/useBeats.tsx";
 import { invoke } from "@tauri-apps/api/tauri";
+import EditBeatCard from "./EditBeatCard.tsx";
 
 interface BeatTableProps {
-  refresh: boolean;
-  onRefreshHandled: () => void;
   onBeatPlay: (beat: Beat) => void;
   onBeatSelect: (beat: Beat) => void;
+  isEditing: boolean;
+  setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
+  selectedBeat: Beat | null;
+  setSelectedBeat: React.Dispatch<React.SetStateAction<Beat | null>>;
+  onTriggerRefresh: () => void;
 }
 
-function BeatTable({ onBeatPlay, refresh, onRefreshHandled, onBeatSelect }: BeatTableProps) {
+interface EditThisBeat {
+  id: number;
+  title: string;
+  bpm: number;
+  key: string;
+  duration: string;
+  artist: string;
+}
+
+function BeatTable({ onBeatPlay, onBeatSelect, isEditing, setIsEditing, selectedBeat, setSelectedBeat, onTriggerRefresh }: BeatTableProps) {
   // table data state
   const {
     beats,
@@ -53,12 +66,7 @@ function BeatTable({ onBeatPlay, refresh, onRefreshHandled, onBeatSelect }: Beat
     setColumnVisibility,
   } = useBeats();
 
-  useEffect(() => {
-    if (refresh) {
-      fetchData();
-      onRefreshHandled(); // Notify App that refresh is complete
-    }
-  }, [refresh, fetchData, onRefreshHandled]);
+  const [shouldRefresh, setShouldRefresh] = useState(false);
 
   // row selection state
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -156,6 +164,13 @@ function BeatTable({ onBeatPlay, refresh, onRefreshHandled, onBeatSelect }: Beat
     });
   };
 
+  useEffect(() => {
+    if (shouldRefresh) {
+      onTriggerRefresh();
+      setShouldRefresh(false);
+    }
+  }, [shouldRefresh, onTriggerRefresh]);
+
   const tableInstance = useReactTable<Beat>({
     columns: finalColumnDef,
     data: finalData,
@@ -241,17 +256,16 @@ function BeatTable({ onBeatPlay, refresh, onRefreshHandled, onBeatSelect }: Beat
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </div>
                     {header.column.getCanResize() && (
                       <div
                         onMouseDown={header.getResizeHandler()}
                         onTouchStart={header.getResizeHandler()}
-                        className={`resizer ${
-                          header.column.getIsResizing() ? "isResizing" : ""
-                        }`}
+                        className={`resizer ${header.column.getIsResizing() ? "isResizing" : ""
+                          }`}
                       />
                     )}
                   </th>
@@ -303,6 +317,36 @@ function BeatTable({ onBeatPlay, refresh, onRefreshHandled, onBeatSelect }: Beat
           );
         })}
       </div>
+      {isEditing && selectedBeat && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <EditBeatCard
+              beat={selectedBeat}
+              onClose={() => {
+                setIsEditing(false);
+                setSelectedBeat(null);
+                setRowSelection({});
+              }}
+              onSave={(updatedBeat: EditThisBeat) => {
+                setIsEditing(false);
+                setSelectedBeat(null);
+                setRowSelection({});
+
+                invoke("update_beat", { beat: updatedBeat })
+                  .then((response) => {
+                    console.log("Response from update_beat:", response);
+                    console.log("Fetching updated data");
+                    fetchData();  // Directly call fetchData here
+                    onTriggerRefresh();  // Still call this in case other components need to refresh
+                  })
+                  .catch((error) => {
+                    console.error("Error updating beat:", error);
+                  });
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

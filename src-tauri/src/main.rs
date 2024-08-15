@@ -4,6 +4,16 @@
 mod db;
 mod audio;
 
+#[derive(serde::Deserialize)]
+struct EditThisBeat {
+    id: i32,
+    title: String,
+    bpm: i32,
+    key: String,
+    duration: String,
+    artist: String,
+}
+
 #[tauri::command]
 fn fetch_beats() -> Result<String, String> {
     db::fetch_beats()
@@ -98,6 +108,11 @@ async fn restart_beat() -> Result<(), String> {
   audio::seek(0.0).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+async fn update_beat(beat: EditThisBeat) -> Result<(), String> {
+    db::update_beat(beat).map_err(|e| e.to_string())
+}
+
 fn main() {
     tauri::Builder::default()
         .setup(|_app| {
@@ -122,7 +137,8 @@ fn main() {
             get_sets,
             delete_set,
             delete_beat,
-            restart_beat
+            restart_beat,
+            update_beat
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

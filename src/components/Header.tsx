@@ -1,9 +1,13 @@
 import SearchBar from "./SearchBar";
 import { message, open } from "@tauri-apps/api/dialog";
-import { invoke } from "@tauri-apps/api";
+import { invoke, notification } from "@tauri-apps/api";
 import { useState } from "react";
 import { RefreshCcw } from "lucide-react";
 import SettingsDropdown from "./SettingsDropdown";
+import { Beat } from "src/bindings";
+import { sendNotification } from "@tauri-apps/api/notification";
+import { Slide, ToastContainer, toast, Bounce} from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
 
 interface HeaderButtonProps {
   onClick: () => void;
@@ -14,21 +18,36 @@ interface HeaderProps {
   onAddNewSet: (setName: string) => void;
   onTriggerRefresh: () => void;
   onDeleteBeat: () => void;
-  onEditBeat: () => void;
   sets: string[];
+  setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
+  selectedBeat: Beat | null;
 }
 
 const Header: React.FC<HeaderProps> = ({
+  selectedBeat,
   onAddNewSet,
   onTriggerRefresh,
   onDeleteBeat,
-  onEditBeat,
+  setIsEditing,
   sets,
 }) => {
+  const notify = () => toast.error('😔 No beat selected.', {
+    position: "top-left",
+    autoClose: 2222,
+    hideProgressBar: false,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+    progress: undefined,
+    theme: "dark",
+    transition: Bounce,
+    });
+  const onEditBeat = () => {
+    setIsEditing(true);
+  };
   const [isAddingNewSet, setIsAddingNewSet] = useState(false);
   const [newSetName, setNewSetName] = useState("");
   //@ts-ignore
-  const [isEditing, setIsEditing] = useState(false);
   // const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   async function handleAddBeat() {
@@ -44,7 +63,8 @@ const Header: React.FC<HeaderProps> = ({
 
       if (filePath) {
         await invoke("add_beat", { filePath: filePath.toString() });
-        onTriggerRefresh();
+        onTriggerRefresh(); // Trigger the refresh
+
       } else {
         console.log("No file selected");
       }
@@ -55,10 +75,14 @@ const Header: React.FC<HeaderProps> = ({
   }
 
   async function handleEditBeat() {
+    if (!selectedBeat) {
+      console.log("No beat selected");
+      notify();
+      return;
+    }
     try {
       setIsEditing(true);
       onEditBeat();
-      await message("Edit Beat", "TODO: Not yet implemented.");
     } catch (error) {
       console.error("Error editing beat:", error);
       message("Failed to edit beat. Please try again.");
@@ -107,7 +131,6 @@ const Header: React.FC<HeaderProps> = ({
   const handleRefresh = async () => {
     try {
       onTriggerRefresh();
-      await message("TODO: Not yet implemented.");
     } catch (error) {
       console.error("Error refreshing:", error);
       message("Failed to refresh. Please try again.");
@@ -167,6 +190,7 @@ const Header: React.FC<HeaderProps> = ({
           <RefreshCcw size={20} width={20} />
         </IconHeaderButton>
         <SettingsDropdown sets={sets} onAddToSet={handleAddToSet} />
+        
       </div>
 
       {/* Search bar */}
@@ -175,6 +199,8 @@ const Header: React.FC<HeaderProps> = ({
           {!isAddingNewSet && <SearchBar />}
         </div>
       </div>
+      <ToastContainer
+    />
     </header>
   );
 };
