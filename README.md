@@ -62,3 +62,14 @@ This is currently a solo project, but I welcome contributions! If you encounter 
 
 # 📝 License
 Beatbank is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
+
+TODO
+style cleanup + buttons
+TODO:
+ - [] add songs to set with button
+ - [] edit set name
+ - [] make default column sizes look nice
+- FF button
+ideas:
+- Allow users to star sets to prioritize favs/ones being worked on.
+- BeatSet page has multiple tabs / ways to look at the set

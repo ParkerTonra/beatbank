@@ -5,7 +5,7 @@ import { useState } from "react";
 import { RefreshCcw } from "lucide-react";
 import SettingsDropdown from "./SettingsDropdown";
 import { Beat } from "src/bindings";
-import { ToastContainer, toast, Bounce} from 'react-toastify';
+import { ToastContainer, toast, Bounce } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
 
 interface HeaderButtonProps {
@@ -40,7 +40,7 @@ const Header: React.FC<HeaderProps> = ({
     progress: undefined,
     theme: "dark",
     transition: Bounce,
-    });
+  });
   const onEditBeat = () => {
     setIsEditing(true);
   };
@@ -189,7 +189,7 @@ const Header: React.FC<HeaderProps> = ({
           <RefreshCcw size={20} width={20} />
         </IconHeaderButton>
         <SettingsDropdown sets={sets} onAddToSet={handleAddToSet} />
-        
+
       </div>
 
       {/* Search bar */}
@@ -198,8 +198,7 @@ const Header: React.FC<HeaderProps> = ({
           {!isAddingNewSet && <SearchBar />}
         </div>
       </div>
-      <ToastContainer
-    />
+      <ToastContainer />
     </header>
   );
 };
