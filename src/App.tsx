@@ -3,20 +3,15 @@ import { MemoryRouter as Router, Routes, Route } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
 import icon from "./assets/icons/db_logo.png";
 import BeatJockey from "./components/BeatJockey";
-import BeatSet from "./pages/BeatSet";
+import BeatSetPage from "./pages/BeatSet";
 import Search from "./pages/Search";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import Home from "./pages/Home";
-import { Beat } from "./bindings";
+import { Beat, BeatSet } from "./bindings";
 import "./Main.css";
 import { invoke } from "@tauri-apps/api";
 import { confirm, message } from "@tauri-apps/api/dialog";
-
-interface BeatSet {
-  id: number;
-  name: string;
-}
 
 function App() {
   //@ts-ignore
@@ -39,7 +34,7 @@ function App() {
       // Convert array of arrays to array of objects
       const mySets = rawSets.map((set: [number, string]) => ({
         id: set[0],
-        name: set[1],
+        setName: set[1],
       }));
       console.log("Transformed sets:", mySets);
       return mySets;
@@ -70,7 +65,7 @@ function App() {
   };
 
   const handleAddNewSet = (setName: string) => {
-    const newSet: BeatSet = { id: Date.now(), name: setName };
+    const newSet: BeatSet = { id: Date.now(), setName: setName };
     setSets([...sets, newSet]);
   };
 
@@ -87,7 +82,7 @@ function App() {
 
     // Check if the set name already exists
     const setNameExists = latestSets.some(
-      (set: BeatSet) => set.name.toLowerCase() === trimmedSetName.toLowerCase()
+      (set: BeatSet) => set.setName.toLowerCase() === trimmedSetName.toLowerCase()
     );
 
     if (setNameExists) {
@@ -98,7 +93,7 @@ function App() {
     try {
       // Invoke the backend to add a new set and get the new ID
       const newSetId: number = await invoke("add_set", { name: trimmedSetName });
-      const newSet: BeatSet = { id: newSetId, name: trimmedSetName };
+      const newSet: BeatSet = { id: newSetId, setName: trimmedSetName };
       setSets((prevSets) => [...prevSets, newSet]);
     } catch (error) {
       console.error("Failed to add new set:", error);
@@ -149,8 +144,6 @@ function App() {
   };
 
 
-  const beatSetNames = sets.map((set) => set.name);
-
   if (!sets) {
     return <div>Loading...</div>; // Show loading state or error message
   }
@@ -162,7 +155,7 @@ function App() {
           <div className="w-64">
             <Sidebar
               iconPath={icon}
-              sets={sets}
+              beatSets={sets}
               addNewSet={addNewSet}
               deleteSet={handleDeleteSet}
             />
@@ -175,7 +168,7 @@ function App() {
                 onTriggerRefresh={triggerRefresh}
                 onDeleteBeat={handleDeleteBeat}
                 setIsEditing={setIsEditing}
-                sets={beatSetNames}
+                sets={sets}
                 selectedBeat={selectedBeat}
               />
             </div>
@@ -196,7 +189,7 @@ function App() {
                   }
                 />
                 <Route path="/search" element={<Search />} />
-                <Route path="/set/:id" element={<BeatSet />} />
+                <Route path="/set/:id" element={<BeatSetPage />} />
               </Routes>
               <div className="flex-grow flex-col justify-center">
                 <BeatJockey playThisBeat={playThisBeat} />

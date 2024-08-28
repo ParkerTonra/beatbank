@@ -9,6 +9,11 @@ export type Beat = {
     file_path: string;
   };
 
+export type BeatSet = {
+  id: number
+  setName: string;
+}
+
   export type ColumnVis = {
     id: boolean;
     title: boolean;

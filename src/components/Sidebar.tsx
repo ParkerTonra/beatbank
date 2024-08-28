@@ -1,17 +1,18 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { X, Star, Home } from "lucide-react";
+import { BeatSet } from "src/bindings";
 
 interface SidebarProps {
   iconPath: string;
-  sets: { id: number; name: string }[];
+  beatSets: BeatSet[];
   addNewSet: (setName: string) => void;
   deleteSet: (setId: number) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
   iconPath,
-  sets,
+  beatSets,
   deleteSet,
 }) => {
   const navigate = useNavigate();
@@ -58,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="border-2 my-2"></div>
 
       {/* Dynamic Sets */}
-      {sets.map((set) => (
+      {beatSets.map((set) => (
         <div
           key={set.id}
           className="relative group my-2 flex items-center justify-center"
@@ -70,13 +71,13 @@ const Sidebar: React.FC<SidebarProps> = ({
             className="w-full py-2 text-center px-2 flex items-center justify-center"
             onClick={() => handleSetClick(set.id)}
           >
-            <span>{set.name}</span>
+            <span>{set.setName}</span>
           </button>
           {hoveredSet === set.id && (
             <button
               className="ml-2 p-1"
               onClick={(e) => handleDeleteClick(e, set.id)}
-              aria-label={`Delete ${set.name}`}
+              aria-label={`Delete ${set.setName}`}
             >
               <X size={16} />
             </button>

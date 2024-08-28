@@ -67,6 +67,23 @@ async fn add_set(name: String) -> Result<i64, String> {
 }
 
 #[tauri::command]
+async fn add_to_set(
+    set_id: u32,
+    beat_id: u32
+) -> Result<String, String> {
+    db::add_beat_to_set(set_id, beat_id)
+        .map_err(|e| e.to_string())
+        .map(|_| "success".to_string())
+}
+
+#[tauri::command]
+async fn remove_from_set(set_id: u32, beat_id: u32) -> Result<String, String> {
+    db::remove_beat_from_set(set_id, beat_id)
+        .map_err(|e| e.to_string())
+        .map(|_| "success".to_string())
+}
+
+#[tauri::command]
 async fn get_playback_state() -> Result<String, String> {
     audio::get_state()
         .map(|state| serde_json::to_string(&state).unwrap())
@@ -79,6 +96,21 @@ async fn get_sets() -> Result<String, String> {
     db::get_sets()
         .map(|sets| serde_json::to_string(&sets).unwrap())
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn get_set_name(id: u32) -> Result<String, ()> {
+    println!("getting set name from the database...");
+    db::get_set_name(id)
+        .map_err(|_e| ())
+}
+
+#[tauri::command]
+async fn get_beat_set(set_id: u32) -> Result<String, ()> {
+    println!("getting beats in set from the database...");
+    db::get_beats_in_set(set_id)
+        .map(|beats| serde_json::to_string(&beats).unwrap()) // Convert beats to JSON string
+        .map_err(|_e| ()) // Convert error to ()
 }
 
 #[tauri::command]
@@ -135,7 +167,11 @@ fn main() {
             save_row_order,
             add_set,
             get_sets,
+            get_set_name,
+            get_beat_set,
+            remove_from_set,
             delete_set,
+            add_to_set,
             delete_beat,
             restart_beat,
             update_beat

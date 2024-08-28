@@ -169,13 +169,13 @@ pub fn delete_set(set_id: i64) -> Result<()> {
     Ok(())
 }
 // TODO: Implement on frontend
-pub fn add_beat_to_set(set_id: i64, beat_id: i64) -> Result<()> {
+pub fn add_beat_to_set(set_id: u32, beat_id: u32) -> Result<()> {
     let conn = CONNECTION.lock().unwrap();
     conn.execute("INSERT INTO set_beat (set_id, beat_id) VALUES (?1, ?2)", params![set_id, beat_id])?;
     Ok(())
 }
 // TODO: Implement on frontend
-pub fn remove_beat_from_set(set_id: i64, beat_id: i64) -> Result<()> {
+pub fn remove_beat_from_set(set_id: u32, beat_id: u32) -> Result<()> {
     let conn = CONNECTION.lock().unwrap();
     conn.execute("DELETE FROM set_beat WHERE set_id = ?1 AND beat_id = ?2", params![set_id, beat_id])?;
     Ok(())
@@ -189,8 +189,16 @@ pub fn get_sets() -> Result<Vec<(i64, String)>> {
     })?;
     sets_iter.collect()
 }
+
+pub fn get_set_name(set_id: u32) -> Result<String, rusqlite::Error> {
+    let conn = CONNECTION.lock().unwrap();
+    let mut stmt = conn.prepare("SELECT set_name FROM set_name WHERE id = ?1")?;
+    let set_name: String = stmt.query_row([set_id], |row| row.get(0))?;
+    Ok(set_name)
+}
+
 // TODO: Implement on frontend
-pub fn get_beats_in_set(set_id: i64) -> Result<Vec<Beat>> {
+pub fn get_beats_in_set(set_id: u32) -> Result<Vec<Beat>, rusqlite::Error> {
     let conn = CONNECTION.lock().unwrap();
     let mut stmt = conn.prepare("
         SELECT b.id, b.title, b.bpm, b.musical_key, b.duration, b.artist, b.date_added, b.file_path, b.row_number
@@ -199,6 +207,7 @@ pub fn get_beats_in_set(set_id: i64) -> Result<Vec<Beat>> {
         WHERE sb.set_id = ?1
         ORDER BY b.row_number
     ")?;
+
     let beat_iter = stmt.query_map(params![set_id], |row| {
         Ok(Beat {
             id: row.get(0)?,
@@ -212,7 +221,10 @@ pub fn get_beats_in_set(set_id: i64) -> Result<Vec<Beat>> {
             row_number: row.get(8)?,
         })
     })?;
-    beat_iter.collect()
+
+    // Collect the results into a Vec<Beat>
+    let beats: Result<Vec<Beat>, rusqlite::Error> = beat_iter.collect();
+    beats
 }
 
 

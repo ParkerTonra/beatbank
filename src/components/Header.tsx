@@ -4,7 +4,7 @@ import { invoke } from "@tauri-apps/api";
 import { useState } from "react";
 import { RefreshCcw } from "lucide-react";
 import SettingsDropdown from "./SettingsDropdown";
-import { Beat } from "src/bindings";
+import { Beat, BeatSet } from "src/bindings";
 import { ToastContainer, toast, Bounce } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
 
@@ -17,7 +17,7 @@ interface HeaderProps {
   onAddNewSet: (setName: string) => void;
   onTriggerRefresh: () => void;
   onDeleteBeat: () => void;
-  sets: string[];
+  sets: BeatSet[],
   setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
   selectedBeat: Beat | null;
 }
@@ -106,7 +106,7 @@ const Header: React.FC<HeaderProps> = ({
 
     if (trimmedSetName) {
       // Check if a set with the same name already exists
-      const setExists = sets.includes(trimmedSetName);
+      const setExists = sets.some((set) => set.setName === trimmedSetName);
 
       if (setExists) {
         // Show a message to the user if the set already exists
@@ -145,13 +145,21 @@ const Header: React.FC<HeaderProps> = ({
   //   }
   // };
 
-  const handleAddToSet = async (setName: string) => {
+  const handleAddToSet = async (set: BeatSet) => {
     try {
-      console.log(`Adding to set: ${setName}`);
-      await invoke("add_to_set", { setName });
+      if (!selectedBeat) {
+        await message("No beat selected.", "Select a beat to add it to a set.")
+      } else {
+        let beatId = selectedBeat.id
+        let setId = set.id
+        console.log(`Adding beat: ${selectedBeat.title}to set: ${set.setName}`);
+        await invoke("add_to_set", { setId, beatId });
+      }
+      
+      
     } catch (error) {
-      console.error(`Error adding to set ${setName}:`, error);
-      message(`Failed to add to set ${setName}. Please try again.`);
+      console.error(`Error adding to set ${set.setName}:`, error);
+      message(`Failed to add to set ${set.setName}. Please try again.`);
     }
   };
 

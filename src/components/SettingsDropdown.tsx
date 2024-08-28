@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronRight, Settings } from "lucide-react";
 import { invoke } from "@tauri-apps/api";
+import { BeatSet } from "src/bindings";
 
 interface SettingsDropdownProps {
-  sets: string[];
-  onAddToSet: (setName: string) => void;
+  sets: BeatSet[];
+  onAddToSet: (set: BeatSet) => void;
 }
 
 const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
@@ -33,8 +34,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
 
   const toggleDropdown = () => setIsOpen(!isOpen);
 
-  const handleAddToSet = (setName: string) => {
-    onAddToSet(setName);
+  const handleAddToSet = (set: BeatSet) => {
+    onAddToSet(set);
     setIsOpen(false);
     setIsSubMenuOpen(false);
   };
@@ -77,11 +78,11 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                   <div className="py-1" role="menu" aria-orientation="vertical">
                     {sets.map((set) => (
                       <div
-                        key={set}
+                        key={set.id}
                         className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 cursor-pointer"
                         onClick={() => handleAddToSet(set)}
                       >
-                        {set}
+                        {set.setName}
                       </div>
                     ))}
                   </div>
