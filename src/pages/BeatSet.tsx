@@ -66,7 +66,7 @@ const BeatSetPage: React.FC = () => {
         <ul>
           {beatSet.map((beat) => (
             <li key={beat.id}>
-              {beat.title} - BPM: {beat.bpm}, Key: {beat.musical_key || 'Unknown'}, Artist: {beat.artist}, Duration: {beat.duration}
+              {beat.title} - BPM: {beat.bpm}, Key: {beat.key || 'Unknown'}, Artist: {beat.artist}, Duration: {beat.duration}
             </li>
           ))}
         </ul>
