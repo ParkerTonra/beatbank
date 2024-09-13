@@ -189,7 +189,13 @@ function App() {
                   }
                 />
                 <Route path="/search" element={<Search />} />
-                <Route path="/set/:id" element={<BeatSetPage />} />
+                <Route path="/set/:id" element={<BeatSetPage onBeatPlay={handleBeatPlay}
+                      onBeatSelect={handleBeatSelection}
+                      onTriggerRefresh={triggerRefresh}
+                      isEditing={isEditing}
+                      setIsEditing={setIsEditing}
+                      selectedBeat={selectedBeat}
+                      setSelectedBeat={setSelectedBeat}/>} />
               </Routes>
               <div className="flex-grow flex-col justify-center">
                 <BeatJockey playThisBeat={playThisBeat} />
