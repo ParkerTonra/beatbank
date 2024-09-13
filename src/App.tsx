@@ -1,7 +1,7 @@
 //App.tsx
 import { MemoryRouter as Router, Routes, Route } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
-import icon from "./assets/icons/db_logo.png";
+import icon from "./assets/icons/msu_logo.png";
 import BeatJockey from "./components/BeatJockey";
 import BeatSetPage from "./pages/BeatSet";
 import Search from "./pages/Search";

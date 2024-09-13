@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { Beat } from '../bindings';
 import BeatTable from '../components/BeatTable';
 import { useBeats } from 'src/hooks/useBeats';
+import { Edit } from 'lucide-react';
+import { message } from '@tauri-apps/api/dialog';
 
 interface BeatSetProps {
   onBeatSelect: (beat: Beat) => void;
@@ -57,7 +59,15 @@ const BeatSetPage: React.FC<BeatSetProps> = ({
 
   return (
     <div className="p-4 bg-gray-500">
-      <h1 className="text-2xl font-bold mb-4">Beat Set: {setName}</h1>
+      <div className='flex w-96 h-12 mx-4 gap-6 items-center text-2xl font-semibold text-gray-100'>
+        Beat Set: {setName}
+        {/* TODO: implement edit button to edit set name */}
+        <Edit onClick={() => {
+          message('Edit set name not implemented yet.')
+        }} className='cursor-pointer' />
+
+      </div>
+      
       {beats.length === 0 ? (
         <p>No beats found in this set.</p>
       ) : (

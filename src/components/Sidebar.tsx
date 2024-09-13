@@ -36,7 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className="h-full flex flex-col border-[8px] rounded bg-gray-800 w-56 border-gray-900 border-opacity-55 p-1.5">
       {/* Title and Icon */}
-      <div className="w-36 md:w-auto flex justify-center items-center my-2 md:my-0 ml-16 md:ml-0">
+      <div className="w-24 md:w-auto flex justify-center items-center my-2 md:my-0 ml-16 md:ml-0">
         <div className="flex items-center">
           <img className="w-8 h-8" alt="icon" src={iconPath} />
           <h1 className="text-xl text-nowrap font-bold py-3">Beat Bank</h1>
