@@ -21,6 +21,7 @@ export const useBeats = () => {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [setName, setSetName] = useState('');
 
   const fetchData = useCallback(async () => {
     console.log("Fetching data...");
@@ -47,15 +48,46 @@ export const useBeats = () => {
     } finally {
       setLoading(false);
     }
-  }, []); // No dependencies, meaning it will be memoized once
+  }, []);
+
+  const fetchSetData = useCallback(async (setId: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch set name
+      const name = await invoke('get_set_name', { id: setId });
+      setSetName(typeof name === 'string' ? name : 'Unknown Set');
+
+      // Fetch beat set data
+      const response = await invoke('get_beat_set', { setId });
+      const fetchedBeats = typeof response === 'string' ? JSON.parse(response) : response;
+
+      console.log('Received beat set:', fetchedBeats);
+      if (Array.isArray(fetchedBeats)) {
+        setBeats(fetchedBeats);
+      } else {
+        console.error('Unexpected response format:', fetchedBeats);
+        setError(new Error('Received invalid data format for beat set.'));
+        setBeats([]);
+      }
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError(new Error('An error occurred while fetching data.'));
+      setBeats([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   return {
     beats,
+    setBeats,
     columnVisibility,
+    setColumnVisibility,
     loading,
     error,
     fetchData,
-    setBeats,
-    setColumnVisibility,
+    fetchSetData,
+    setName,
   };
 };

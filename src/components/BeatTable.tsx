@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   useReactTable,
   flexRender,
@@ -29,11 +29,11 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import DraggableRow from "./DraggableRow";
-import { useBeats } from "src/hooks/useBeats.tsx";
 import { invoke } from "@tauri-apps/api/tauri";
 import EditBeatCard from "./EditBeatCard.tsx";
 
 interface BeatTableProps {
+  beats: Beat[];
   onBeatPlay: (beat: Beat) => void;
   onBeatSelect: (beat: Beat) => void;
   isEditing: boolean;
@@ -41,6 +41,10 @@ interface BeatTableProps {
   selectedBeat: Beat | null;
   setSelectedBeat: React.Dispatch<React.SetStateAction<Beat | null>>;
   onTriggerRefresh: () => void;
+  onBeatsChange: (newBeats: Beat[]) => void;
+  columnVisibility: ColumnVis;
+  setColumnVisibility: React.Dispatch<React.SetStateAction<ColumnVis>>;
+  saveRowOrder?: (beatsToSave: Beat[]) => Promise<void>; // TODO: make this mandatory and work for sets as well.
 }
 
 interface EditThisBeat {
@@ -52,22 +56,19 @@ interface EditThisBeat {
   artist: string;
 }
 
-function BeatTable({ onBeatPlay, onBeatSelect, isEditing, setIsEditing, selectedBeat, setSelectedBeat, onTriggerRefresh }: BeatTableProps) {
-  // table data state
-  const {
-    beats,
-    columnVisibility,
-    //@ts-ignore
-    loading,
-    //@ts-ignore
-    error,
-    fetchData,
-    setBeats,
-    setColumnVisibility,
-  } = useBeats();
-
-  const [shouldRefresh, setShouldRefresh] = useState(false);
-
+function BeatTable({
+  beats,
+  onBeatPlay,
+  onBeatSelect,
+  isEditing,
+  setIsEditing,
+  selectedBeat,
+  setSelectedBeat,
+  onTriggerRefresh,
+  onBeatsChange,
+  columnVisibility,
+  setColumnVisibility,
+}: BeatTableProps) {
   // row selection state
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
@@ -133,23 +134,15 @@ function BeatTable({ onBeatPlay, onBeatSelect, isEditing, setIsEditing, selected
     });
   };
 
-  const finalData = useMemo(() => beats, [beats]);
   const finalColumnDef = useMemo(
     () => createColumnDef(onBeatPlay),
     [onBeatPlay]
   );
 
-  // Fetch data when the component mounts
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
   const dataIds: UniqueIdentifier[] = useMemo(
-    () => finalData?.map(({ id }) => id),
-    [finalData]
+    () => beats.map(({ id }) => id),
+    [beats]
   );
-
-  //console.log("columnVisibility:", columnVisibility);
 
   const handleColumnVisibilityChange = (
     updaterOrValue: Updater<VisibilityState>
@@ -164,16 +157,9 @@ function BeatTable({ onBeatPlay, onBeatSelect, isEditing, setIsEditing, selected
     });
   };
 
-  useEffect(() => {
-    if (shouldRefresh) {
-      onTriggerRefresh();
-      setShouldRefresh(false);
-    }
-  }, [shouldRefresh, onTriggerRefresh]);
-
   const tableInstance = useReactTable<Beat>({
     columns: finalColumnDef,
-    data: finalData,
+    data: beats,
     getCoreRowModel: getCoreRowModel(),
     enableColumnResizing: true,
     columnResizeMode: "onChange" as ColumnResizeMode,
@@ -196,26 +182,27 @@ function BeatTable({ onBeatPlay, onBeatSelect, isEditing, setIsEditing, selected
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (active && over && active.id !== over.id) {
-      setBeats((prevBeats) => {
-        const oldIndex = prevBeats.findIndex((beat) => beat.id === active.id);
-        const newIndex = prevBeats.findIndex((beat) => beat.id === over.id);
-        const newBeats = arrayMove(prevBeats, oldIndex, newIndex);
+      const newBeats = arrayMove(
+        beats,
+        beats.findIndex((beat) => beat.id === active.id),
+        beats.findIndex((beat) => beat.id === over.id)
+      );
+      
+      onBeatsChange(newBeats);
 
-        // Save the new order
-        saveRowOrder(newBeats);
+      
 
-        return newBeats;
-      });
+      saveRowOrder(newBeats);
     }
   };
 
   const saveRowOrder = async (beatsToSave: Beat[]) => {
     const rowOrder = beatsToSave.map((beat, index) => ({
       row_id: beat.id.toString(),
-      row_number: index + 1, // Changed from row_order to row_number
+      row_number: index + 1,
     }));
     try {
-      await invoke("save_row_order", { rowOrder }); // Changed from row_order to rowOrder
+      await invoke("save_row_order", { rowOrder });
       console.log("Row order saved successfully");
     } catch (error) {
       console.error("Error saving row order:", error);
@@ -247,7 +234,7 @@ function BeatTable({ onBeatPlay, onBeatSelect, isEditing, setIsEditing, selected
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="relative pr-4 text-left border-gray-800 border-b-4" // Add text-left class
+                    className="relative pr-4 text-left border-gray-800 border-b-4"
                     style={{
                       width: header.getSize(),
                     }}
@@ -336,8 +323,7 @@ function BeatTable({ onBeatPlay, onBeatSelect, isEditing, setIsEditing, selected
                   .then((response) => {
                     console.log("Response from update_beat:", response);
                     console.log("Fetching updated data");
-                    fetchData();  // Directly call fetchData here
-                    onTriggerRefresh();  // Still call this in case other components need to refresh
+                    onTriggerRefresh();
                   })
                   .catch((error) => {
                     console.error("Error updating beat:", error);
