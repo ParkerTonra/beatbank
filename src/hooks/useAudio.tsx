@@ -14,18 +14,14 @@ export const useAudio = () => {
 
   useEffect(() => {
     if (currentBeat?.file_path && audioRef.current) {
-      console.log('Original file path:', currentBeat.file_path);
       
       try {
         const audioUrl = convertFileSrc(currentBeat.file_path);
-        console.log('Converted audio URL:', audioUrl);
-        
+
         audioRef.current.src = audioUrl;
-        console.log('Audio element src set to:', audioRef.current.src);
-        
+
         audioRef.current.play()
           .then(() => {
-            console.log('Audio playing successfully');
             setIsPlaying(true);
           })
           .catch(error => {
@@ -43,7 +39,7 @@ export const useAudio = () => {
   }, [currentBeat]);
 
   const playBeat = (beat: Beat) => {
-    console.log("playing beat:", beat);
+    console.log("playing beat:", beat.title);
     setCurrentBeat(beat);
   };
 
