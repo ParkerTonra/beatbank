@@ -22,16 +22,15 @@
         "readDir": true,
         "copyFile": true,
         "createDir": true,
-        "exists": true,
-        "scope": ["**/*"]
+        "exists": true
       },
       "protocol": {
         "asset": true,
-        "assetScope": ["**/*"]
+        "assetScope": ["**", "**/*"]
       },
       "shell": {
         "all": false,
-        "open": true
+        "open": "true"
       }
     },
     "windows": [

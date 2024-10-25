@@ -15,7 +15,7 @@ use std::{
 };
 
 use crate::models::{Beat, BeatCollection};
-use tauri::{Manager, State};
+use tauri::{ Manager, State};
 
 struct DatabaseConnection {
     conn: SqliteConnection,
@@ -230,7 +230,47 @@ fn add_beat_to_collection(
     db::add_beat_to_collection(&mut *conn, collection_id, beat_id).map_err(|e| e.to_string())?;
     Ok(())
 }
+// Opens the file location in the default file manager & selects the file
+// Needs to be tested on Mac & Linux
+#[tauri::command]
+async fn open_file_location(path: String) -> Result<(), String> {
+    if cfg!(target_os = "windows") {
+        // On Windows, use explorer with the /select flag to highlight the file
+        let result = std::process::Command::new("explorer")
+            .arg("/select,")
+            .arg(path.replace("/", "\\")) // Convert to backslashes for Windows
+            .spawn();
+        
+        if result.is_err() {
+            return Err("Failed to open file location in Windows Explorer.".to_string());
+        }
+    } else if cfg!(target_os = "macos") {
+        // On macOS, use 'open -R' to reveal the file in Finder
+        let result = std::process::Command::new("open")
+            .arg("-R")
+            .arg(&path)
+            .spawn();
+        
+        if result.is_err() {
+            return Err("Failed to open file location in Finder.".to_string());
+        }
+    } else {
+        // On Linux, just open the directory since most file managers don't support selecting files directly
+        let parent_dir = std::path::Path::new(&path)
+            .parent()
+            .ok_or_else(|| "Failed to extract parent directory".to_string())?;
+        
+        let result = std::process::Command::new("xdg-open")
+            .arg(parent_dir)
+            .spawn();
+        
+        if result.is_err() {
+            return Err("Failed to open file location in Linux file manager.".to_string());
+        }
+    }
 
+    Ok(())
+}
 fn main() {
     println!("Starting beatbank...");
 
@@ -259,6 +299,7 @@ fn main() {
             get_beat_collection,
             get_beats_in_collection,
             save_row_order,
+            open_file_location,
             store::load_settings,
             store::save_settings,
             store::get_settings_path
