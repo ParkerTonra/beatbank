@@ -1,6 +1,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Beat } from "./../bindings";
+import { convertFileSrc } from "@tauri-apps/api/tauri";
 
 
 export const useAudio = () => {
@@ -12,10 +13,32 @@ export const useAudio = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    if (currentBeat && audioRef.current) {
-      audioRef.current.src = currentBeat.file_path; // Assuming Beat has a file_path property
-      audioRef.current.play();
-      setIsPlaying(true);
+    if (currentBeat?.file_path && audioRef.current) {
+      console.log('Original file path:', currentBeat.file_path);
+      
+      try {
+        const audioUrl = convertFileSrc(currentBeat.file_path);
+        console.log('Converted audio URL:', audioUrl);
+        
+        audioRef.current.src = audioUrl;
+        console.log('Audio element src set to:', audioRef.current.src);
+        
+        audioRef.current.play()
+          .then(() => {
+            console.log('Audio playing successfully');
+            setIsPlaying(true);
+          })
+          .catch(error => {
+            console.error('Error playing audio:', error);
+            if (audioRef.current) {
+                console.log('Audio element error:', audioRef.current.error);
+            }
+            setIsPlaying(false);
+          });
+      } catch (error) {
+        console.error('Error in convertFileSrc:', error);
+        setIsPlaying(false);
+      }
     }
   }, [currentBeat]);
 

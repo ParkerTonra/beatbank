@@ -19,7 +19,15 @@
         "all": true
       },
       "fs": {
-        "readDir": true
+        "readDir": true,
+        "copyFile": true,
+        "createDir": true,
+        "exists": true,
+        "scope": ["**/*"]
+      },
+      "protocol": {
+        "asset": true,
+        "assetScope": ["**/*"]
       },
       "shell": {
         "all": false,
