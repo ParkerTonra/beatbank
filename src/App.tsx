@@ -207,74 +207,62 @@ function App() {
   if (error) return <div className="flex items-center justify-center h-screen">Error: {error.message}</div>;
 
   return (
-    
-    
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
-      {/* Audio Player. will be moved to the bottom of the page. */ }
-      <div className="flex bg-slate-900 justify-center overflow-scroll">
-      <BeatJockey
-        isPlaying={isPlaying}
-        currentBeat={currentBeat}
-        togglePlayPause={togglePlayPause}
-        stopBeat={stopBeat}
-        audioRef={audioRef}
-      />
-      </div>
       <Router>
-        <div className="flex h-screen bg-gray-100">
-          <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
+      <div className="flex bg-slate-900 justify-center overflow-scroll">          <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
           <div className="flex-1 flex flex-col overflow-hidden">
             <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-600 p-6">
-              <>
-                <h1 className="text-3xl font-bold mb-6">Welcome to Beatbank!</h1>
-                <div className="flex justify-center gap-8">
-                  <div className="flex flex-row">
-                    <SettingsDropdown sets={beatCollections} handleAddToCollBtnClick={handleAddToCollBtnClick} selectedBeat={selectedBeat} setIsEditing={setIsEditing} />
-                  </div>
-                  <button onClick={handleThemeChange}>
-                    <div className="flex-row items-center justify-center w-52">
-                      <div className="flex items-center text-center justify-center">
-                        <SunIcon className="h-6 w-6 justify-center mr-2" />
-                        Toggle Theme
-                      </div>
-                      <div className="flex justify-center text-sm italic">
-                        current: {theme}
-                      </div>
-                    </div>
-                  </button>
+              <h1 className="text-3xl font-bold">Welcome to Beatbank!</h1>
+              <div className="flex justify-center gap-8">
+                <div className="flex flex-row">
+                  <SettingsDropdown
+                    sets={beatCollections}
+                    handleAddToCollBtnClick={handleAddToCollBtnClick}
+                    selectedBeat={selectedBeat}
+                    setIsEditing={setIsEditing}
+                  />
                 </div>
-                <UploadBeat fetchData={fetchData} selectedBeat={selectedBeat} />
-                <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
-                  strategy={verticalListSortingStrategy}>
-                  <Routes>
-                    {/* default route for main beat table */}
-                    <Route
-                      path="/"
-                      element={
-                        <BeatTable
-                          beats={beats}
-                          onBeatPlay={playBeat}
-                          onBeatSelect={handleBeatSelection}
-                          isEditing={isEditing}
-                          setIsEditing={setIsEditing}
-                          selectedBeat={selectedBeat}
-                          setSelectedBeat={setSelectedBeat}
-                          fetchData={fetchData}
-                          onBeatsChange={handleBeatsChange}
-                          onAddBeatToCollection={handleAddToCollection}
-                          columnVisibility={columnVisibility}
-                          setColumnVisibility={setColumnVisibility}
-                          onDragEnd={handleDragEnd}
-                        />
-                      }
-                    />
-                    <Route
-                      path="/collection/:id"
-                      element={<BeatCollTable onDragEnd={handleDragEnd} />}
-                    />
-                  </Routes>
-                </SortableContext>
-              </>
+                <button onClick={handleThemeChange}>
+                  <div className="flex-row items-center justify-center w-52">
+                    <div className="flex items-center text-center justify-center">
+                      <SunIcon className="h-6 w-6 justify-center mr-2" />
+                      Toggle Theme
+                    </div>
+                  </div>
+                </button>
+              </div>
+              <UploadBeat fetchData={fetchData} selectedBeat={selectedBeat} />
+              <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
+                strategy={verticalListSortingStrategy}>
+                <Routes>
+                  {/* default route for main beat table */}
+                  <Route
+                    path="/"
+                    element={
+                      <BeatTable
+                        beats={beats}
+                        onBeatPlay={playBeat}
+                        onBeatSelect={handleBeatSelection}
+                        isEditing={isEditing}
+                        setIsEditing={setIsEditing}
+                        selectedBeat={selectedBeat}
+                        setSelectedBeat={setSelectedBeat}
+                        fetchData={fetchData}
+                        onBeatsChange={handleBeatsChange}
+                        onAddBeatToCollection={handleAddToCollection}
+                        columnVisibility={columnVisibility}
+                        setColumnVisibility={setColumnVisibility}
+                        onDragEnd={handleDragEnd}
+                      />
+                    }
+                  />
+                  <Route
+                    path="/collection/:id"
+                    element={<BeatCollTable onDragEnd={handleDragEnd} />}
+                  />
+                </Routes>
+              </SortableContext>
+
               {/* Overlay when dragging files */}
               {isFileDragging && (
                 <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
@@ -287,6 +275,15 @@ function App() {
           </div>
         </div>
       </Router>
+      <div className="flex bg-slate-900 justify-center overflow-scroll">
+        <BeatJockey
+          isPlaying={isPlaying}
+          currentBeat={currentBeat}
+          togglePlayPause={togglePlayPause}
+          stopBeat={stopBeat}
+          audioRef={audioRef}
+        />
+      </div>
     </DndContext >
   );
 }
