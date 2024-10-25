@@ -8,10 +8,12 @@ interface BeatJockeyProps {
     currentBeat: Beat | null;
     togglePlayPause: () => void;
     stopBeat: () => void;
+    audioRef: React.RefObject<HTMLAudioElement>;
   }
-  
 
-const BeatJockey: React.FC<BeatJockeyProps> = ({ isPlaying, currentBeat, togglePlayPause, stopBeat }) => {
+
+
+const BeatJockey: React.FC<BeatJockeyProps> = ({ isPlaying, currentBeat, togglePlayPause, stopBeat, audioRef }) => {
   
 
   return (
@@ -23,7 +25,7 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({ isPlaying, currentBeat, toggleP
           <button onClick={stopBeat}>Stop</button>
         </div>
       )}
-      <audio></audio>
+      <audio ref={audioRef} src={currentBeat?.file_path} controls />
     </div>
   );
 };

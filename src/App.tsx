@@ -31,7 +31,7 @@ function App() {
   const { isPlaying, currentBeat, playBeat, stopBeat, togglePlayPause, audioRef } = useAudio();
 
   const sensors = useSensors(
-    useSensor(MouseSensor),
+    useSensor(MouseSensor, { activationConstraint: { distance: 10 } }),
     useSensor(TouchSensor)
   );
 
@@ -217,6 +217,7 @@ function App() {
         currentBeat={currentBeat}
         togglePlayPause={togglePlayPause}
         stopBeat={stopBeat}
+        audioRef={audioRef}
       />
       </div>
       <Router>
