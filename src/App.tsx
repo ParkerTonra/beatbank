@@ -17,6 +17,8 @@ import SettingsDropdown from "./components/SettingsDropdown";
 import { HashRouter as Router, Route, Routes } from "react-router-dom";
 import BeatCollTable from "./components/BeatCollection";
 import { listen } from '@tauri-apps/api/event';
+import BeatJockey from "./components/BeatJockey";
+import { useAudio } from "./hooks/useAudio";
 
 function App() {
   const [showSplashScreen, setShowSplashScreen] = useState(true);
@@ -26,8 +28,10 @@ function App() {
   const [settingsPath, setSettingsPath] = useState<string>('');
   const [isFileDragging, setIsFileDragging] = useState(false);
 
+  const { isPlaying, currentBeat, playBeat, stopBeat, togglePlayPause, audioRef } = useAudio();
+
   const sensors = useSensors(
-    useSensor(MouseSensor),
+    useSensor(MouseSensor, { activationConstraint: { distance: 10 } }),
     useSensor(TouchSensor)
   );
 
@@ -96,55 +100,55 @@ function App() {
     }
   };
 
-  
-  
+
+
   const handleDragEnd = (event: DragEndEvent) => {
-      const { active, over } = event;
-      if (!over || !active) return;
-  
-      const activeId = active.id.toString();
-      const overId = over.id.toString();
-  
-      if (overId.startsWith('collection-') && activeId.startsWith('beat-')) {
-        const collectionId = parseInt(overId.replace('collection-', ''), 10);
-        const beatId = parseInt(activeId.replace('beat-', ''), 10);
-        handleAddToCollection(collectionId, beatId);
-      } else if (activeId.startsWith('sortable-') && overId.startsWith('sortable-')) {
-        const activeIndex = beats.findIndex((beat) => `sortable-${beat.id}` === activeId);
-        const overIndex = beats.findIndex((beat) => `sortable-${beat.id}` === overId);
-        
-        if (activeIndex === -1 || overIndex === -1) {
-          console.error("Could not find beat indices");
-          return;
-        }
-  
-        if (activeIndex !== overIndex) {
-          const newBeats = arrayMove(beats, activeIndex, overIndex);
-          setBeats(newBeats);
-          saveRowOrder(newBeats);
-          fetchData();
-        }
+    const { active, over } = event;
+    if (!over || !active) return;
+
+    const activeId = active.id.toString();
+    const overId = over.id.toString();
+
+    if (overId.startsWith('collection-') && activeId.startsWith('beat-')) {
+      const collectionId = parseInt(overId.replace('collection-', ''), 10);
+      const beatId = parseInt(activeId.replace('beat-', ''), 10);
+      handleAddToCollection(collectionId, beatId);
+    } else if (activeId.startsWith('sortable-') && overId.startsWith('sortable-')) {
+      const activeIndex = beats.findIndex((beat) => `sortable-${beat.id}` === activeId);
+      const overIndex = beats.findIndex((beat) => `sortable-${beat.id}` === overId);
+
+      if (activeIndex === -1 || overIndex === -1) {
+        console.error("Could not find beat indices");
+        return;
       }
+
+      if (activeIndex !== overIndex) {
+        const newBeats = arrayMove(beats, activeIndex, overIndex);
+        setBeats(newBeats);
+        saveRowOrder(newBeats);
+        fetchData();
+      }
+    }
   };
-  
+
   const saveRowOrder = async (beatsToSave: Beat[]) => {
-      // Don't try to save if we have no beats
-      if (!beatsToSave.length) return;
-  
-      const rowOrder: RowOrder[] = beatsToSave.map((beat, index) => ({
-        row_id: beat.id,
-        row_number: index + 1
-      }));
-  
-      try {
-        await invoke("save_row_order", { rowOrder });
-        console.log("Row order saved successfully");
-        
-      } catch (error) {
-        // Could add a toast notification here
-        console.error("Error saving row order:", error);
-        setBeats(beats);
-      }
+    // Don't try to save if we have no beats
+    if (!beatsToSave.length) return;
+
+    const rowOrder: RowOrder[] = beatsToSave.map((beat, index) => ({
+      row_id: beat.id,
+      row_number: index + 1
+    }));
+
+    try {
+      await invoke("save_row_order", { rowOrder });
+      console.log("Row order saved successfully");
+
+    } catch (error) {
+      // Could add a toast notification here
+      console.error("Error saving row order:", error);
+      setBeats(beats);
+    }
   };
 
   //TODO: audio player
@@ -205,26 +209,24 @@ function App() {
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
       <Router>
-
-        <div className="flex h-screen bg-gray-100">
-          <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
+      <div className="flex bg-slate-900 justify-center overflow-scroll">          <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
           <div className="flex-1 flex flex-col overflow-hidden">
             <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-600 p-6">
-              <>
-              <h1 className="text-3xl font-bold mb-6">Welcome to Beatbank!</h1>
+              <h1 className="text-3xl font-bold">Welcome to Beatbank!</h1>
               <div className="flex justify-center gap-8">
                 <div className="flex flex-row">
-                  <SettingsDropdown sets={beatCollections} handleAddToCollBtnClick={handleAddToCollBtnClick} selectedBeat={selectedBeat} setIsEditing={setIsEditing} />
+                  <SettingsDropdown
+                    sets={beatCollections}
+                    handleAddToCollBtnClick={handleAddToCollBtnClick}
+                    selectedBeat={selectedBeat}
+                    setIsEditing={setIsEditing}
+                  />
                 </div>
-
                 <button onClick={handleThemeChange}>
                   <div className="flex-row items-center justify-center w-52">
                     <div className="flex items-center text-center justify-center">
                       <SunIcon className="h-6 w-6 justify-center mr-2" />
                       Toggle Theme
-                    </div>
-                    <div className="flex justify-center text-sm italic">
-                      current: {theme}
                     </div>
                   </div>
                 </button>
@@ -239,6 +241,7 @@ function App() {
                     element={
                       <BeatTable
                         beats={beats}
+                        onBeatPlay={playBeat}
                         onBeatSelect={handleBeatSelection}
                         isEditing={isEditing}
                         setIsEditing={setIsEditing}
@@ -258,9 +261,7 @@ function App() {
                     element={<BeatCollTable onDragEnd={handleDragEnd} />}
                   />
                 </Routes>
-
-                </SortableContext>
-              </>
+              </SortableContext>
 
               {/* Overlay when dragging files */}
               {isFileDragging && (
@@ -273,7 +274,16 @@ function App() {
             </main>
           </div>
         </div>
-    </Router>
+      </Router>
+      <div className="flex bg-slate-900 justify-center overflow-scroll">
+        <BeatJockey
+          isPlaying={isPlaying}
+          currentBeat={currentBeat}
+          togglePlayPause={togglePlayPause}
+          stopBeat={stopBeat}
+          audioRef={audioRef}
+        />
+      </div>
     </DndContext >
   );
 }

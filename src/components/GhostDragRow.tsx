@@ -1,11 +1,12 @@
 
 interface GhostRowProps {
-    title: string; // Passing the title of the beat to display
-  }
+  title: string; // Passing the title of the beat to display
+}
 
 function GhostRow({ title }: GhostRowProps) {
-    return (
-      <div
+  return (
+    <tr>
+      <td
         style={{
           padding: '10px',
           backgroundColor: '#5b81fc',
@@ -17,8 +18,9 @@ function GhostRow({ title }: GhostRowProps) {
         }}
       >
         {title}
-      </div>
-    );
-  }
-  
-  export default GhostRow;
+      </td>
+    </tr>
+  );
+}
+
+export default GhostRow;

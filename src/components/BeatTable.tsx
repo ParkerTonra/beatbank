@@ -21,7 +21,7 @@ import EditBeatCard from "./EditBeatCard.tsx";
 interface BeatTableProps {
   beats: Beat[];
   // TODO: audio player
-  // onBeatPlay: (beat: Beat) => void;
+  onBeatPlay: (beat: Beat) => void;
   onBeatSelect: (beat: Beat) => void;
   isEditing: boolean;
   setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
@@ -39,8 +39,7 @@ interface BeatTableProps {
 
 function BeatTable({
   beats,
-  // TODO: audio player
-  // onBeatPlay,
+  onBeatPlay,
   onBeatSelect,
   isEditing,
   setIsEditing,
@@ -81,11 +80,6 @@ function BeatTable({
       window.removeEventListener("keyup", handleKeyUp);
     };
   }, []);
-
-  const onBeatPlay = (beat: Beat) => {
-    // TODO: audio player
-    console.log("handleBeatPlay:", beat);
-  };
 
   const handleRowSelection = (beat: Beat) => {
     const rowId = beat.id.toString();
@@ -209,7 +203,9 @@ function BeatTable({
           ))}
         </tbody>
       </table>
-      <div className="flex px-4 border border-black shadow rounded mt-12 text-sm space-x-4">
+      
+      <div className="flex px-4 border border-black shadow rounded mt-12 text-sm space-x-4 h-12">
+        {/* toggle all columns */}
         <div className="px-1 border-b border-black ">
           <label>
             <input
@@ -221,10 +217,10 @@ function BeatTable({
             Toggle All
           </label>
         </div>
-
+        {/* column visibility toggles */}
         {tableInstance.getAllLeafColumns().map((column) => {
           return (
-            <div key={column.id} className="mb-36">
+            <div key={column.id} className="mb-36 h-1">
               <label>
                 <input
                   type="checkbox"
@@ -233,9 +229,11 @@ function BeatTable({
                 />{" "}
                 {column.id}
               </label>
+              
             </div>
           );
         })}
+        
       </div>
       {isEditing && selectedBeat && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
