@@ -7,9 +7,14 @@ import { DragEndEvent } from '@dnd-kit/core';
 
 interface BeatCollProps {
   onDragEnd: (event: DragEndEvent) => void;
+  onBeatPlay: (beat: Beat) => void;
+  isEditing: boolean;
+  setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
+  selectedBeat: Beat | null;
+  setSelectedBeat: React.Dispatch<React.SetStateAction<Beat | null>>;
 }
 
-const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd }) => {
+const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd, onBeatPlay, isEditing, setIsEditing, selectedBeat, setSelectedBeat }) => {
   const { id } = useParams<{ id: string }>();
   const { 
     beats, 
@@ -21,8 +26,6 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd }) => {
     setColumnVisibility 
   } = useBeats();
 
-  const [selectedBeat, setSelectedBeat] = useState<Beat | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -58,6 +61,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd }) => {
       <BeatTable
         beats={beats}
         onBeatSelect={(beat: Beat) => setSelectedBeat(beat)}
+        onBeatPlay={onBeatPlay}
         isEditing={isEditing}
         setIsEditing={setIsEditing}
         selectedBeat={selectedBeat}

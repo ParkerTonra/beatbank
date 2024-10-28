@@ -209,7 +209,8 @@ function App() {
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
       <Router>
-      <div className="flex bg-slate-900 justify-center overflow-scroll">          <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
+        <div className="flex bg-slate-900 justify-center overflow-scroll">          
+        <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
           <div className="flex-1 flex flex-col overflow-hidden">
             <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-600 p-6">
               <h1 className="text-3xl font-bold">Welcome to Beatbank!</h1>
@@ -258,7 +259,14 @@ function App() {
                   />
                   <Route
                     path="/collection/:id"
-                    element={<BeatCollTable onDragEnd={handleDragEnd} />}
+                    element={<BeatCollTable 
+                    onDragEnd={handleDragEnd} 
+                    onBeatPlay={playBeat}
+                    isEditing={isEditing}
+                    setIsEditing={setIsEditing}
+                    selectedBeat={selectedBeat}
+                    setSelectedBeat={setSelectedBeat}
+                      />}
                   />
                 </Routes>
               </SortableContext>
@@ -284,7 +292,7 @@ function App() {
           audioRef={audioRef}
         />
       </div>
-    </DndContext >
+    </DndContext>
   );
 }
 
