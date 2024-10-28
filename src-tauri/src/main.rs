@@ -6,6 +6,7 @@ mod db;
 mod models;
 mod schema;
 mod store;
+mod tests;
 use diesel::prelude::*;
 use serde_json;
 use std::{
