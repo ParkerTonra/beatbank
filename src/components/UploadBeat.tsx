@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Beat } from './../bindings';
 import { FileEntry, readDir } from "@tauri-apps/api/fs";
 import { Dialog } from "primereact/dialog";
-import { Tooltip } from 'primereact/tooltip';
 
 interface UploadBeatProps {
   fetchData: () => void;
@@ -118,8 +117,8 @@ const UploadBeat: React.FC<UploadBeatProps> = ({ fetchData, selectedBeat }) => {
   return (
     <div className="my-2 flex flex-col">
       <div className="w-full flex justify-center gap-5">
-        <button onClick={handleFileUpload}>Upload a beat</button>
-        <button onClick={handleFolderUpload} className="ml-2">Upload a folder</button>
+        <button onClick={handleFileUpload}>Add a beat</button>
+        <button onClick={handleFolderUpload} className="ml-2">Add a folder</button>
         <button onClick={handleFileDelete} className="ml-2">Delete</button>
         <button onClick={fetchData} className="ml-2">Refresh</button>
         {uploadStatus && <button onClick={() => setShowStatusDialog(true)} className="ml-2 absolute right-2 top-2"><span className="pi pi-info-circle"/></button>}

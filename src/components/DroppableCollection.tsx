@@ -13,10 +13,6 @@ const DroppableCollection: React.FC<DroppableCollectionProps> = ({ collection })
 
   const { active } = useDndContext();
 
-  const style = {
-    backgroundColor: isOver ? 'lightblue' : 'grey',
-  };
-
   const navigate = useNavigate();
 
   const handleClick = () => {
@@ -31,7 +27,6 @@ const DroppableCollection: React.FC<DroppableCollectionProps> = ({ collection })
     <li
       ref={setNodeRef}
       onClick={handleClick}
-      style={style}
       className={`bg-gray-700 p-2 rounded hover:bg-gray-600 transition duration-200 cursor-pointer ${
         isOver ? 'border-2 border-green-500' : ''
       }`}

@@ -144,6 +144,7 @@ dependencies = [
  "chrono",
  "diesel",
  "dotenvy",
+ "open",
  "pyo3",
  "pyo3-build-config",
  "serde",

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Beat } from "./bindings";
+import { Beat, RowOrder } from "./bindings";
 import Sidebar from "./components/Sidebar";
 import "./App.css";
 import "./Main.css";
@@ -10,7 +10,7 @@ import BeatTable from "./components/BeatTable";
 import { SunIcon } from "lucide-react";
 import { useBeats } from "./hooks/useBeats";
 import { loadSettings, saveSettings, getSettingsPath } from './store';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragStartEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { invoke } from "@tauri-apps/api/tauri";
 import { message } from "@tauri-apps/api/dialog";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -18,6 +18,8 @@ import SettingsDropdown from "./components/SettingsDropdown";
 import { HashRouter as Router, Route, Routes } from "react-router-dom";
 import BeatCollTable from "./components/BeatCollection";
 import { listen } from '@tauri-apps/api/event';
+import BeatJockey from "./components/BeatJockey";
+import { useAudio } from "./hooks/useAudio";
 
 function App() {
   const [showSplashScreen, setShowSplashScreen] = useState(true);
@@ -27,8 +29,10 @@ function App() {
   const [settingsPath, setSettingsPath] = useState<string>('');
   const [isFileDragging, setIsFileDragging] = useState(false);
 
+  const { isPlaying, currentBeat, playBeat, stopBeat, togglePlayPause, audioRef } = useAudio();
+
   const sensors = useSensors(
-    useSensor(MouseSensor),
+    useSensor(MouseSensor, { activationConstraint: { distance: 10 } }),
     useSensor(TouchSensor)
   );
 
@@ -97,10 +101,11 @@ function App() {
     }
   };
 
+
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-
-    if (!over) return;
+    if (!over || !active) return;
 
     const activeId = active.id.toString();
     const overId = over.id.toString();
@@ -112,10 +117,38 @@ function App() {
     } else if (activeId.startsWith('sortable-') && overId.startsWith('sortable-')) {
       const activeIndex = beats.findIndex((beat) => `sortable-${beat.id}` === activeId);
       const overIndex = beats.findIndex((beat) => `sortable-${beat.id}` === overId);
+
+      if (activeIndex === -1 || overIndex === -1) {
+        console.error("Could not find beat indices");
+        return;
+      }
+
       if (activeIndex !== overIndex) {
         const newBeats = arrayMove(beats, activeIndex, overIndex);
         setBeats(newBeats);
+        saveRowOrder(newBeats);
+        fetchData();
       }
+    }
+  };
+
+  const saveRowOrder = async (beatsToSave: Beat[]) => {
+    // Don't try to save if we have no beats
+    if (!beatsToSave.length) return;
+
+    const rowOrder: RowOrder[] = beatsToSave.map((beat, index) => ({
+      row_id: beat.id,
+      row_number: index + 1
+    }));
+
+    try {
+      await invoke("save_row_order", { rowOrder });
+      console.log("Row order saved successfully");
+
+    } catch (error) {
+      // Could add a toast notification here
+      console.error("Error saving row order:", error);
+      setBeats(beats);
     }
   };
 
@@ -177,18 +210,20 @@ function App() {
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
       <Router>
-
-        <div className="flex h-screen bg-gray-100">
-          <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
+      <div className="flex bg-slate-900 justify-center overflow-scroll">
+        <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
           <div className="flex-1 flex flex-col overflow-hidden">
             <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-600 p-6">
-              <>
-                <h1 className="text-3xl font-bold font-guerilla mb-4 py-0">BEATBANK</h1>
+              <h1 className="text-3xl font-bold font-guerilla mb-4 py-0">BEATBANK</h1>
               <div className="flex justify-center gap-8">
                 <div className="flex flex-row">
-                  <SettingsDropdown sets={beatCollections} handleAddToCollBtnClick={handleAddToCollBtnClick} selectedBeat={selectedBeat} setIsEditing={setIsEditing} />
+                  <SettingsDropdown
+                    sets={beatCollections}
+                    handleAddToCollBtnClick={handleAddToCollBtnClick}
+                    selectedBeat={selectedBeat}
+                    setIsEditing={setIsEditing}
+                  />
                 </div>
-
                 <button onClick={handleThemeChange}>
                   <div className="flex-row items-center justify-center w-52">
                     <div className="flex items-center text-center justify-center">
@@ -211,6 +246,7 @@ function App() {
                     element={
                       <BeatTable
                         beats={beats}
+                        onBeatPlay={playBeat}
                         onBeatSelect={handleBeatSelection}
                         isEditing={isEditing}
                         setIsEditing={setIsEditing}
@@ -230,9 +266,7 @@ function App() {
                     element={<BeatCollTable onDragEnd={handleDragEnd} />}
                   />
                 </Routes>
-
-                </SortableContext>
-              </>
+              </SortableContext>
 
               {/* Overlay when dragging files */}
               {isFileDragging && (
@@ -245,8 +279,16 @@ function App() {
             </main>
           </div>
         </div>
-        <DragOverlay>{/* Render dragged item */}</DragOverlay>
       </Router>
+      <div className="flex bg-slate-900 justify-center overflow-scroll">
+        <BeatJockey
+          isPlaying={isPlaying}
+          currentBeat={currentBeat}
+          togglePlayPause={togglePlayPause}
+          stopBeat={stopBeat}
+          audioRef={audioRef}
+        />
+      </div>
     </DndContext >
   );
 }
