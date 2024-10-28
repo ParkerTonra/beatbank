@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import {
   useReactTable,
   flexRender,
@@ -21,7 +21,6 @@ import EditBeatCard from "./EditBeatCard.tsx";
 interface BeatTableProps {
   beats: Beat[];
   onBeatPlay: (beat: Beat) => void;
-  onBeatSelect: (beat: Beat) => void;
   isEditing: boolean;
   setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
   selectedBeat: Beat | null;
@@ -39,7 +38,6 @@ interface BeatTableProps {
 function BeatTable({
   beats,
   onBeatPlay,
-  onBeatSelect,
   isEditing,
   setIsEditing,
   selectedBeat,
@@ -50,73 +48,12 @@ function BeatTable({
 }: BeatTableProps) {
   // row selection state
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-
-  // key press state
-  const [lastSelectedRow, setLastSelectedRow] = useState<string | null>(null);
-  const [isCtrlPressed, setIsCtrlPressed] = useState(false);
-  const [isShiftPressed, setIsShiftPressed] = useState(false);
-
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [sorting, setSorting] = useState<SortingState>([])
 
-  // react based on key press state:
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Control") setIsCtrlPressed(true);
-      if (e.key === "Shift") setIsShiftPressed(true);
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === "Control") setIsCtrlPressed(false);
-      if (e.key === "Shift") setIsShiftPressed(false);
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, []);
-
-  const handleRowSelection = (beat: Beat) => {
-    const rowId = beat.id.toString();
-    console.log("handleRowSelection:", rowId);
-    setRowSelection((prev) => {
-      if (isCtrlPressed) {
-        // Toggle the selected row
-        const newSelection: RowSelectionState = { ...prev };
-        newSelection[rowId] = !newSelection[rowId];
-        setLastSelectedRow(rowId);
-        return newSelection;
-      } else if (isShiftPressed && lastSelectedRow) {
-        // Select all rows between last selected and current
-        const newSelection: RowSelectionState = { ...prev };
-        const rowIds = tableInstance.getRowModel().rows.map((row) => row.id);
-        const startIndex = rowIds.indexOf(lastSelectedRow);
-        const endIndex = rowIds.indexOf(rowId);
-        const [start, end] =
-          startIndex < endIndex
-            ? [startIndex, endIndex]
-            : [endIndex, startIndex];
-        for (let i = start; i <= end; i++) {
-          newSelection[rowIds[i]] = true;
-        }
-        return newSelection;
-      } else {
-        // Select only the clicked row
-        setLastSelectedRow(rowId);
-        // get the beat object from the rowId
-        onBeatSelect(beat);
-        return { [rowId]: true } as RowSelectionState;
-      }
-    });
-  };
-
   const finalColumnDef = useMemo(
     () => createColumnDef(onBeatPlay),
-    [onBeatPlay]
+    []
   );
 
   const tableInstance = useReactTable<Beat>({
@@ -140,7 +77,29 @@ function BeatTable({
     enableSorting: true,
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
-  })
+  });
+
+  const getRowRange = (rows: Row<Beat>[], currentIndex: number, selectedIndex: number): Row<Beat>[] => {
+    const [firstIndex, lastIndex] = currentIndex < selectedIndex
+      ? [currentIndex, selectedIndex]
+      : [selectedIndex, currentIndex];
+    return rows.slice(firstIndex, lastIndex + 1);
+  };
+
+  const lastSelectedIndex = useRef('');
+
+  const onRowSelection = (e: React.MouseEvent<HTMLTableRowElement>, row): void => {
+    if (e.shiftKey) {
+      const { rows, rowsById } = tableInstance.getRowModel();
+      const rowsToToggle = getRowRange(rows as Row<Beat>[], Number(row.index), Number(lastSelectedIndex.current));
+      const isCellSelected = rowsById[row.id].getIsSelected();
+      rowsToToggle.forEach((_row) => _row.toggleSelected(!isCellSelected));
+    } else {
+      row.toggleSelected();
+    }
+
+    lastSelectedIndex.current = row.index;
+  }
 
   if (columnVisibility === undefined) {
     return <div>Loading...</div>;
@@ -170,10 +129,10 @@ function BeatTable({
                       )}
                     <div>
                       {header.column.getIsSorted() === "asc" ? (
-                        <span>^</span>
-                      ) : header.column.getIsSorted() === "desc" ? (
-                        <span>v</span>
-                      ) :
+                          <span className="pi pi-arrow-up text-xs" />
+                        ) : header.column.getIsSorted() === "desc" ? (
+                          <span className="pi pi-arrow-down text-xs" />
+                        ) :
                         null
                       }
                     </div>
@@ -195,9 +154,11 @@ function BeatTable({
         <tbody>
           {tableInstance.getRowModel().rows.map((rowElement) => (
             <DraggableRow
+              table={tableInstance}
               row={rowElement as Row<Beat>}
               key={rowElement.id}
-              onRowSelection={handleRowSelection}
+              onRowSelection={onRowSelection}
+              isSelected={rowElement.getIsSelected()}
             />
           ))}
         </tbody>

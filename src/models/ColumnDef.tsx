@@ -21,7 +21,6 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
     header: "",
     cell: ({ row }: { row: Row }) => (
       <div>
-        
         <RowDragHandleCell row={row.original} />
       </div>
       
@@ -38,7 +37,7 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
   {
     accessorKey: "title",
     header: "Title",
-    size: 260
+    size: 120
   },
   {
     accessorKey: "bpm",
