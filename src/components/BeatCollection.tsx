@@ -21,7 +21,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd }) => {
     setColumnVisibility 
   } = useBeats();
 
-  const [selectedBeat, setSelectedBeat] = useState<Beat | null>(null);
+  const [selectedBeat, setSelectedBeat] = useState<Beat | null>(null); // TODO:  Rip this out in favor of tanstack table selected rows
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
