@@ -263,7 +263,7 @@ function App() {
                   />
                   <Route
                     path="/collection/:id"
-                    element={<BeatCollTable onDragEnd={handleDragEnd} />}
+                    element={<BeatCollTable onDragEnd={handleDragEnd} playBeat={playBeat} />}
                   />
                 </Routes>
               </SortableContext>
