@@ -7,9 +7,10 @@ import { DragEndEvent } from '@dnd-kit/core';
 
 interface BeatCollProps {
   onDragEnd: (event: DragEndEvent) => void;
+  playBeat: () => void;
 }
 
-const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd }) => {
+const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd, playBeat }) => {
   const { id } = useParams<{ id: string }>();
   const { 
     beats, 
@@ -21,7 +22,8 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd }) => {
     setColumnVisibility 
   } = useBeats();
 
-  const [selectedBeat, setSelectedBeat] = useState<Beat | null>(null); // TODO:  Rip this out in favor of tanstack table selected rows
+  // TODO:  Rip this out in favor of tanstack table selected rows
+  const [selectedBeat, setSelectedBeat] = useState<Beat | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
@@ -30,10 +32,6 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd }) => {
       fetchSetData(parseInt(id));
     }
   }, [id, fetchSetData]);
-
-  useEffect(() => {
-    console.log('Beats updated:', beats);
-  }, [beats]);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
@@ -57,6 +55,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd }) => {
       <p>Date Played: {currentCollection.date_played || 'N/A'}</p>
       <BeatTable
         beats={beats}
+        onBeatPlay={playBeat}
         onBeatSelect={(beat: Beat) => setSelectedBeat(beat)}
         isEditing={isEditing}
         setIsEditing={setIsEditing}
