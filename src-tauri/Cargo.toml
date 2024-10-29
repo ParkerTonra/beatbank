@@ -5,6 +5,10 @@ description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
 
+[[bin]]
+name = "sidecar"
+path = "sidecar/main.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
@@ -12,7 +16,6 @@ tauri-build = { version = "1", features = [] }
 pyo3-build-config = "0.22.5"
 
 [dependencies]
-
 tauri = { version = "1", features = [ "path-all", "fs-read-dir", "dialog-all", "shell-open"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

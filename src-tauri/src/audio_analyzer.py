@@ -6,7 +6,10 @@ import numpy as np
 
 def analyze(file_path):
     try:
+        print(f"This is python")
         print(f"Starting analysis on {file_path}")
+
+        print(f"Starting Librosa Load on {file_path}")
         y, sr = librosa.load(file_path)
         print(f"Loaded audio signal with shape: {y.shape} and sample rate: {sr}")
 
@@ -75,3 +78,7 @@ def analyze(file_path):
     except Exception as e:
         print(f"Failed to analyze audio: {e}")
         print("This error is from the audio_analyzer.py script")
+
+if __name__ == "__main__":
+    file_path = sys.argv[1]
+    analyze(file_path)
