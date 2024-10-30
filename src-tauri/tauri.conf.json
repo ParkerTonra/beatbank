@@ -56,7 +56,7 @@
         "icons/icon.ico"
       ],
       "resources": [
-        "../python/windows"
+        "../python/macos"
       ]
     }
   }
