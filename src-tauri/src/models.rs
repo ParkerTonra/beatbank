@@ -126,3 +126,9 @@ pub struct RowOrder {
     pub row_id: i32,
     pub row_number: i32,
 }
+
+#[derive(serde::Deserialize)]
+pub struct CollOrder {
+    pub beat_id: i32,
+    pub collection_order: i32,
+}

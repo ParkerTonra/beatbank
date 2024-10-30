@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import BeatTable from './BeatTable';
 import { useBeats } from '../hooks/useBeats';
-import { Beat, RowOrder } from '../bindings';
+import { Beat, CollOrder, RowOrder } from '../bindings';
 import { DragEndEvent } from '@dnd-kit/core';
+import { invoke } from '@tauri-apps/api';
 
 interface BeatCollProps {
   onDragEnd: (event: DragEndEvent) => void;
@@ -18,6 +19,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd, onBeatPla
   const { id } = useParams<{ id: string }>();
   const { 
     beats, 
+    setBeats,
     currentCollection, 
     loading, 
     error, 
@@ -55,13 +57,13 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd, onBeatPla
   const saveCollectionOrder = async (beatsToSave: Beat[]) => {
     if (!beatsToSave.length) return;
 
-    const rowOrder: CollOrder[] = beatsToSave.map((beat, index) => ({
-      row_id: beat.id,
-      row_number: index + 1
+    const collOrder: CollOrder[] = beatsToSave.map((beat, index) => ({
+      beat_id: beat.id,
+      collection_order: index + 1
     }));
 
     try {
-      await invoke("save_row_order", { rowOrder });
+      await invoke("save_collection_order", { collOrder });
       console.log("Row order saved successfully");
 
     } catch (error) {
