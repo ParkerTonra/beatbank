@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import BeatTable from './BeatTable';
 import { useBeats } from '../hooks/useBeats';
-import { Beat } from '../bindings';
+import { Beat, RowOrder } from '../bindings';
 import { DragEndEvent } from '@dnd-kit/core';
 
 interface BeatCollProps {
@@ -52,6 +52,25 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd, onBeatPla
     console.log('Adding beat to collection:', beatId, collectionId);
   };
 
+  const saveCollectionOrder = async (beatsToSave: Beat[]) => {
+    if (!beatsToSave.length) return;
+
+    const rowOrder: CollOrder[] = beatsToSave.map((beat, index) => ({
+      row_id: beat.id,
+      row_number: index + 1
+    }));
+
+    try {
+      await invoke("save_row_order", { rowOrder });
+      console.log("Row order saved successfully");
+
+    } catch (error) {
+      // Could add a toast notification here
+      console.error("Error saving row order:", error);
+      setBeats(beats);
+    }
+  };
+
 
   return (
     <div>
@@ -72,6 +91,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd, onBeatPla
         setColumnVisibility={setColumnVisibility}
         onAddBeatToCollection={handleAddBeatToCollection}
         onDragEnd={onDragEnd}
+        saveRowOrder={saveCollectionOrder}
       />
     </div>
   );

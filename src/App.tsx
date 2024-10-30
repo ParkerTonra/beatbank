@@ -74,6 +74,7 @@ function App() {
       return;
     }
     let beatId = selectedBeat.id;
+    console.log('adding beat to collection:', beatId, collectionId);
     await invoke('add_beat_to_collection', { beatId, collectionId });
     // Refresh data or update state as needed
     fetchData();

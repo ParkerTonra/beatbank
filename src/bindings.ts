@@ -65,3 +65,8 @@ export interface RowOrder {
   row_id: number;
   row_number: number;
 }
+
+export interface CollOrder {
+  beat_id: number;
+  collection_order: number;
+}
