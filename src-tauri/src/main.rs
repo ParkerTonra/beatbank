@@ -106,7 +106,8 @@ fn analyze_and_update_beat(
     println!("Connection check passed");
 
     //Call your Python analysis function
-    match analyze_audio(&file_path) {
+    match analyze_audio(
+        &file_path) {
         Ok((key, tempo)) => {
             println!("Analysis Result: Key: {}, Tempo: {}", key, tempo); // Debug output
             let musical_key_str = key.to_string(); // Ensure key is a String
@@ -154,6 +155,14 @@ fn save_row_order(row_order: Vec<models::RowOrder>, state: State<AppState>) -> R
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
     db::save_row_order(conn, row_order).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn save_collection_order(coll_order: Vec<models::CollOrder>, state: State<AppState>) -> Result<(), String> {
+  let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
+  let conn = &mut conn_guard.conn;
+  db::save_collection_order(conn, coll_order).map_err(|e| e.to_string())?;
+  Ok(())
 }
 
 #[tauri::command]
@@ -299,6 +308,7 @@ fn main() {
             get_beat_collection,
             get_beats_in_collection,
             save_row_order,
+            save_collection_order,
             open_file_location,
             store::load_settings,
             store::save_settings,
