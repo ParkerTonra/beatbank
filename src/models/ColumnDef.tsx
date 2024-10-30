@@ -2,6 +2,7 @@ import RowDragHandleCell from "./../components/RowDragHandleCell.tsx";
 import RowPlayHandleCell from "./../components/RowPlayHandleCell.tsx";
 import { ColumnDef } from "@tanstack/react-table";
 import { Beat } from "../bindings";
+import { format } from "date-fns";
 
 interface Row {
   id: string;
@@ -15,6 +16,10 @@ const formatSecs = (secs?: number): string => {
   return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
 };
 
+const formatDate = (datetime: string): string => {
+  return format(new Date(datetime), "yyyy-MM-dd");
+};
+
 export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Beat>[] => [
   {
     accessorKey: "drag-handle",
@@ -25,9 +30,9 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
       </div>
       
     ),
-    size: 35,
     enableHiding: false,
     enableResizing: false,
+    size: 30
   },
   {
     accessorKey: "id",
@@ -37,7 +42,8 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
   {
     accessorKey: "title",
     header: "Title",
-    size: 120
+    size: 250,
+    cell: ({ cell }) => <div className="truncate">{cell.getValue()}</div>
   },
   {
     accessorKey: "bpm",
@@ -47,23 +53,23 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
   {
     accessorKey: "musical_key",
     header: "Key",
-    size: 35,
-    enableResizing: false,
+    size: 50,
   },
   {
     accessorKey: "duration",
     header: "Duration",
-    size: 35,
+    size: 20,
     cell: ({ row }) => formatSecs(row.original.duration),
   },
   {
     accessorKey: "artist",
     header: "Artist",
   },
-
   {
     accessorKey: "date_created",
     header: "Date Added",
+    cell: ({ cell }) => formatDate(cell.getValue()),
+    maxSize: 40
   },
   {
     accessorKey: "file_path",

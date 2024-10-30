@@ -27,7 +27,13 @@ function DraggableRow({ row, onRowSelection }: DraggableRowProps) {
         className={`cursor-pointer max-h-[50px] ${row.getIsSelected() ? 'bg-blue-900' : ''}`}
       >
         {row.getVisibleCells().map((cell: Cell<Beat, unknown>) => (
-          <td key={cell.id} className="whitespace-nowrap h-[40px]">
+          <td key={cell.id} className="whitespace-nowrap h-[40px] mr-2"
+              style={{
+                width: cell.column.getSize(),
+                maxWidth: cell.column.getSize(),
+                overflowX: "hidden",
+                paddingLeft: "4px",
+              }}>
             {flexRender(cell.column.columnDef.cell, cell.getContext())}
           </td>
         ))}
