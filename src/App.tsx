@@ -126,6 +126,7 @@ function App() {
       if (activeIndex !== overIndex) {
         const newBeats = arrayMove(beats, activeIndex, overIndex);
         setBeats(newBeats);
+        // TODO: if in collection (route), save collection order. Otherwise, save row order.
         saveRowOrder(newBeats);
         fetchData();
       }
