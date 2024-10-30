@@ -5,16 +5,13 @@ import "./App.css";
 import "./Main.css";
 import 'primeicons/primeicons.css';
 import { SplashScreen } from "./components/SplashScreen";
-import UploadBeat from "./components/UploadBeat";
 import BeatTable from "./components/BeatTable";
-import { SunIcon } from "lucide-react";
 import { useBeats } from "./hooks/useBeats";
 import { loadSettings, saveSettings, getSettingsPath } from './store';
 import { DndContext, DragEndEvent, DragStartEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { invoke } from "@tauri-apps/api/tauri";
 import { message } from "@tauri-apps/api/dialog";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import SettingsDropdown from "./components/SettingsDropdown";
 import { HashRouter as Router, Route, Routes } from "react-router-dom";
 import BeatCollTable from "./components/BeatCollection";
 import { listen } from '@tauri-apps/api/event';
@@ -152,9 +149,6 @@ function App() {
     }
   };
 
-  //TODO: audio player
-  // const [playThisBeat, setPlayThisBeat] = useState<Beat | null>(null);
-
   const {
     beats,
     beatCollections,
@@ -215,28 +209,6 @@ function App() {
           <div className="flex-1 flex flex-col overflow-hidden">
             <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-600 p-6">
               <h1 className="text-3xl font-bold font-guerilla mb-4 py-0">BEATBANK</h1>
-              <div className="flex justify-center gap-8">
-                <div className="flex flex-row">
-                  <SettingsDropdown
-                    sets={beatCollections}
-                    handleAddToCollBtnClick={handleAddToCollBtnClick}
-                    selectedBeat={selectedBeat}
-                    setIsEditing={setIsEditing}
-                  />
-                </div>
-                <button onClick={handleThemeChange}>
-                  <div className="flex-row items-center justify-center w-52">
-                    <div className="flex items-center text-center justify-center">
-                      <SunIcon className="h-6 w-6 justify-center mr-2" />
-                      Toggle Theme
-                    </div>
-                    <div className="flex justify-center text-sm italic">
-                      current: {theme}
-                    </div>
-                  </div>
-                </button>
-              </div>
-              <UploadBeat fetchData={fetchData} selectedBeat={selectedBeat} />
               <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
                 strategy={verticalListSortingStrategy}>
                 <Routes>
@@ -250,8 +222,6 @@ function App() {
                         onBeatSelect={handleBeatSelection}
                         isEditing={isEditing}
                         setIsEditing={setIsEditing}
-                        selectedBeat={selectedBeat}
-                        setSelectedBeat={setSelectedBeat}
                         fetchData={fetchData}
                         onBeatsChange={handleBeatsChange}
                         onAddBeatToCollection={handleAddToCollection}

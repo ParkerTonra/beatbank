@@ -26,13 +26,6 @@
 }
 
 @layer components {
-  .icon {
-    width: 96px;
-    height: 96px;
-    margin-top: auto;
-    margin-bottom: 28px;
-  }
-
   .resizer {
     position: absolute;
     right: 0;
@@ -93,9 +86,33 @@
 
 }
 
-.p-tooltip{
-  background-color: purple !important;
-  color: white !important;
-  padding: 8px;
-  border-radius: 8px;
+/* Prime React */
+
+.p-submenu-list {
+  background-color: #1e293b;
+  margin-left: 8px;
+  border-radius: 4px;
+}
+
+.p-dialog, .p-dialog-header, .p-dialog-content {
+  background-color: #1e3a8a;
+  color: white;
+}
+
+.p-menuitem-text {
+  color: white;
+}
+
+.p-menuitem-link {
+  padding: 4px;
+  margin-bottom: 4px;
+}
+
+.p-menuitem-link:hover {
+  background-color: #64748b;
+}
+
+.p-menuitem-icon {
+  color: white;
+  margin-right: 4px;
 }

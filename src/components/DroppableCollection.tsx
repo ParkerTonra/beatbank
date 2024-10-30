@@ -9,7 +9,7 @@ interface DroppableCollectionProps {
 const DroppableCollection: React.FC<DroppableCollectionProps> = ({ collection }) => {
 
   const location = useLocation();
-  const setId = location.pathname.split("/").pop()
+  const setId = location.pathname.split("/").pop();
   const { isOver, setNodeRef } = useDroppable({
     id: `collection-${collection.id}`,
   });
