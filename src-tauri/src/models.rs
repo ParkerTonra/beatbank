@@ -88,6 +88,7 @@ pub struct NewBeatCollection<'a> {
 pub struct NewBeatInCollection<'a> {
     pub beat_id: &'a i32,
     pub beat_collection_id: &'a i32,
+    pub order_in_collection: &'a i32,
 }
 
 #[derive(Queryable, Selectable, Debug)]
@@ -97,6 +98,7 @@ pub struct NewBeatInCollection<'a> {
 pub struct BeatInCollection {
     pub beat_id: i32,
     pub beat_collection_id: i32,
+    pub order_in_collection: i32,
 }
 
 #[derive(serde::Deserialize)]#[derive(AsChangeset)]
