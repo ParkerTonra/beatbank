@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "prebuild": "cd src-tauri &&diesel setup && diesel migration run",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",

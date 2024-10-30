@@ -86,6 +86,7 @@ fn add_beat(state: State<AppState>, file_path: String) -> Result<String, String>
     Ok(format!("New beat added with id: {}", inserted_beat.id))
 }
 
+
 fn analyze_and_update_beat(
     beat_id: i32, 
     file_path: String, 
@@ -328,5 +329,5 @@ fn main() {
             }
         })
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .expect("error while running tauri application");        
 }

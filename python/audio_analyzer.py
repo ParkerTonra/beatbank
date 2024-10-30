@@ -81,5 +81,7 @@ def analyze(file_path):
 
         return key, tempo
     except Exception as e:
-        print(f"Failed to analyze audio: {e}")
+        error_message = f"Failed to analyze audio: {e}"
+        print(error_message)
         print("This error is from the audio_analyzer.py script")
+

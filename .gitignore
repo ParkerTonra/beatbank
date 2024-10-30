@@ -31,6 +31,11 @@ database.sqlite
 #.env
 
 .venv
+windows_venv
+/src-tauri/python/windows
 /src-tauri/src/__pycache__
 src-tauri/src/__pycache__/audio_analyzer.cpython-312.pyc
 .DS_Store
+
+/python/windows/*
+/python/macos/*

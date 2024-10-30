@@ -15,9 +15,16 @@ export default defineConfig(async () => ({
   server: {
     port: 1420,
     strictPort: true,
+    hmr: {
+      overlay: false,  // Disable hot module replacement completely
+    },
     watch: {
       // 3. tell vite to ignore watching `src-tauri`
-      ignored: ["**/src-tauri/**"],
+      ignored: ["**/src-tauri/**", "!src-tauri/python/**"],
+    },
+    fs: {
+      strict: true,
+      allow: ["src"],  // Only allow watching files in the `src` directory
     },
   },
 }));
