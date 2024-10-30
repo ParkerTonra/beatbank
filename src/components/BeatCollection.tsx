@@ -55,6 +55,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd, onBeatPla
   };
 
   const saveCollectionOrder = async (beatsToSave: Beat[]) => {
+    console.log('Saving collection order:', beatsToSave);
     if (!beatsToSave.length) return;
 
     const collOrder: CollOrder[] = beatsToSave.map((beat, index) => ({
@@ -64,7 +65,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd, onBeatPla
 
     try {
       await invoke("save_collection_order", { collOrder });
-      console.log("Row order saved successfully");
+      console.log("Collection order saved successfully");
 
     } catch (error) {
       // Could add a toast notification here
