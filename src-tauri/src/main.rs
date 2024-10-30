@@ -14,14 +14,13 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use crate::models::BeatChangeset;
 use crate::models::{Beat, BeatCollection};
 use tauri::{ Manager, State};
 
 struct DatabaseConnection {
     conn: SqliteConnection,
 }
-
-
 
 
 impl Drop for DatabaseConnection {
@@ -139,7 +138,17 @@ fn delete_beat(id: i32, state: State<AppState>) -> Result<(), String> {
     db::delete_beat(&mut *conn, id).map_err(|e| e.to_string())?;
     Ok(())
 }
-use crate::models::BeatChangeset;
+
+
+#[tauri::command]
+fn delete_beats(ids: Vec<i32>, state: State<AppState>) -> Result<(), String> {
+    let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
+    let conn = &mut conn_guard.conn;
+    db::delete_beats(&mut *conn, ids).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
 #[tauri::command]
 fn update_beat(beat: BeatChangeset, state: State<AppState>) -> Result<(), String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
@@ -230,6 +239,21 @@ fn add_beat_to_collection(
     db::add_beat_to_collection(&mut *conn, collection_id, beat_id).map_err(|e| e.to_string())?;
     Ok(())
 }
+
+#[tauri::command]
+fn add_beats_to_collection(
+    state: State<AppState>,
+    collection_id: i32,
+    ids: Vec<i32>,
+) -> Result<(), String> {
+    let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
+    let conn = &mut conn_guard.conn;
+    db::add_beats_to_collection(&mut *conn, collection_id, ids).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+
 // Opens the file location in the default file manager & selects the file
 // Needs to be tested on Mac & Linux
 #[tauri::command]
@@ -271,6 +295,8 @@ async fn open_file_location(path: String) -> Result<(), String> {
 
     Ok(())
 }
+
+
 fn main() {
     println!("Starting beatbank...");
 
@@ -290,12 +316,14 @@ fn main() {
             fetch_beats,
             add_beat,
             delete_beat,
+            delete_beats,
             update_beat,
             fetch_column_vis, 
             new_beat_collection, 
             fetch_collections,
             delete_beat_collection,
             add_beat_to_collection,
+            add_beats_to_collection,
             get_beat_collection,
             get_beats_in_collection,
             save_row_order,

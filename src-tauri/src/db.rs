@@ -103,6 +103,14 @@ pub fn delete_beat(conn: &mut SqliteConnection, id: i32) -> Result<(), DieselErr
         .map(|_| ())
 }
 
+pub fn delete_beats(conn: &mut SqliteConnection, ids: Vec<i32>) -> Result<(), DieselError> {
+    use crate::schema::beats;
+
+    diesel::delete(beats::table.filter(beats::id.eq_any(ids)))
+        .execute(conn)
+        .map(|_| ())
+}
+
 pub fn update_beat(conn: &mut SqliteConnection, beat: BeatChangeset) -> Result<(), DieselError> {
     use crate::schema::beats::dsl::*;
 
@@ -157,6 +165,26 @@ pub fn add_beat_to_collection(
             set_beat::dsl::beat_id.eq(beat_id),
             set_beat::dsl::beat_collection_id.eq(collection_id),
         ))
+        .execute(conn)
+        .map(|_| ())
+}
+
+pub fn add_beats_to_collection(
+    conn: &mut SqliteConnection,
+    collection_id: i32,
+    ids: Vec<i32>,
+) -> Result<(), DieselError> {
+    use crate::schema::set_beat;
+
+    // Create a list of values to insert for each beat_id in beat_ids
+    let new_records: Vec<_> = ids
+        .into_iter()
+        .map(|beat_id| (set_beat::dsl::beat_id.eq(beat_id), set_beat::dsl::beat_collection_id.eq(collection_id)))
+        .collect();
+
+    // Insert all the new records into the set_beat table in a single batch
+    diesel::insert_into(set_beat::table)
+        .values(&new_records)
         .execute(conn)
         .map(|_| ())
 }
