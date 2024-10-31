@@ -146,7 +146,6 @@ dependencies = [
  "dotenvy",
  "open",
  "pyo3",
- "pyo3-build-config",
  "serde",
  "serde_json",
  "symphonia",
