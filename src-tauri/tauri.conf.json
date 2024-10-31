@@ -30,7 +30,14 @@
       },
       "shell": {
         "all": false,
-        "open": "true"
+        "open": "true",
+        "scope": [
+          {
+            "name": "sidecar",
+            "sidecar": true,
+            "args": true
+          }
+        ]
       }
     },
     "windows": [
@@ -54,6 +61,12 @@
         "icons/128x128@2x.png",
         "icons/icon.icns",
         "icons/icon.ico"
+      ],
+      "externalBin": [
+        "dist/audio_analyzer"
+      ],
+      "resources": [
+        "../python/windows"
       ]
     }
   }
