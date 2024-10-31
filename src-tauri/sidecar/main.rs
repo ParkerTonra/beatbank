@@ -3,7 +3,12 @@ use std::process::Command;
 fn main() {
     println!("Running the bundled Python script...");
 
-    let py_executable_path = "dist/audio_analyzer.exe";
+
+    let py_executable_path = if cfg!(target_os = "windows") {
+        "dist/audio_analyzer.exe"
+    } else {
+        "dist/audio_analyzer"
+    };
 
     let output = Command::new(py_executable_path)
         .arg("some_argument") // Pass any arguments if needed
