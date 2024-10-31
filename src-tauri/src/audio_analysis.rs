@@ -55,7 +55,8 @@ pub fn analyze_audio(file_path: &str) -> PyResult<(String, f64)> {
             let result: Vec<&str> = output_str.trim().split(',').collect();
             if result.len() == 2 {
                 let key = result[0].to_string();
-                let tempo: f64 = result[1].parse().expect("Failed to parse tempo");
+                let tempo_str = result[1].trim_matches(['[', ']'].as_ref());
+                let tempo: f64 = tempo_str.parse().expect("Failed to parse tempo");
                 Ok((key, tempo))
             } else {
                 Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Invalid script output"))
