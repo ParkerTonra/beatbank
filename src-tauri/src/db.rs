@@ -223,15 +223,34 @@ pub fn save_row_order(conn: &mut SqliteConnection, row_number: Vec<crate::models
     Ok(())
 }
 
-pub fn save_collection_order(conn: &mut SqliteConnection, coll_order: Vec<crate::models::CollOrder>) -> Result<(), DieselError> {
+pub fn save_collection_order(
+    conn: &mut SqliteConnection,
+    coll_order: Vec<crate::models::CollOrder>,
+    collection_id: i32
+) -> Result<(), DieselError> {
     use crate::schema::set_beat::dsl::*;
     
-    for row in coll_order {
-        diesel::update(set_beat.find((row.collection_order, row.beat_id))) // Find the beat with the given ID
-            .set(order_in_collection.eq(row.collection_order))
+    // Start a transaction
+    conn.transaction(|conn| {
+        // First, reset all orders for the given collection to ensure clean state
+        diesel::update(set_beat)
+            .filter(beat_collection_id.eq(collection_id))
+            .set(order_in_collection.eq(0))
             .execute(conn)?;
-    }
-    Ok(())
+        
+        // Then update each beat with its new order
+        for row in coll_order {
+            diesel::update(set_beat)
+                .filter(
+                    beat_collection_id.eq(collection_id)
+                        .and(beat_id.eq(row.beat_id))
+                )
+                .set(order_in_collection.eq(row.collection_order))
+                .execute(conn)?;
+        }
+        
+        Ok(())
+    })
 }
 
 #[cfg(test)]

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Beat, RowOrder } from "./bindings";
+import { Beat, CollOrder, RowOrder } from "./bindings";
 import Sidebar from "./components/Sidebar";
 import "./App.css";
 import "./Main.css";
@@ -14,19 +14,24 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { message } from "@tauri-apps/api/dialog";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import SettingsDropdown from "./components/SettingsDropdown";
-import { HashRouter as Router, Route, Routes } from "react-router-dom";
+import { HashRouter as Router, Route, Routes, useLocation } from "react-router-dom";
 import BeatCollTable from "./components/BeatCollection";
 import { listen } from '@tauri-apps/api/event';
 import BeatJockey from "./components/BeatJockey";
 import { useAudio } from "./hooks/useAudio";
 
-function App() {
+function AppContainer() {
   const [showSplashScreen, setShowSplashScreen] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedBeat, setSelectedBeat] = useState<Beat | null>(null);
   const [theme, setTheme] = useState<string>('light');
   const [settingsPath, setSettingsPath] = useState<string>('');
   const [isFileDragging, setIsFileDragging] = useState(false);
+
+  const location = useLocation();
+  const collectionIdMatch = location.pathname.match(/\/collection\/(\d+)/);
+  const isInCollection = Boolean(collectionIdMatch);
+  const collectionId = collectionIdMatch ? parseInt(collectionIdMatch[1], 10) : null;
 
   const { isPlaying, currentBeat, playBeat, stopBeat, togglePlayPause, audioRef } = useAudio();
 
@@ -101,34 +106,97 @@ function App() {
     }
   };
 
+  const saveCollectionOrder = async (collectionId: number, beatsToSave: Beat[]) => {
+  console.log('Saving collection order:', { collectionId, beatsToSave });
+  
+  if (!beatsToSave.length) return;
+  
+  // Create sequential order numbers starting from 1 for the beats in this collection
+  const collOrder: CollOrder[] = beatsToSave.map((beat, index) => ({
+    beat_id: beat.id,
+    collection_order: index + 1  // This will now be 1, 2, 3 for each collection's beats
+  }));
 
-
+  try {
+    await invoke("save_collection_order", { 
+      payload: {
+        collection_id: collectionId,
+        coll_order: collOrder
+      }
+    });
+    
+    console.log("Collection order saved successfully", {
+      collectionId,
+      numberOfBeats: beatsToSave.length,
+      orders: collOrder.map(co => ({
+        beatId: co.beat_id,
+        order: co.collection_order
+      }))
+    });
+  } catch (error) {
+    console.error("Error saving collection order:", error);
+    throw error;
+  }
+};
+  
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || !active) return;
-
+  
     const activeId = active.id.toString();
     const overId = over.id.toString();
-
+  
+    // Handle dropping a beat into a collection
     if (overId.startsWith('collection-') && activeId.startsWith('beat-')) {
-      const collectionId = parseInt(overId.replace('collection-', ''), 10);
+      const targetCollectionId = parseInt(overId.replace('collection-', ''), 10);
       const beatId = parseInt(activeId.replace('beat-', ''), 10);
-      handleAddToCollection(collectionId, beatId);
-    } else if (activeId.startsWith('sortable-') && overId.startsWith('sortable-')) {
-      const activeIndex = beats.findIndex((beat) => `sortable-${beat.id}` === activeId);
-      const overIndex = beats.findIndex((beat) => `sortable-${beat.id}` === overId);
-
+      handleAddToCollection(targetCollectionId, beatId);
+      return;
+    }
+  
+    // Handle reordering beats
+    if (activeId.startsWith('sortable-') && overId.startsWith('sortable-')) {
+      const activeBeatId = parseInt(activeId.replace('sortable-', ''), 10);
+      const overBeatId = parseInt(overId.replace('sortable-', ''), 10);
+  
+      const activeIndex = beats.findIndex(beat => beat.id === activeBeatId);
+      const overIndex = beats.findIndex(beat => beat.id === overBeatId);
+  
       if (activeIndex === -1 || overIndex === -1) {
         console.error("Could not find beat indices");
         return;
       }
-
+  
       if (activeIndex !== overIndex) {
         const newBeats = arrayMove(beats, activeIndex, overIndex);
         setBeats(newBeats);
-        // TODO: if in collection (route), save collection order. Otherwise, save row order.
-        saveRowOrder(newBeats);
-        fetchData();
+  
+        // If we're in a collection view, save the collection order
+        if (isInCollection && collectionId) {
+          console.log('Saving collection order:', {
+            collectionId,
+            beatsCount: newBeats.length,
+            beatIds: newBeats.map(b => b.id)
+          });
+          saveCollectionOrder(collectionId, newBeats)
+            .then(() => {
+              // After saving collection order, refresh the collection data
+              fetchSetData(collectionId);
+            })
+            .catch(error => {
+              console.error('Error saving collection order:', error);
+            });
+        } else {
+          // For main table order
+          saveRowOrder(newBeats)
+            .then(() => {
+              // Refresh main table data
+              fetchData();
+            })
+            .catch(error => {
+              console.error('Error saving row order:', error);
+            });
+        }
       }
     }
   };
@@ -152,7 +220,6 @@ function App() {
       setBeats(beats);
     }
   };
-
   //TODO: audio player
   // const [playThisBeat, setPlayThisBeat] = useState<Beat | null>(null);
 
@@ -164,6 +231,7 @@ function App() {
     error,
     setBeats,
     setColumnVisibility,
+    fetchSetData
   } = useBeats();
 
   useEffect(() => {
@@ -210,7 +278,6 @@ function App() {
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
-      <Router>
         <div className="flex bg-slate-900 justify-center overflow-scroll">          
         <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
           <div className="flex-1 flex flex-col overflow-hidden">
@@ -256,6 +323,8 @@ function App() {
                         columnVisibility={columnVisibility}
                         setColumnVisibility={setColumnVisibility}
                         onDragEnd={handleDragEnd}
+                        saveRowOrder={saveRowOrder}
+                        saveCollectionOrder={saveCollectionOrder}
                       />
                     }
                   />
@@ -268,6 +337,8 @@ function App() {
                     setIsEditing={setIsEditing}
                     selectedBeat={selectedBeat}
                     setSelectedBeat={setSelectedBeat}
+                    saveRowOrder={saveRowOrder}
+                    saveCollectionOrder={saveCollectionOrder}
                       />}
                   />
                 </Routes>
@@ -284,7 +355,6 @@ function App() {
             </main>
           </div>
         </div>
-      </Router>
       <div className="flex bg-slate-900 justify-center overflow-scroll">
         <BeatJockey
           isPlaying={isPlaying}
@@ -295,6 +365,14 @@ function App() {
         />
       </div>
     </DndContext>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContainer />
+    </Router>
   );
 }
 

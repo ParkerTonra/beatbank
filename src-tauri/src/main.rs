@@ -7,6 +7,8 @@ mod models;
 mod schema;
 mod store;
 use diesel::prelude::*;
+use models::CollOrder;
+use serde::Deserialize;
 use serde_json;
 use std::{
     env,
@@ -21,7 +23,11 @@ struct DatabaseConnection {
     conn: SqliteConnection,
 }
 
-
+#[derive(Deserialize)]
+struct CollectionOrderPayload {
+    collection_id: i32,
+    coll_order: Vec<CollOrder>
+}
 
 
 impl Drop for DatabaseConnection {
@@ -157,12 +163,22 @@ fn save_row_order(row_order: Vec<models::RowOrder>, state: State<AppState>) -> R
     db::save_row_order(conn, row_order).map_err(|e| e.to_string())
 }
 
+
 #[tauri::command]
-fn save_collection_order(coll_order: Vec<models::CollOrder>, state: State<AppState>) -> Result<(), String> {
-  let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
-  let conn = &mut conn_guard.conn;
-  db::save_collection_order(conn, coll_order).map_err(|e| e.to_string())?;
-  Ok(())
+fn save_collection_order(
+    payload: CollectionOrderPayload, // payload is a struct with two fields: beat_id and collection_order
+    state: State<AppState>
+) -> Result<(), String> {
+    let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
+    let conn = &mut conn_guard.conn;
+    
+    db::save_collection_order(
+        conn,
+        payload.coll_order,
+        payload.collection_id
+    ).map_err(|e| e.to_string())?;
+    
+    Ok(())
 }
 
 #[tauri::command]
