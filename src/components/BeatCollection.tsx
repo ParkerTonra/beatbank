@@ -13,9 +13,11 @@ interface BeatCollProps {
   setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
   selectedBeat: Beat | null;
   setSelectedBeat: React.Dispatch<React.SetStateAction<Beat | null>>;
+  saveRowOrder: (beatsToSave: Beat[]) => Promise<void>;
+  saveCollectionOrder: (collectionId: number, beatsToSave: Beat[]) => Promise<void>;
 }
 
-const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd, onBeatPlay, isEditing, setIsEditing, selectedBeat, setSelectedBeat }) => {
+const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd, onBeatPlay, isEditing, setIsEditing, selectedBeat, setSelectedBeat, saveRowOrder, saveCollectionOrder }) => {
   const { id } = useParams<{ id: string }>();
   const { 
     beats, 
@@ -25,7 +27,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd, onBeatPla
     error, 
     fetchSetData, 
     columnVisibility, 
-    setColumnVisibility 
+    setColumnVisibility,
   } = useBeats();
 
 
@@ -54,25 +56,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd, onBeatPla
     console.log('Adding beat to collection:', beatId, collectionId);
   };
 
-  const saveCollectionOrder = async (beatsToSave: Beat[]) => {
-    console.log('Saving collection order:', beatsToSave);
-    if (!beatsToSave.length) return;
-
-    const collOrder: CollOrder[] = beatsToSave.map((beat, index) => ({
-      beat_id: beat.id,
-      collection_order: index + 1
-    }));
-
-    try {
-      await invoke("save_collection_order", { collOrder });
-      console.log("Collection order saved successfully");
-
-    } catch (error) {
-      // Could add a toast notification here
-      console.error("Error saving row order:", error);
-      setBeats(beats);
-    }
-  };
+  
 
 
   return (
@@ -94,7 +78,8 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd, onBeatPla
         setColumnVisibility={setColumnVisibility}
         onAddBeatToCollection={handleAddBeatToCollection}
         onDragEnd={onDragEnd}
-        saveRowOrder={saveCollectionOrder}
+        saveRowOrder={saveRowOrder}
+        saveCollectionOrder={saveCollectionOrder}
       />
     </div>
   );
