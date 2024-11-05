@@ -186,9 +186,15 @@ pub fn get_beats_in_collection(
 ) -> Result<Vec<Beat>, diesel::result::Error> {
     use crate::schema::beats;
     use crate::schema::set_beat;
-    set_beat::table
+    
+    // Use alias for clarity with join
+    let beats = beats::table;
+    let set_beat = set_beat::table;
+
+    set_beat
         .filter(set_beat::dsl::beat_collection_id.eq(collection_id))
-        .inner_join(beats::table)
+        .inner_join(beats)
+        .order_by(set_beat::dsl::order_in_collection.asc())
         .select((
             beats::dsl::id,
             beats::dsl::title,
@@ -208,7 +214,6 @@ pub fn get_beats_in_collection(
             beats::dsl::date_created,
             beats::dsl::row_order,
         ))
-        .order_by(order_in_collection.asc())
         .load::<Beat>(conn)
 }
 

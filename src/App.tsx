@@ -107,38 +107,35 @@ function AppContainer() {
   };
 
   const saveCollectionOrder = async (collectionId: number, beatsToSave: Beat[]) => {
-  console.log('Saving collection order:', { collectionId, beatsToSave });
+    console.log('Saving collection order:', { collectionId, beatsToSave });
   
-  if (!beatsToSave.length) return;
+    if (!beatsToSave.length) return;
   
-  // Create sequential order numbers starting from 1 for the beats in this collection
-  const collOrder: CollOrder[] = beatsToSave.map((beat, index) => ({
-    beat_id: beat.id,
-    collection_order: index + 1  // This will now be 1, 2, 3 for each collection's beats
-  }));
+    const collOrder: CollOrder[] = beatsToSave.map((beat, index) => ({
+      beat_id: beat.id,
+      collection_order: index + 1
+    }));
+  
+    try {
+      // Update collection beats state
+      setCollectionBeats(beatsToSave);
+      
+      await invoke("save_collection_order", {
+        payload: {
+          collection_id: collectionId,
+          coll_order: collOrder
+        }
+      });
+      
+      console.log("Collection order saved successfully");
+      await fetchSetData(collectionId);
+    } catch (error) {
+      console.error("Error saving collection order:", error);
+      await fetchSetData(collectionId);
+      throw error;
+    }
+  };
 
-  try {
-    await invoke("save_collection_order", { 
-      payload: {
-        collection_id: collectionId,
-        coll_order: collOrder
-      }
-    });
-    
-    console.log("Collection order saved successfully", {
-      collectionId,
-      numberOfBeats: beatsToSave.length,
-      orders: collOrder.map(co => ({
-        beatId: co.beat_id,
-        order: co.collection_order
-      }))
-    });
-  } catch (error) {
-    console.error("Error saving collection order:", error);
-    throw error;
-  }
-};
-  
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || !active) return;
@@ -159,8 +156,9 @@ function AppContainer() {
       const activeBeatId = parseInt(activeId.replace('sortable-', ''), 10);
       const overBeatId = parseInt(overId.replace('sortable-', ''), 10);
   
-      const activeIndex = beats.findIndex(beat => beat.id === activeBeatId);
-      const overIndex = beats.findIndex(beat => beat.id === overBeatId);
+      let beatsToReorder = isInCollection ? collectionBeats : beats;
+      const activeIndex = beatsToReorder.findIndex(beat => beat.id === activeBeatId);
+      const overIndex = beatsToReorder.findIndex(beat => beat.id === overBeatId);
   
       if (activeIndex === -1 || overIndex === -1) {
         console.error("Could not find beat indices");
@@ -168,34 +166,31 @@ function AppContainer() {
       }
   
       if (activeIndex !== overIndex) {
-        const newBeats = arrayMove(beats, activeIndex, overIndex);
-        setBeats(newBeats);
-  
-        // If we're in a collection view, save the collection order
+        const newBeats = arrayMove(beatsToReorder, activeIndex, overIndex);
+        
+        // Immediately update UI state based on context
         if (isInCollection && collectionId) {
+          setCollectionBeats(newBeats);
           console.log('Saving collection order:', {
             collectionId,
             beatsCount: newBeats.length,
             beatIds: newBeats.map(b => b.id)
           });
-          saveCollectionOrder(collectionId, newBeats)
-            .then(() => {
-              // After saving collection order, refresh the collection data
-              fetchSetData(collectionId);
-            })
-            .catch(error => {
-              console.error('Error saving collection order:', error);
-            });
+          
+          // Save to backend without waiting
+          saveCollectionOrder(collectionId, newBeats).catch(error => {
+            console.error('Error saving collection order:', error);
+            // Revert UI state on error
+            setCollectionBeats(beatsToReorder);
+          });
         } else {
-          // For main table order
-          saveRowOrder(newBeats)
-            .then(() => {
-              // Refresh main table data
-              fetchData();
-            })
-            .catch(error => {
-              console.error('Error saving row order:', error);
-            });
+          setBeats(newBeats);
+          // Save to backend without waiting
+          saveRowOrder(newBeats).catch(error => {
+            console.error('Error saving row order:', error);
+            // Revert UI state on error
+            setBeats(beatsToReorder);
+          });
         }
       }
     }
@@ -231,7 +226,9 @@ function AppContainer() {
     error,
     setBeats,
     setColumnVisibility,
-    fetchSetData
+    fetchSetData,
+    collectionBeats,
+    setCollectionBeats
   } = useBeats();
 
   useEffect(() => {
@@ -250,6 +247,13 @@ function AppContainer() {
 
     fetchSettings(); // Invoke the fetchSettings function when the component mounts
   }, []); // Empty dependency array ensures this runs only once
+
+  useEffect(() => {
+    if (collectionId) {
+      fetchSetData(collectionId);
+    }
+  }, [collectionId]);
+
 
   // Define a function to handle theme changes
   const handleThemeChange = async () => {
@@ -278,60 +282,61 @@ function AppContainer() {
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
-        <div className="flex bg-slate-900 justify-center overflow-scroll">          
+      <div className="flex bg-slate-900 justify-center overflow-scroll">
         <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-600 p-6">
-              <h1 className="text-3xl font-bold">Welcome to Beatbank!</h1>
-              <div className="flex justify-center gap-8">
-                <div className="flex flex-row">
-                  <SettingsDropdown
-                    sets={beatCollections}
-                    handleAddToCollBtnClick={handleAddToCollBtnClick}
-                    selectedBeat={selectedBeat}
-                    setIsEditing={setIsEditing}
-                  />
-                </div>
-                <button onClick={handleThemeChange}>
-                  <div className="flex-row items-center justify-center w-52">
-                    <div className="flex items-center text-center justify-center">
-                      <SunIcon className="h-6 w-6 justify-center mr-2" />
-                      Toggle Theme
-                    </div>
-                  </div>
-                </button>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-600 p-6">
+            <h1 className="text-3xl font-bold">Welcome to Beatbank!</h1>
+            <div className="flex justify-center gap-8">
+              <div className="flex flex-row">
+                <SettingsDropdown
+                  sets={beatCollections}
+                  handleAddToCollBtnClick={handleAddToCollBtnClick}
+                  selectedBeat={selectedBeat}
+                  setIsEditing={setIsEditing}
+                />
               </div>
-              <UploadBeat fetchData={fetchData} selectedBeat={selectedBeat} />
-              <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
-                strategy={verticalListSortingStrategy}>
-                <Routes>
-                  {/* default route for main beat table */}
-                  <Route
-                    path="/"
-                    element={
-                      <BeatTable
-                        beats={beats}
-                        onBeatPlay={playBeat}
-                        onBeatSelect={handleBeatSelection}
-                        isEditing={isEditing}
-                        setIsEditing={setIsEditing}
-                        selectedBeat={selectedBeat}
-                        setSelectedBeat={setSelectedBeat}
-                        fetchData={fetchData}
-                        onBeatsChange={handleBeatsChange}
-                        onAddBeatToCollection={handleAddToCollection}
-                        columnVisibility={columnVisibility}
-                        setColumnVisibility={setColumnVisibility}
-                        onDragEnd={handleDragEnd}
-                        saveRowOrder={saveRowOrder}
-                        saveCollectionOrder={saveCollectionOrder}
-                      />
-                    }
-                  />
-                  <Route
-                    path="/collection/:id"
-                    element={<BeatCollTable 
-                    onDragEnd={handleDragEnd} 
+              <button onClick={handleThemeChange}>
+                <div className="flex-row items-center justify-center w-52">
+                  <div className="flex items-center text-center justify-center">
+                    <SunIcon className="h-6 w-6 justify-center mr-2" />
+                    Toggle Theme
+                  </div>
+                </div>
+              </button>
+            </div>
+            <UploadBeat fetchData={fetchData} selectedBeat={selectedBeat} />
+            <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
+              strategy={verticalListSortingStrategy}>
+              <Routes>
+                {/* default route for main beat table */}
+                <Route
+                  path="/"
+                  element={
+                    <BeatTable
+                      beats={beats}
+                      onBeatPlay={playBeat}
+                      onBeatSelect={handleBeatSelection}
+                      isEditing={isEditing}
+                      setIsEditing={setIsEditing}
+                      selectedBeat={selectedBeat}
+                      setSelectedBeat={setSelectedBeat}
+                      fetchData={fetchData}
+                      onBeatsChange={handleBeatsChange}
+                      //onAddBeatToCollection={handleAddToCollection}
+                      columnVisibility={columnVisibility}
+                      setColumnVisibility={setColumnVisibility}
+                      onDragEnd={handleDragEnd}
+                      saveRowOrder={saveRowOrder}
+                      saveCollectionOrder={saveCollectionOrder}
+                    />
+                  }
+                />
+                <Route
+                  path="/collection/:id"
+                  element={<BeatCollTable
+                    beats={collectionBeats}
+                    onDragEnd={handleDragEnd}
                     onBeatPlay={playBeat}
                     isEditing={isEditing}
                     setIsEditing={setIsEditing}
@@ -339,22 +344,22 @@ function AppContainer() {
                     setSelectedBeat={setSelectedBeat}
                     saveRowOrder={saveRowOrder}
                     saveCollectionOrder={saveCollectionOrder}
-                      />}
-                  />
-                </Routes>
-              </SortableContext>
+                  />}
+                />
+              </Routes>
+            </SortableContext>
 
-              {/* Overlay when dragging files */}
-              {isFileDragging && (
-                <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="text-2xl font-bold text-white text-center bg-black bg-opacity-75 p-6 rounded-lg">
-                    Drop files here
-                  </div>
+            {/* Overlay when dragging files */}
+            {isFileDragging && (
+              <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
+                <div className="text-2xl font-bold text-white text-center bg-black bg-opacity-75 p-6 rounded-lg">
+                  Drop files here
                 </div>
-              )}
-            </main>
-          </div>
+              </div>
+            )}
+          </main>
         </div>
+      </div>
       <div className="flex bg-slate-900 justify-center overflow-scroll">
         <BeatJockey
           isPlaying={isPlaying}

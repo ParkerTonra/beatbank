@@ -34,7 +34,7 @@ interface BeatTableProps {
   setColumnVisibility: (columnVis: ColumnVis) => void;
   saveRowOrder: (beatsToSave: Beat[]) => Promise<void>;
   saveCollectionOrder: (collectionId: number, beatsToSave: Beat[]) => Promise<void>;
-  onAddBeatToCollection: (beatId: number, collectionId: number) => void;
+  //onAddBeatToCollection: (beatId: number, collectionId: number) => void;
   onDragEnd: (event: DragEndEvent) => void;
 }
 

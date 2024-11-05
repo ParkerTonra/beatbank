@@ -1,5 +1,4 @@
-
-import { useState, useCallback, Dispatch, SetStateAction } from "react";
+import { useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { Beat, BeatCollection } from "./../bindings";
 
@@ -15,16 +14,14 @@ const defaultColumnVisibility = {
 };
 
 export const useBeats = () => {
-    const [beats, setBeats]: [Beat[], Dispatch<SetStateAction<Beat[]>>] =
-    useState<Beat[]>([]);
-  const [columnVisibility, setColumnVisibility] = useState(
-    defaultColumnVisibility
-  );
-
-  const [beatCollections, setBeatCollections]: [BeatCollection[], Dispatch<SetStateAction<BeatCollection[]>>] = useState<BeatCollection[]>([]);
+  const [beats, setBeats] = useState<Beat[]>([]);
+  const [collectionBeats, setCollectionBeats] = useState<Beat[]>([]);
+  const [columnVisibility, setColumnVisibility] = useState(defaultColumnVisibility);
+  const [beatCollections, setBeatCollections] = useState<BeatCollection[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [currentCollection, setCurrentCollection] = useState<BeatCollection | null>(null);
+
   // fetch sets, data, and column visibility for initialization
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -34,20 +31,15 @@ export const useBeats = () => {
       const [beatsResult, columnVisResult, collectionsResult] = await Promise.all([
         invoke<string>("fetch_beats"),
         invoke<string>("fetch_column_vis"),
-        invoke<string>("fetch_collections"), 
+        invoke<string>("fetch_collections"),
       ]);
-
       const myBeats = JSON.parse(beatsResult);
       setBeats(myBeats);
-
       let columnVis = JSON.parse(columnVisResult);
       if (columnVis && typeof columnVis === "object" && "0" in columnVis) {
         columnVis = columnVis[0];
       }
-
       setColumnVisibility({ ...defaultColumnVisibility, ...columnVis });
-
-
       let myBeatCollections = JSON.parse(collectionsResult);
       setBeatCollections(myBeatCollections);
     } catch (error) {
@@ -59,28 +51,27 @@ export const useBeats = () => {
   }, []);
 
   const fetchSetData = useCallback(async (setId: number) => {
-    console.log("Fetching set data...");
+    console.log("Fetching set data for ID:", setId);
     setLoading(true);
     setError(null);
     try {
       // Fetch beat collection data
       const collectionResponse = await invoke<BeatCollection>('get_beat_collection', { id: setId });
       setCurrentCollection(collectionResponse);
-
+      
       // Fetch beats in the collection
       const beatsResponse = await invoke<Beat[]>('get_beats_in_collection', { id: setId });
-
       if (Array.isArray(beatsResponse)) {
-        setBeats(beatsResponse);
+        setCollectionBeats(beatsResponse);
       } else {
         console.error('Unexpected response format for beats:', beatsResponse);
         setError(new Error('Received invalid data format for beats.'));
-        setBeats([]);
+        setCollectionBeats([]);
       }
     } catch (err) {
-      console.error('Error fetching data:', err);
+      console.error('Error fetching collection data:', err);
       setError(new Error('An error occurred while fetching data.'));
-      setBeats([]);
+      setCollectionBeats([]);
       setCurrentCollection(null);
     } finally {
       setLoading(false);
@@ -90,13 +81,15 @@ export const useBeats = () => {
   return {
     beats,
     setBeats,
-    columnVisibility,
-    setColumnVisibility,
+    collectionBeats,
+    setCollectionBeats,
+    beatCollections,
     currentCollection,
     loading,
     error,
+    columnVisibility,
+    setColumnVisibility,
     fetchData,
     fetchSetData,
-    beatCollections,
   };
 };
