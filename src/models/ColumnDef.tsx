@@ -21,7 +21,6 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
     header: "",
     cell: ({ row }: { row: Row }) => (
       <div>
-        
         <RowDragHandleCell row={row.original} />
       </div>
       

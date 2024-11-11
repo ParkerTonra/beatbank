@@ -84,7 +84,6 @@ function BeatTable({
 
   const handleRowSelection = (beat: Beat) => {
     const rowId = beat.id.toString();
-    console.log("handleRowSelection:", rowId);
     setRowSelection((prev) => {
       if (isCtrlPressed) {
         // Toggle the selected row
@@ -256,8 +255,7 @@ function BeatTable({
                   beat: updatedBeat
                 })
                   .then((response) => {
-                    console.log("Response from update_beat:", response);
-                    console.log("Fetching updated data");
+                    console.log("Beat successfully updated:", response);
                     if (fetchData) fetchData();
                   })
                   .catch((error) => {

@@ -23,7 +23,6 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
 }) => {
   const { id } = useParams<{ id: string }>();
   const {
-    collectionBeats,  // Use collectionBeats instead of beats
     setCollectionBeats,
     currentCollection,
     loading,
