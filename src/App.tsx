@@ -47,7 +47,6 @@ function AppContainer() {
       if (Array.isArray(event.payload)) {
         for (const filePath of event.payload) {
           try {
-            console.log(`Processing file: ${filePath}`);
             await invoke('add_beat', { filePath }); // Process the file
           } catch (error) {
             console.error(`Error processing file ${filePath}:`, error);
@@ -87,7 +86,6 @@ function AppContainer() {
 
   const handleAddToCollection = async (collectionId: number, beatId: number) => {
     try {
-      console.log(`Adding beat ${beatId} to collection ${collectionId}`);
       await invoke('add_beat_to_collection', { beatId, collectionId });
       fetchData(); // Refresh data or update state as needed
     } catch (error) {
@@ -126,8 +124,6 @@ function AppContainer() {
           coll_order: collOrder
         }
       });
-      
-      console.log("Collection order saved successfully");
       await fetchSetData(collectionId);
     } catch (error) {
       console.error("Error saving collection order:", error);
@@ -171,12 +167,6 @@ function AppContainer() {
         // Immediately update UI state based on context
         if (isInCollection && collectionId) {
           setCollectionBeats(newBeats);
-          console.log('Saving collection order:', {
-            collectionId,
-            beatsCount: newBeats.length,
-            beatIds: newBeats.map(b => b.id)
-          });
-          
           // Save to backend without waiting
           saveCollectionOrder(collectionId, newBeats).catch(error => {
             console.error('Error saving collection order:', error);
@@ -207,8 +197,6 @@ function AppContainer() {
 
     try {
       await invoke("save_row_order", { rowOrder });
-      console.log("Row order saved successfully");
-
     } catch (error) {
       // Could add a toast notification here
       console.error("Error saving row order:", error);
@@ -261,7 +249,6 @@ function AppContainer() {
     setTheme(newTheme); // Update the theme state
 
     await saveSettings({ theme: newTheme }); // Save the new theme settings to the backend
-    console.log("Theme changed to:", newTheme); // Log the new theme for debugging purposes
   };
 
 
