@@ -1,28 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import BeatTable from './BeatTable';
 import { useBeats } from '../hooks/useBeats';
-import { Beat } from '../bindings';
+import { Beat} from '../bindings';
 import { DragEndEvent } from '@dnd-kit/core';
 
 interface BeatCollProps {
-  onDragEnd: (event: DragEndEvent) => void;
+onDragEnd: (event: DragEndEvent) => void;
+onBeatPlay: (beat: Beat) => void;
+isEditing: boolean;
+setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
+selectedBeat: Beat | null;
+setSelectedBeat: React.Dispatch<React.SetStateAction<Beat | null>>;
+saveRowOrder: (beatsToSave: Beat[]) => Promise<void>;
+saveCollectionOrder: (collectionId: number, beatsToSave: Beat[]) => Promise<void>;
+beats: Beat[];
 }
 
-const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd }) => {
+const BeatCollectionComponent: React.FC<BeatCollProps> = ({
+  onDragEnd, onBeatPlay, isEditing, setIsEditing, selectedBeat, 
+  setSelectedBeat, saveRowOrder, saveCollectionOrder, beats
+}) => {
   const { id } = useParams<{ id: string }>();
-  const { 
-    beats, 
-    currentCollection, 
-    loading, 
-    error, 
-    fetchSetData, 
-    columnVisibility, 
-    setColumnVisibility 
+  const {
+    setCollectionBeats,
+    currentCollection,
+    loading,
+    error,
+    fetchSetData,
+    columnVisibility,
+    setColumnVisibility,
   } = useBeats();
-
-  const [selectedBeat, setSelectedBeat] = useState<Beat | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -31,24 +39,14 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd }) => {
     }
   }, [id, fetchSetData]);
 
-  useEffect(() => {
-    console.log('Beats updated:', beats);
-  }, [beats]);
-
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
   if (!currentCollection) return <div>No collection found</div>;
 
   const handleBeatsChange = (newBeats: Beat[]) => {
-    // Implement this function to update beats in your state management
-    console.log('Beats changed:', newBeats);
+    console.log('Collection beats changed:', newBeats);
+    setCollectionBeats(newBeats);
   };
-
-  const handleAddBeatToCollection = (beatId: number, collectionId: number) => {
-    // Implement this function to add a beat to a collection
-    console.log('Adding beat to collection:', beatId, collectionId);
-  };
-
 
   return (
     <div>
@@ -58,6 +56,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd }) => {
       <BeatTable
         beats={beats}
         onBeatSelect={(beat: Beat) => setSelectedBeat(beat)}
+        onBeatPlay={onBeatPlay}
         isEditing={isEditing}
         setIsEditing={setIsEditing}
         selectedBeat={selectedBeat}
@@ -66,8 +65,10 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd }) => {
         onBeatsChange={handleBeatsChange}
         columnVisibility={columnVisibility}
         setColumnVisibility={setColumnVisibility}
-        onAddBeatToCollection={handleAddBeatToCollection}
+        //onAddBeatToCollection={handleAddBeatToCollection}
         onDragEnd={onDragEnd}
+        saveRowOrder={saveRowOrder}
+        saveCollectionOrder={saveCollectionOrder}
       />
     </div>
   );

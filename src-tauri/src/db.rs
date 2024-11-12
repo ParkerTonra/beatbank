@@ -12,7 +12,7 @@ use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
 
-use crate::models::{Beat, BeatCollection, NewBeat, NewBeatCollection, BeatChangeset};
+use crate::{models::{Beat, BeatChangeset, BeatCollection, NewBeat, NewBeatCollection}, schema::set_beat::order_in_collection};
 
 
 pub fn establish_connection() -> SqliteConnection {
@@ -186,9 +186,15 @@ pub fn get_beats_in_collection(
 ) -> Result<Vec<Beat>, diesel::result::Error> {
     use crate::schema::beats;
     use crate::schema::set_beat;
-    set_beat::table
+    
+    // Use alias for clarity with join
+    let beats = beats::table;
+    let set_beat = set_beat::table;
+
+    set_beat
         .filter(set_beat::dsl::beat_collection_id.eq(collection_id))
-        .inner_join(beats::table)
+        .inner_join(beats)
+        .order_by(set_beat::dsl::order_in_collection.asc())
         .select((
             beats::dsl::id,
             beats::dsl::title,
@@ -220,6 +226,36 @@ pub fn save_row_order(conn: &mut SqliteConnection, row_number: Vec<crate::models
             .execute(conn)?;
     }
     Ok(())
+}
+
+pub fn save_collection_order(
+    conn: &mut SqliteConnection,
+    coll_order: Vec<crate::models::CollOrder>,
+    collection_id: i32
+) -> Result<(), DieselError> {
+    use crate::schema::set_beat::dsl::*;
+    
+    // Start a transaction
+    conn.transaction(|conn| {
+        // First, reset all orders for the given collection to ensure clean state
+        diesel::update(set_beat)
+            .filter(beat_collection_id.eq(collection_id))
+            .set(order_in_collection.eq(0))
+            .execute(conn)?;
+        
+        // Then update each beat with its new order
+        for row in coll_order {
+            diesel::update(set_beat)
+                .filter(
+                    beat_collection_id.eq(collection_id)
+                        .and(beat_id.eq(row.beat_id))
+                )
+                .set(order_in_collection.eq(row.collection_order))
+                .execute(conn)?;
+        }
+        
+        Ok(())
+    })
 }
 
 #[cfg(test)]
