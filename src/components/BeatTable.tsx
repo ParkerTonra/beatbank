@@ -32,8 +32,9 @@ interface BeatTableProps {
   onBeatsChange: (newBeats: Beat[]) => void;
   columnVisibility: ColumnVis;
   setColumnVisibility: (columnVis: ColumnVis) => void;
-  saveRowOrder?: (beatsToSave: Beat[]) => Promise<void>; // TODO: make this mandatory and work for sets as well.
-  onAddBeatToCollection: (beatId: number, collectionId: number) => void;
+  saveRowOrder: (beatsToSave: Beat[]) => Promise<void>;
+  saveCollectionOrder: (collectionId: number, beatsToSave: Beat[]) => Promise<void>;
+  //onAddBeatToCollection: (beatId: number, collectionId: number) => void;
   onDragEnd: (event: DragEndEvent) => void;
 }
 
@@ -83,7 +84,6 @@ function BeatTable({
 
   const handleRowSelection = (beat: Beat) => {
     const rowId = beat.id.toString();
-    console.log("handleRowSelection:", rowId);
     setRowSelection((prev) => {
       if (isCtrlPressed) {
         // Toggle the selected row
@@ -255,8 +255,7 @@ function BeatTable({
                   beat: updatedBeat
                 })
                   .then((response) => {
-                    console.log("Response from update_beat:", response);
-                    console.log("Fetching updated data");
+                    console.log("Beat successfully updated:", response);
                     if (fetchData) fetchData();
                   })
                   .catch((error) => {
