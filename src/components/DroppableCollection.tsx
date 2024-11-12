@@ -19,7 +19,6 @@ const DroppableCollection: React.FC<DroppableCollectionProps> = ({ collection })
 
   const handleClick = () => {
     if (active) {
-      console.log("Preventing navigation")
       return;
     }
     navigate(`/collection/${collection.id}`);
