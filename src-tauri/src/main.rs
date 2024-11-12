@@ -280,6 +280,22 @@ fn add_beats_to_collection(
     Ok(())
 }
 
+#[tauri::command]
+fn remove_beats_from_collection(
+    state: State<AppState>,
+    collection_id: i32,
+    ids: Vec<i32>,
+) -> Result<(), String> {
+    let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
+    let conn = &mut conn_guard.conn;
+
+
+    println!("Removing beats from collection...");
+    db::remove_beats_from_collection(&mut *conn, collection_id, ids).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
 
 // Opens the file location in the default file manager & selects the file
 // Needs to be tested on Mac & Linux
@@ -351,6 +367,7 @@ fn main() {
             delete_beat_collection,
             add_beat_to_collection,
             add_beats_to_collection,
+            remove_beats_from_collection,
             get_beat_collection,
             get_beats_in_collection,
             save_row_order,

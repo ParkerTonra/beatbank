@@ -189,6 +189,22 @@ pub fn add_beats_to_collection(
         .map(|_| ())
 }
 
+pub fn remove_beats_from_collection(
+    conn: &mut SqliteConnection,
+    collection_id: i32,
+    ids: Vec<i32>,
+) -> Result<(), DieselError> {
+    use crate::schema::set_beat::dsl::{set_beat, beat_collection_id, beat_id};
+
+    diesel::delete(
+        set_beat
+            .filter(beat_collection_id.eq(collection_id))
+            .filter(beat_id.eq_any(ids)),
+    )
+    .execute(conn)
+    .map(|_| ())
+}
+
 pub fn get_beat_collection(
     conn: &mut SqliteConnection,
     id: i32,
