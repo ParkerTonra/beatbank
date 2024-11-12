@@ -20,7 +20,7 @@ export const TableHeader = ({
   setIsEditingBeat: (isEditing: boolean) => void,
 }) => {
   const location = useLocation();
-  const setId = location.pathname.split("/").pop();
+  const setId = Number(location.pathname.split("/").pop());
   const {
     fetchData,
     beatCollections,
@@ -39,6 +39,14 @@ export const TableHeader = ({
       return;
     }
     await invoke('add_beats_to_collection', { ids: selectedBeats.map(beat => beat.id), collectionId }).then(() => fetchData());
+  };
+
+  const removeBeatsFromSet = async () => {
+    if (!selectedBeats.length) {
+      message('Please select a beat first.', { title: 'Error', type: 'error' });
+      return;
+    }
+    await invoke('remove_beats_from_collection', { ids: selectedBeats.map(beat => beat.id), collectionId: setId }).then(() => fetchData());
   };
 
   //opens up EditBeatCard as a popup
@@ -175,9 +183,9 @@ export const TableHeader = ({
   if (setId) {
     beatActionItems.push(
       {
-        label: "Remove from set", // TODO: Only show if currently in a set
+        label: "Remove from set",
         icon: "pi pi-minus",
-        command: () => console.log(`invoke remove from set ${setId} for beats ${selectedBeats.map(beat => beat.id)}`),
+        command: removeBeatsFromSet,
       }
     )
   }
