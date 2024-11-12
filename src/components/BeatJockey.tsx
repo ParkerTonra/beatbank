@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Beat } from "../bindings";
 import { Play, Pause, StopCircle, Volume2, VolumeX, File } from "lucide-react";
-import { open } from '@tauri-apps/api/shell';
-import { dirname } from '@tauri-apps/api/path';
 import { convertFileSrc } from '@tauri-apps/api/tauri';
-import { dialog, invoke, path, shell } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api';
 
 interface BeatJockeyProps {
     isPlaying: boolean;

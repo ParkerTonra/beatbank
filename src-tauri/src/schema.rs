@@ -38,6 +38,7 @@ diesel::table! {
     set_beat (beat_collection_id, beat_id) {
         beat_collection_id -> Integer,
         beat_id -> Integer,
+        order_in_collection -> Integer,
     }
 }
 
