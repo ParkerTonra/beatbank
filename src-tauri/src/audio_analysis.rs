@@ -5,7 +5,13 @@ use std::process::Command;
 fn get_executable_path() -> PathBuf {
     let current_dir = env::current_dir().expect("Failed to get current directory");
     let project_root = current_dir.parent().expect("Failed to get project root");
-    project_root.join("src-tauri").join("dist").join("audio_analyzer-x86_64-pc-windows-msvc.exe")
+// Conditionally compile the correct path based on the target OS 
+    #[cfg(target_os = "windows")] { 
+        project_root.join("src-tauri").join("dist").join("audio_analyzer-x86_64-pc-windows-msvc.exe") 
+    } 
+    #[cfg(target_os = "macos")] { 
+        project_root.join("src-tauri").join("dist").join("audio_analyzer-aarch64-apple-darwin")
+    }
 }
 
 pub fn analyze_audio(file_path: &str) -> Result<(String, f64), String> {

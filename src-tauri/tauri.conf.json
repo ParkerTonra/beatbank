@@ -64,9 +64,6 @@
       ],
       "externalBin": [
         "dist/audio_analyzer"
-      ],
-      "resources": [
-        "../python/windows"
       ]
     }
   }
