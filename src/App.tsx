@@ -103,6 +103,70 @@ function AppContainer() {
     }
   };
 
+  const handleBeatDelete = async () => {
+    console.log("Deleting beat...");
+    if (!selectedBeat) {
+      console.warn("No beat selected");
+      return;
+    }
+    try {
+      const result = await invoke('delete_beats', { ids: [selectedBeat.id] });
+      console.log("Beat deleted successfully:", result);
+      await fetchData();
+    } catch (error) {
+      console.error("Error deleting beat:", error);
+    }
+  };
+
+  const handleBulkBeatDelete = async (selectedBeats: Row<Beat>[]) => {
+    try {
+      if (!selectedBeats || selectedBeats.length === 0) {
+        await message('Please select at least one beat to delete.', {
+          title: 'Error',
+          type: 'error'
+        });
+        return;
+      }
+
+        const beatIds = selectedBeats.map(beat => beat.original.id);
+        await invoke('delete_beats', { ids: beatIds });
+        
+        // Update local state immediately
+        const updatedBeats = beats.filter(beat => !beatIds.includes(beat.id));
+        setBeats(updatedBeats);
+        
+        // If we're in a collection, update collection beats too
+        if (isInCollection && collectionBeats) {
+          const updatedCollectionBeats = collectionBeats.filter(beat => !beatIds.includes(beat.id));
+          setCollectionBeats(updatedCollectionBeats);
+        }
+
+        // Fetch fresh data to ensure consistency
+        await fetchData();
+        if (isInCollection && collectionId) {
+          await fetchSetData(collectionId);
+        }
+
+        await message(
+          `Successfully deleted ${selectedBeats.length} beat(s)`,
+          {
+            title: 'Success',
+            type: 'info'
+          }
+        );
+      }
+     catch (error) {
+      console.error('Error deleting beats:', error);
+      await message(
+        `Error deleting beats: ${error}`,
+        {
+          title: 'Error',
+          type: 'error'
+        }
+      );
+    }
+  };
+
   const saveCollectionOrder = async (collectionId: number, beatsToSave: Beat[]) => {
     console.log('Saving collection order:', { collectionId, beatsToSave });
 
@@ -282,6 +346,7 @@ function AppContainer() {
                       beats={beats}
                       onBeatPlay={playBeat}
                       onBeatSelect={handleBeatSelection}
+                      handleBeatDelete={handleBulkBeatDelete}
                       isEditing={isEditing}
                       setIsEditing={setIsEditing}
                       selectedBeat={selectedBeat}

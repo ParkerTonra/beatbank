@@ -34,6 +34,7 @@ interface BeatTableProps {
   saveCollectionOrder: (collectionId: number, beatsToSave: Beat[]) => Promise<void>;
   //onAddBeatToCollection: (beatId: number, collectionId: number) => void;
   onDragEnd: (event: DragEndEvent) => void;
+  handleBeatDelete: (selectedBeats: Row<Beat>[]) => Promise<void>
 }
 
 function BeatTable({
@@ -42,6 +43,7 @@ function BeatTable({
   fetchData,
   columnVisibility,
   setColumnVisibility,
+  handleBeatDelete,
 }: BeatTableProps) {
   // row selection state
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -111,6 +113,7 @@ function BeatTable({
         setShowEditColumnsDialog={setShowEditColumnsDialog}
         selectedBeats={tableInstance.getSelectedRowModel().rows as Row<Beat>[]}
         setIsEditingBeat={setIsEditingBeat}
+        handleBeatDelete={handleBeatDelete}
       />
       <div className="flex flex-col h-[calc(100%-250px)] w-full select-none overflow-x-auto">
         <table className="w-full mb-4 h-full">
@@ -160,7 +163,6 @@ function BeatTable({
           <tbody>
             {tableInstance.getRowModel().rows.map((rowElement) => (
               <DraggableRow
-                table={tableInstance}
                 row={rowElement as Row<Beat>}
                 key={rowElement.id}
                 onRowSelection={onRowSelection}

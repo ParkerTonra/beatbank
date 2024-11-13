@@ -14,10 +14,12 @@ export const TableHeader = ({
   selectedBeats,
   setShowEditColumnsDialog,
   setIsEditingBeat,
+  handleBeatDelete,
 }: {
   selectedBeats: Row<Beat>[]
   setShowEditColumnsDialog: (isVisible: boolean) => void,
   setIsEditingBeat: (isEditing: boolean) => void,
+  handleBeatDelete: (selectedBeats: Row<Beat>[]) => Promise<void>
 }) => {
   const location = useLocation();
   const setId = Number(location.pathname.split("/").pop());
@@ -59,21 +61,7 @@ export const TableHeader = ({
     setIsEditingBeat(true);
   }
 
-  const handleBeatDelete = async () => {
-    if (!selectedBeats.length) {
-      console.warn("No beat selected");
-      setUploadStatus("No beat selected");
-      return;
-    }
-    try {
-      const result = await invoke('delete_beats', { ids: selectedBeats.map(beat => beat.id) });
-      await fetchData();
-      setUploadStatus(prevStatus => prevStatus + `\n${result}`);
-    } catch (error) {
-      console.error("Error deleting beat:", error);
-      setUploadStatus(prevStatus => prevStatus + `\nError deleting beat: ${error}`);
-    }
-  };
+  
 
   async function processEntries(entries: FileEntry[]) {
     const promises = [];
@@ -166,7 +154,7 @@ export const TableHeader = ({
     {
       label: "Delete",
       icon: "pi pi-trash",
-      command: handleBeatDelete,
+      command: () => handleBeatDelete(selectedBeats),
     },
   ];
 
