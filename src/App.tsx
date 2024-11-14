@@ -150,10 +150,19 @@ function AppContainer() {
       message('Please select a beat first.', { title: 'Error', type: 'error' });
       return;
     }
-    await invoke('remove_beats_from_collection', {
-      ids: selectedBeats.map(beat => beat.id),
-      collectionId: collectionId
-    }).then(() => fetchData());
+    try {
+      await invoke('remove_beats_from_collection', {
+        ids: selectedBeats.map(beat => beat.id),
+        collectionId: collectionId
+      });
+      
+      // Always fetch collection data after modifying collection
+      if (collectionId) {
+        await fetchSetData(collectionId);
+      }
+    } catch (error) {
+      console.error('Error removing beats from collection:', error);
+    }
   };
 
   const handleEditBeat = async () => {
@@ -177,7 +186,14 @@ function AppContainer() {
       const result = await invoke('delete_beats', {
         ids: selectedBeats.map(beat => beat.id)
       });
-      await fetchData();
+      
+      // Check if we're in a collection and refresh accordingly
+      if (collectionId) {
+        await fetchSetData(collectionId);
+      } else {
+        await fetchData();
+      }
+      
       setUploadStatus(prevStatus => prevStatus + `\n${result}`);
     } catch (error) {
       console.error("Error deleting beat:", error);
@@ -529,6 +545,8 @@ function AppContainer() {
                       setSelectedBeats={setSelectedBeats}
                       saveRowOrder={saveRowOrder}
                       saveCollectionOrder={saveCollectionOrder}
+                      fetchData={fetchData}
+                      
                     />}
                 />
               </Routes>

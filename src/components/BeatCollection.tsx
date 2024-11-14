@@ -15,14 +15,23 @@ interface BeatCollProps {
   saveRowOrder: (beatsToSave: Beat[]) => Promise<void>;
   saveCollectionOrder: (collectionId: number, beatsToSave: Beat[]) => Promise<void>;
   beats: Beat[];
+  fetchData: () => void;
 }
 
 const BeatCollectionComponent: React.FC<BeatCollProps> = ({
-  onDragEnd, onBeatPlay, isEditing, setIsEditing, selectedBeats,
-  setSelectedBeats, saveRowOrder, saveCollectionOrder, beats
+  onDragEnd, 
+  onBeatPlay, 
+  isEditing, 
+  setIsEditing, 
+  selectedBeats,
+  setSelectedBeats, 
+  saveRowOrder, 
+  saveCollectionOrder, 
+  beats
 }) => {
   const { id } = useParams<{ id: string }>();
   const {
+    collectionBeats,
     setCollectionBeats,
     currentCollection,
     loading,
@@ -30,15 +39,18 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
     fetchSetData,
     columnVisibility,
     setColumnVisibility,
-    fetchData,
   } = useBeats();
 
-  useEffect(() => {
+  const refreshCollectionData = () => {
     if (id) {
-      console.log('Fetching data for collection:', id);
       fetchSetData(parseInt(id));
     }
+  };
+
+  useEffect(() => {
+    refreshCollectionData();
   }, [id, fetchSetData]);
+
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
@@ -55,14 +67,14 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
       <p>Venue: {currentCollection.venue || 'N/A'}</p>
       <p>Date Played: {currentCollection.date_played || 'N/A'}</p>
       <BeatTable
-        beats={beats}
+        beats={collectionBeats}
         onBeatSelect={(beat: Beat) => setSelectedBeats([beat])}
         onBeatPlay={onBeatPlay}
         isEditing={isEditing}
         setIsEditing={setIsEditing}
         selectedBeats={selectedBeats}
         setSelectedBeats={setSelectedBeats}
-        fetchData={fetchData}
+        fetchData={refreshCollectionData}
         fetchSetData={fetchSetData}
         onBeatsChange={handleBeatsChange}
         columnVisibility={columnVisibility}

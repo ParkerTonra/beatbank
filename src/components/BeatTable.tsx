@@ -10,7 +10,7 @@ import {
   VisibilityState, SortingState, Row, getSortedRowModel,
 } from "@tanstack/react-table";
 import { createColumnDef } from "./../models/ColumnDef.tsx";
-import { Beat, ColumnVis, ColumnVisibility, ColumnVisibilityState, EditThisBeat } from "./../bindings.ts";
+import { Beat, ColumnVisibilityState, EditThisBeat } from "./../bindings.ts";
 import {
   DragEndEvent,
 } from "@dnd-kit/core";
@@ -18,7 +18,6 @@ import DraggableRow from "./DraggableRow.tsx";
 import { invoke } from "@tauri-apps/api/tauri";
 import EditBeatCard from "./EditBeatCard.tsx";
 import { Dialog } from "primereact/dialog";
-import { TableHeader } from "./TableHeader.tsx";
 
 interface BeatTableProps {
   beats: Beat[];
@@ -275,7 +274,7 @@ function BeatTable({
                     })
                       .then((response) => {
                         console.log("Beat successfully updated:", response);
-                        if (fetchData) fetchData();
+                        fetchData();
                       })
                       .catch((error) => {
                         console.error("Error updating beat:", error);
