@@ -98,6 +98,30 @@ function BeatTable({
     return rows.slice(firstIndex, lastIndex + 1);
   };
     
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Ctrl+A or Cmd+A
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault(); // Prevent the default browser select-all behavior
+        
+        // Select all rows
+        tableInstance.getRowModel().rows.forEach(row => {
+          row.toggleSelected(true);
+        });
+  
+        // Update selected beats state with all beats
+        setSelectedBeats(beats || []);
+      }
+    };
+  
+    // Add the event listener
+    document.addEventListener('keydown', handleKeyDown);
+  
+    // Clean up
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [beats, tableInstance, setSelectedBeats]);
 
   const onRowSelection = (e: React.MouseEvent<HTMLTableRowElement>, row): void => {
     const beat = row.original;
