@@ -3,14 +3,13 @@ import {
   useReactTable,
   flexRender,
   getCoreRowModel,
-  RowSelectionState,
   ColumnResizeMode,
   ColumnSizingState,
   OnChangeFn,
   VisibilityState, SortingState, Row, getSortedRowModel,
 } from "@tanstack/react-table";
 import { createColumnDef } from "./../models/ColumnDef.tsx";
-import { Beat, ColumnVisibilityState, EditThisBeat } from "./../bindings.ts";
+import { Beat, EditThisBeat } from "./../bindings.ts";
 import {
   DragEndEvent,
 } from "@dnd-kit/core";
@@ -18,7 +17,7 @@ import DraggableRow from "./DraggableRow.tsx";
 import { invoke } from "@tauri-apps/api/tauri";
 import EditBeatCard from "./EditBeatCard.tsx";
 import { Dialog } from "primereact/dialog";
-
+import { useTableContext } from "../contexts/TableContext.tsx";
 interface BeatTableProps {
   beats: Beat[];
   onBeatPlay: (beat: Beat) => void;
@@ -30,11 +29,13 @@ interface BeatTableProps {
   fetchData: () => void;
   onBeatsChange: (beats: Beat[]) => void;
   columnVisibility: VisibilityState;
-  setColumnVisibility: (updater: (prev: VisibilityState) => VisibilityState) => void;
+  setColumnVisibility: OnChangeFn<VisibilityState>;
   onDragEnd: (event: DragEndEvent) => void;
   saveRowOrder: (beats: Beat[]) => Promise<void>;
   saveCollectionOrder: (collectionId: number, beats: Beat[]) => Promise<void>;
   fetchSetData: (setId: number) => Promise<void>;
+  showEditColumnsDialog: boolean;
+  setShowEditColumnsDialog: (show: boolean) => void;
 }
 
 function BeatTable({
@@ -46,40 +47,23 @@ function BeatTable({
   isEditing,
   setIsEditing,
   fetchData,
+  onBeatsChange,
   columnVisibility,
   setColumnVisibility,
+  onDragEnd,
+  saveRowOrder,
+  saveCollectionOrder,
+  fetchSetData,
+  showEditColumnsDialog,
+  setShowEditColumnsDialog,
 }: BeatTableProps) {
   // row selection state
-  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
-  const [showEditColumnsDialog, setShowEditColumnsDialog] = useState(false);
-  const [sorting, setSorting] = useState<SortingState>([])
 
+  const { tableInstance } = useTableContext();
 
-  const finalColumnDef = useMemo(
-    () => createColumnDef(onBeatPlay),
-    []
-  );
-
-  const tableInstance = useReactTable<Beat>({
-    columns: finalColumnDef,
-    data: beats,
-    getCoreRowModel: getCoreRowModel(),
-    enableColumnResizing: true,
-    columnResizeMode: "onChange" as ColumnResizeMode,
-    onColumnSizingChange: setColumnSizing,
-    getRowId: (row: Record<string, any>) => row.id,
-    state: {
-      columnVisibility,
-      columnSizing,
-      sorting,
-    },
-    enableRowSelection: true,
-    enableMultiRowSelection: true,
-    onColumnVisibilityChange: setColumnVisibility as OnChangeFn<VisibilityState>,
-    enableSorting: true,
-    getSortedRowModel: getSortedRowModel(),
-    onSortingChange: setSorting,
-  })
+  if (!tableInstance) {
+    return <div>Loading...</div>;
+  }
 
   const getRowRange = (rows: Row<Beat>[], currentIndex: number, selectedIndex: number): Row<Beat>[] => {
     const [firstIndex, lastIndex] = currentIndex < selectedIndex
@@ -136,7 +120,47 @@ function BeatTable({
   }
 
   return (
+    
     <div className="w-full">
+      <Dialog
+          header="Edit Columns"
+          visible={showEditColumnsDialog}
+          className="bg-blue-900 w-3/4 h-1/2 p-4 rounded-md border-2 border-black"
+          modal
+          onHide={() => setShowEditColumnsDialog(false)}
+        >
+          <div className="flex px-4 shadow rounded mt-12 text-sm space-x-4">
+            <div className="px-1">
+              <label>
+                <input
+                  className="flex-row"
+                  type="checkbox"
+                  checked={tableInstance.getIsAllColumnsVisible()}
+                  onChange={tableInstance.getToggleAllColumnsVisibilityHandler()}
+                />{" "}
+                Toggle All
+              </label>
+            </div>
+
+            {tableInstance.getAllLeafColumns().map((column) => {
+              if (column.id === "drag-handle") {
+                return;
+              }
+              return (
+                <div key={column.id} className="mb-36">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={column.getIsVisible()}
+                      onChange={column.getToggleVisibilityHandler()}
+                    />{" "}
+                    {column.id}
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+        </Dialog>
       <div className="flex flex-col h-[calc(100%-250px)] w-full select-none overflow-x-auto">
         <table className="w-full mb-4 h-full">
           <thead>
@@ -192,45 +216,7 @@ function BeatTable({
             ))}
           </tbody>
         </table>
-        <Dialog
-          header="Edit Columns"
-          visible={showEditColumnsDialog}
-          className="bg-blue-900 w-3/4 h-1/2 p-4 rounded-md border-2 border-black"
-          modal
-          onHide={() => setShowEditColumnsDialog(false)}
-        >
-          <div className="flex px-4 shadow rounded mt-12 text-sm space-x-4">
-            <div className="px-1">
-              <label>
-                <input
-                  className="flex-row"
-                  type="checkbox"
-                  checked={tableInstance.getIsAllColumnsVisible()}
-                  onChange={tableInstance.getToggleAllColumnsVisibilityHandler()}
-                />{" "}
-                Toggle All
-              </label>
-            </div>
-
-            {tableInstance.getAllLeafColumns().map((column) => {
-              if (column.id === "drag-handle") {
-                return;
-              }
-              return (
-                <div key={column.id} className="mb-36">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={column.getIsVisible()}
-                      onChange={column.getToggleVisibilityHandler()}
-                    />{" "}
-                    {column.id}
-                  </label>
-                </div>
-              );
-            })}
-          </div>
-        </Dialog>
+        
         {isEditing && selectedBeats.length === 1 && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg p-6 max-w-md w-full">
