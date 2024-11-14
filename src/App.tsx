@@ -24,12 +24,13 @@ import { FileEntry, readDir } from "@tauri-apps/api/fs";
 import TableHeader from "./components/TableHeader";
 
 
-import { ColumnResizeMode, ColumnSizingState, getCoreRowModel, getSortedRowModel, Row, SortingState, useReactTable } from "@tanstack/react-table";
+import { ColumnResizeMode, ColumnSizingState, getCoreRowModel, getSortedRowModel, Row, SortingState, Table, useReactTable } from "@tanstack/react-table";
 import { open, OpenDialogOptions } from "@tauri-apps/api/dialog";
 import { MenuItem } from "primereact/menuitem";
 import { Dialog } from "primereact/dialog";
 import { createColumnDef } from "./models/ColumnDef";
 import { TableContext } from "./contexts/TableContext";
+import BeatCollectionComponent from "./components/BeatCollection";
 
 function AppContainer() {
   // state
@@ -45,12 +46,14 @@ function AppContainer() {
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [sorting, setSorting] = useState<SortingState>([])
+  const [tableInstance, setTableInstance] = useState<Table<Beat> | null>(null);
 
   // react router hooks
   const location = useLocation();
   const collectionIdMatch = location.pathname.match(/\/collection\/(\d+)/);
   const isInCollection = Boolean(collectionIdMatch);
   const collectionId = collectionIdMatch ? parseInt(collectionIdMatch[1], 10) : null;
+  
 
   const { isPlaying, currentBeat, playBeat, stopBeat, togglePlayPause, audioRef } = useAudio();
 
@@ -74,39 +77,12 @@ function AppContainer() {
     useSensor(TouchSensor)
   );
 
-  const finalColumnDef = useMemo(
-    () => createColumnDef(playBeat),
-    [playBeat]
-  );
-
-  // create table
-  const tableInstance = useReactTable<Beat>({
-    columns: finalColumnDef,
-    data: beats,
-    getCoreRowModel: getCoreRowModel(),
-    enableColumnResizing: true,
-    columnResizeMode: 'onChange' as ColumnResizeMode,
-    onColumnSizingChange: setColumnSizing,
-    getRowId: (row) => row.id.toString(),
-    state: {
-      columnVisibility,
-      columnSizing,
-      sorting,
-    },
-    enableRowSelection: true,
-    enableMultiRowSelection: true,
-    onColumnVisibilityChange: setColumnVisibility,  // Remove the type assertion
-    enableSorting: true,
-    getSortedRowModel: getSortedRowModel(),
-    onSortingChange: setSorting,
-  });
-
   //effects
   useEffect(() => {
     fetchData();
   }, []);
 
-  
+
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -160,9 +136,9 @@ function AppContainer() {
   };
 
 
-  
 
-  
+
+
   useEffect(() => {
     const unlistenDrop = listen('tauri://file-drop', async (event) => {
       console.log('File dropped:', event.payload); // Logs the file paths or dropped items
@@ -219,6 +195,8 @@ function AppContainer() {
   };
 
   const removeBeatsFromSet = async () => {
+    //remove after debug
+    console.log("removeBeatsFromSet");
     if (!selectedBeats.length) {
       message('Please select a beat first.', { title: 'Error', type: 'error' });
       return;
@@ -228,10 +206,10 @@ function AppContainer() {
         ids: selectedBeats.map(beat => beat.id),
         collectionId: collectionId
       });
-      
+
       // Always fetch collection data after modifying collection
       if (collectionId) {
-        await fetchSetData(collectionId);
+        fetchData();
       }
     } catch (error) {
       console.error('Error removing beats from collection:', error);
@@ -257,14 +235,14 @@ function AppContainer() {
       const result = await invoke('delete_beats', {
         ids: selectedBeats.map(beat => beat.id)
       });
-      
+
       // Check if we're in a collection and refresh accordingly
       if (collectionId) {
         await fetchSetData(collectionId);
       } else {
         await fetchData();
       }
-      
+
       setUploadStatus(prevStatus => prevStatus + `\n${result}`);
     } catch (error) {
       console.error("Error deleting beat:", error);
@@ -492,9 +470,9 @@ function AppContainer() {
     }
   };
 
-  
 
-  
+
+
 
 
   // Define a function to handle theme changes
@@ -515,7 +493,7 @@ function AppContainer() {
   };
 
   const handleBeatSelection = (beat: Beat) => {
-    console.log("Selecting beat:", beat); // Add logging
+    console.log("Selected beats:", selectedBeats);
     setSelectedBeats(prev => {
       const exists = prev.some(b => b.id === beat.id);
       if (exists) {
@@ -525,10 +503,7 @@ function AppContainer() {
     });
   };
 
-  
-
-  
-
+  const currentBeats = collectionIdMatch ? collectionBeats : beats;
 
   if (error) return <div className="flex items-center justify-center h-screen">Error: {error.message}</div>;
 
@@ -539,66 +514,66 @@ function AppContainer() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-600 p-6">
             <h1 className="text-3xl font-bold font-guerilla mb-4 py-0">BEATBANK</h1>
-            <TableContext.Provider value={{ tableInstance }}>
-            <TableHeader
-            selectedBeats={selectedBeats}
-            setIsEditingBeat={setIsEditing}
-            beatActionItems={getBeatActionItems()}
-            addBeatItems={addBeatItems}
-            uploadStatus={uploadStatus}
-            showStatusDialog={showStatusDialog}
-            setShowStatusDialog={setShowStatusDialog}
-            uploadedFiles={uploadedFiles}
-            tableInstance={tableInstance}
-            showEditColumnsDialog={showEditColumnsDialog}
-            setShowEditColumnsDialog={setShowEditColumnsDialog}
-          />
-            <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
-              strategy={verticalListSortingStrategy}>
-              <Routes>
-                <Route
-                  path="/"
-                  element={
-                    <BeatTable
-                    beats={beats}
-                    onBeatPlay={playBeat}
-                    selectedBeats={selectedBeats}
-                    setSelectedBeats={setSelectedBeats}
-                    onBeatSelect={handleBeatSelection}
-                    isEditing={isEditing}
-                    setIsEditing={setIsEditing}
-                    fetchData={fetchData}
-                    onBeatsChange={handleBeatsChange}
-                    columnVisibility={columnVisibility}
-                    setColumnVisibility={setColumnVisibility}
-                    onDragEnd={handleDragEnd}
-                    saveRowOrder={saveRowOrder}
-                    saveCollectionOrder={saveCollectionOrder}
-                    fetchSetData={fetchSetData}
-                    showEditColumnsDialog={showEditColumnsDialog}
-                    setShowEditColumnsDialog={setShowEditColumnsDialog}
+            <TableContext.Provider value={{ tableInstance, setTableInstance }}>
+              <TableHeader
+                selectedBeats={selectedBeats}
+                setIsEditingBeat={setIsEditing}
+                beatActionItems={getBeatActionItems()}
+                addBeatItems={addBeatItems}
+                uploadStatus={uploadStatus}
+                showStatusDialog={showStatusDialog}
+                setShowStatusDialog={setShowStatusDialog}
+                uploadedFiles={uploadedFiles}
+                showEditColumnsDialog={showEditColumnsDialog}
+                setShowEditColumnsDialog={setShowEditColumnsDialog}
+              />
+              <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
+                strategy={verticalListSortingStrategy}>
+                <Routes>
+                  <Route
+                    path="/"
+                    element={
+                      <BeatTable
+                        beats = {beats}
+                        onBeatPlay={playBeat}
+                        selectedBeats={selectedBeats}
+                        setSelectedBeats={setSelectedBeats}
+                        onBeatSelect={handleBeatSelection}
+                        isEditing={isEditing}
+                        setIsEditing={setIsEditing}
+                        fetchData={fetchData}
+                        onBeatsChange={handleBeatsChange}
+                        columnVisibility={columnVisibility}
+                        setColumnVisibility={setColumnVisibility}
+                        onDragEnd={handleDragEnd}
+                        saveRowOrder={saveRowOrder}
+                        saveCollectionOrder={saveCollectionOrder}
+                        fetchSetData={fetchSetData}
+                        showEditColumnsDialog={showEditColumnsDialog}
+                        setShowEditColumnsDialog={setShowEditColumnsDialog}
+                      />
+                    }
                   />
-                  }
-                />
-                <Route
-                  path="/collection/:id"
-                  element={
-                    <BeatCollTable
-                      beats={collectionBeats}
-                      onDragEnd={handleDragEnd}
-                      onBeatPlay={playBeat}
-                      isEditing={isEditing}
-                      setIsEditing={setIsEditing}
-                      selectedBeats={selectedBeats}
-                      setSelectedBeats={setSelectedBeats}
-                      saveRowOrder={saveRowOrder}
-                      saveCollectionOrder={saveCollectionOrder}
-                      fetchData={fetchData}
-                      
-                    />}
-                />
-              </Routes>
-            </SortableContext>
+                  <Route
+                    path="/collection/:id"
+                    element={
+                      <BeatCollectionComponent
+                        onDragEnd={handleDragEnd}
+                        onBeatPlay={playBeat}
+                        isEditing={isEditing}
+                        setIsEditing={setIsEditing}
+                        selectedBeats={selectedBeats}
+                        setSelectedBeats={setSelectedBeats}
+                        saveRowOrder={saveRowOrder}
+                        saveCollectionOrder={saveCollectionOrder}
+                        fetchData={fetchData}
+                        showEditColumnsDialog={showEditColumnsDialog}
+                        setShowEditColumnsDialog={setShowEditColumnsDialog}
+
+                      />}
+                  />
+                </Routes>
+              </SortableContext>
             </TableContext.Provider>
 
             {/* Overlay when dragging files */}

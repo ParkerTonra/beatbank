@@ -14,8 +14,9 @@ interface BeatCollProps {
   setSelectedBeats: React.Dispatch<React.SetStateAction<Beat[]>>;
   saveRowOrder: (beatsToSave: Beat[]) => Promise<void>;
   saveCollectionOrder: (collectionId: number, beatsToSave: Beat[]) => Promise<void>;
-  beats: Beat[];
   fetchData: () => void;
+  showEditColumnsDialog: boolean;
+  setShowEditColumnsDialog: (show: boolean) => void;
 }
 
 const BeatCollectionComponent: React.FC<BeatCollProps> = ({
@@ -27,7 +28,8 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
   setSelectedBeats, 
   saveRowOrder, 
   saveCollectionOrder, 
-  beats
+  showEditColumnsDialog,
+  setShowEditColumnsDialog,
 }) => {
   const { id } = useParams<{ id: string }>();
   const {
@@ -48,7 +50,10 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
   };
 
   useEffect(() => {
-    refreshCollectionData();
+    if (id) {
+      console.log('Fetching data for collection:', id);
+      fetchSetData(parseInt(id));
+    }
   }, [id, fetchSetData]);
 
 
@@ -82,6 +87,8 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
         onDragEnd={onDragEnd}
         saveRowOrder={saveRowOrder}
         saveCollectionOrder={saveCollectionOrder}
+        showEditColumnsDialog={showEditColumnsDialog}
+        setShowEditColumnsDialog={setShowEditColumnsDialog}
       />
     </div>
   );

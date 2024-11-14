@@ -298,6 +298,7 @@ fn remove_beats_from_collection(
     collection_id: i32,
     ids: Vec<i32>,
 ) -> Result<(), String> {
+    println!("Removing beats from collection...");
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
 

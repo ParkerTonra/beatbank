@@ -195,7 +195,7 @@ pub fn remove_beats_from_collection(
     ids: Vec<i32>,
 ) -> Result<(), DieselError> {
     use crate::schema::set_beat::dsl::{set_beat, beat_collection_id, beat_id};
-
+    println!("Removing beats from collection: {:?}", ids);
     diesel::delete(
         set_beat
             .filter(beat_collection_id.eq(collection_id))

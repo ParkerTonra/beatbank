@@ -5,6 +5,7 @@ import DropdownMenu from "./DropdownMenu";
 import { Dialog } from "primereact/dialog";
 import { MenuItem } from "primereact/menuitem";
 import { Table } from "@tanstack/react-table";
+import { useTableContext } from "../contexts/TableContext";
 
 interface TableHeaderProps {
   selectedBeats: Beat[];
@@ -15,7 +16,6 @@ interface TableHeaderProps {
   showStatusDialog: boolean;
   setShowStatusDialog: (show: boolean) => void;
   uploadedFiles: string[];
-  tableInstance: Table<Beat>; // Add proper typing
   showEditColumnsDialog: boolean;
   setShowEditColumnsDialog: (show: boolean) => void;
 }
@@ -29,10 +29,10 @@ export const TableHeader = ({
   showStatusDialog,
   setShowStatusDialog,
   uploadedFiles,
-  tableInstance,
   showEditColumnsDialog,
   setShowEditColumnsDialog,
 }: TableHeaderProps) => {
+  const { tableInstance } = useTableContext();
   return (
     <div className="w-full flex">
       <button
@@ -41,7 +41,7 @@ export const TableHeader = ({
     >
       <span className="pi pi-pencil mr-2" /> Edit Columns
     </button>
-    
+    {tableInstance && (
       <Dialog
           header="Edit Columns"
           visible={showEditColumnsDialog}
@@ -81,6 +81,7 @@ export const TableHeader = ({
             })}
           </div>
         </Dialog>
+      )}
       
       <DropdownMenu 
         className="mr-2" 
