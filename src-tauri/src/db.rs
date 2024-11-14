@@ -1,4 +1,5 @@
 use diesel::result::Error as DieselError;
+use log::info;
 use std::error::Error;
 use chrono::Utc;
 use diesel::prelude::*;
@@ -11,18 +12,30 @@ use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
 use crate::models::{Beat, BeatChangeset, BeatCollection, NewBeat, NewBeatCollection};
 
 
-pub fn establish_connection() -> SqliteConnection {
-    dotenv().ok();
+// At the top of your file with other constants
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
+pub fn establish_connection() -> Result<SqliteConnection, Box<dyn std::error::Error>> {
+    dotenv().ok();
+    
     let database_url = env::var("SQLITE_DATABASE_URL")
         .or_else(|_| env::var("DATABASE_URL"))
-        .expect("DATABASE_URL must be set");
-    SqliteConnection::establish(&database_url)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+        .map_err(|e| format!("DATABASE_URL not set: {}", e))?;
+
+    let mut connection = SqliteConnection::establish(&database_url)
+        .map_err(|e| format!("Error connecting to {}: {}", database_url, e))?;
+
+    // Run the migrations
+    connection.run_pending_migrations(MIGRATIONS)
+        .map_err(|e| format!("Error running migrations: {}", e))?;
+
+    info!("Database migrations completed successfully");
+    Ok(connection)
 }
 
 pub fn add_beat(
