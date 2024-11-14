@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, Dispatch, SetStateAction } from "react";
 import {
   useReactTable,
   flexRender,
@@ -22,12 +22,10 @@ interface BeatTableProps {
   beats?: Beat[];
   onBeatPlay: (beat: Beat) => void;
   selectedBeats: Beat[];
-  setSelectedBeats: (beats: Beat[]) => void;
-  onBeatSelect: (beat: Beat) => void;
+  setSelectedBeats: Dispatch<SetStateAction<Beat[]>>;
   isEditing: boolean;
   setIsEditing: (isEditing: boolean) => void;
   fetchData: () => void;
-  onBeatsChange: (beats: Beat[]) => void;
   columnVisibility: VisibilityState;
   setColumnVisibility: OnChangeFn<VisibilityState>;
   onDragEnd: (event: DragEndEvent) => void;
@@ -44,17 +42,15 @@ function BeatTable({
   onBeatPlay,
   selectedBeats,
   setSelectedBeats,
-  onBeatSelect,
   isEditing,
   setIsEditing,
   fetchData,
-  onBeatsChange,
   columnVisibility,
   setColumnVisibility,
   collectionId,
   fetchSetData,
 }: BeatTableProps) {
-  
+
 
   // row selection state
   const lastSelectedIndex = useRef('');
@@ -103,13 +99,13 @@ function BeatTable({
       : [selectedIndex, currentIndex];
     return rows.slice(firstIndex, lastIndex + 1);
   };
-    
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Check for Ctrl+A or Cmd+A
       if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
         e.preventDefault(); // Prevent the default browser select-all behavior
-        
+
         // Select all rows
         tableInstance.getRowModel().rows.forEach(row => {
           row.toggleSelected(true);
@@ -118,24 +114,24 @@ function BeatTable({
         setSelectedBeats(beats || []);
       }
     };
-  
+
     // Add the event listener
     document.addEventListener('keydown', handleKeyDown);
-  
+
     // Clean up
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [beats, tableInstance, setSelectedBeats]);
 
-  const onRowSelection = (e: React.MouseEvent<HTMLTableRowElement>, row): void => {
+  const onRowSelection = (e: React.MouseEvent<HTMLTableRowElement>, row: Row<Beat>): void => {
     const beat = row.original;
     console.log("Row clicked:", beat);
-  
+
     if (e.ctrlKey || e.metaKey) {
       // Multi-select with Ctrl/Cmd - Toggle behavior
       row.toggleSelected();
-      setSelectedBeats(prev => {
+      setSelectedBeats((prev: Beat[]): Beat[] => {
         const exists = prev.some(b => b.id === beat.id);
         if (exists) {
           return prev.filter(b => b.id !== beat.id);
@@ -146,12 +142,12 @@ function BeatTable({
       // Shift-click range selection
       const { rows } = tableInstance.getRowModel();
       const rowsToToggle = getRowRange(rows as Row<Beat>[], Number(row.index), Number(lastSelectedIndex.current));
-      
+
       // Select all rows in the range
       rowsToToggle.forEach((_row) => {
         _row.toggleSelected(true);
       });
-      
+
       // Update selected beats with the range
       const beatsInRange = rowsToToggle.map(row => row.original);
       setSelectedBeats(beatsInRange);
@@ -162,10 +158,10 @@ function BeatTable({
       });
       row.toggleSelected(true);
       setSelectedBeats([beat]);
-      
+
     }
-  
-    lastSelectedIndex.current = row.index;
+
+    lastSelectedIndex.current = row.index.toString();
   };
 
   if (columnVisibility === undefined) {
@@ -173,98 +169,106 @@ function BeatTable({
   }
 
   return (
-    
-    <div className="w-full">
-      
-      <div className="flex flex-col h-[calc(100%-250px)] w-full select-none overflow-x-auto">
-        <table className="w-full mb-4 h-full">
-          <thead>
-            {tableInstance.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="relative pr-4 text-left border-gray-800 border-b-4 cursor-pointer mr-2"
-                    style={{
-                      width: header.getSize(),
-                    }}
-                    onClick={() => header.column.toggleSorting()}
-                  >
-                    <div className="flex items-center truncate w-full justify-between">
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
+    <div className="w-full h-full flex flex-col">
+      {/* Main table container with fixed height and scroll */}
+      <div className="flex-1 min-h-0"> {/* This ensures the container can shrink */}
+        <div className="h-full relative">
+          {/* Header wrapper - fixed position */}
+          <div className="sticky top-0 z-10 ">
+            <table className="w-full">
+              <thead>
+                {tableInstance.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        className="relative pr-4 text-left border-gray-800 border-b-4 cursor-pointer mr-2"
+                        style={{
+                          width: header.getSize(),
+                        }}
+                        onClick={() => header.column.toggleSorting()}
+                      >
+                        <div className="flex items-center truncate w-full justify-between">
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                          <div>
+                            {header.column.getIsSorted() === "asc" ? (
+                              <span className="pi pi-arrow-up text-xs" />
+                            ) : header.column.getIsSorted() === "desc" ? (
+                              <span className="pi pi-arrow-down text-xs" />
+                            ) :
+                              null
+                            }
+                          </div>
+                        </div>
+
+                        {header.column.getCanResize() && (
+                          <div
+                            onMouseDown={header.getResizeHandler()}
+                            onTouchStart={header.getResizeHandler()}
+                            className={`resizer ${header.column.getIsResizing() ? "isResizing" : ""
+                              }`}
+                          />
                         )}
-                      <div>
-                        {header.column.getIsSorted() === "asc" ? (
-                            <span className="pi pi-arrow-up text-xs" />
-                          ) : header.column.getIsSorted() === "desc" ? (
-                            <span className="pi pi-arrow-down text-xs" />
-                          ) :
-                          null
-                        }
-                      </div>
-                    </div>
-
-                    {header.column.getCanResize() && (
-                      <div
-                        onMouseDown={header.getResizeHandler()}
-                        onTouchStart={header.getResizeHandler()}
-                        className={`resizer ${header.column.getIsResizing() ? "isResizing" : ""
-                          }`}
-                      />
-                    )}
-                  </th>
+                      </th>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {tableInstance.getRowModel().rows.map((rowElement) => (
-              <DraggableRow
-                row={rowElement as Row<Beat>}
-                key={rowElement.id}
-                onRowSelection={onRowSelection}
-                selectedBeats={selectedBeats}
-              />
-            ))}
-          </tbody>
-        </table>
-        
-        {isEditing && selectedBeats.length === 1 && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                <EditBeatCard
-                  beat={tableInstance.getSelectedRowModel().rows[0].original as Beat}
-                  onClose={() => {
-                    setIsEditing(false);
-                  }}
-                  onSave={(updatedBeat: EditThisBeat) => {
-                    console.log("Saving updated beat...");
-                    setIsEditing(false);
-                    setSelectedBeats([]);
-
-                    invoke("update_beat", {
-                      beat: updatedBeat
-                    })
-                      .then((response) => {
-                        console.log("Beat successfully updated:", response);
-                        fetchData();
-                      })
-                      .catch((error) => {
-                        console.error("Error updating beat:", error);
-                      });
-                  }}
-              />
-            </div>
+              </thead>
+            </table>
           </div>
-        )}
+          <div className=" h-[calc(100%-48px)]">
+            <table className="w-full">
+              <tbody>
+                {tableInstance.getRowModel().rows.map((rowElement) => (
+                  <DraggableRow
+                    row={rowElement as Row<Beat>}
+                    key={rowElement.id}
+                    onRowSelection={onRowSelection}
+                    selectedBeats={selectedBeats}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-    </div>
-  );
-}
+
+            {isEditing && selectedBeats.length === 1 && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                  <EditBeatCard
+                    beat={tableInstance.getSelectedRowModel().rows[0].original as Beat}
+                    onClose={() => {
+                      setIsEditing(false);
+                    }}
+                    onSave={(updatedBeat: EditThisBeat) => {
+                      console.log("Saving updated beat...");
+                      setIsEditing(false);
+                      setSelectedBeats([]);
+
+                      invoke("update_beat", {
+                        beat: updatedBeat
+                      })
+                        .then((response) => {
+                          console.log("Beat successfully updated:", response);
+                          fetchData();
+                        })
+                        .catch((error) => {
+                          console.error("Error updating beat:", error);
+                        });
+                    }}
+                    />
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          }
 
 
-export default BeatTable;
+        export default BeatTable;

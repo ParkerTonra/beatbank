@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Beat, CollOrder, RowOrder } from "./bindings";
 import Sidebar from "./components/Sidebar";
 import "./App.css";
@@ -23,7 +23,7 @@ import { FileEntry, readDir } from "@tauri-apps/api/fs";
 import TableHeader from "./components/TableHeader";
 
 
-import {ColumnSizingState,SortingState, Table, } from "@tanstack/react-table";
+import { Table } from "@tanstack/react-table";
 import { open, OpenDialogOptions } from "@tauri-apps/api/dialog";
 import { MenuItem } from "primereact/menuitem";
 import { TableContext } from "./contexts/TableContext";
@@ -41,8 +41,6 @@ function AppContainer() {
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
-  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
-  const [sorting, setSorting] = useState<SortingState>([])
   const [tableInstance, setTableInstance] = useState<Table<Beat> | null>(null);
 
   // react router hooks
@@ -290,7 +288,7 @@ function AppContainer() {
     }
   };
 
-  
+
 
   const handleAddToCollection = async (collectionId: number, beatId: number) => {
     try {
@@ -351,7 +349,7 @@ function AppContainer() {
 
     if (overId.startsWith('collection-') && activeId.startsWith('beat-') || activeId.startsWith('selected-beats-')) {
       const targetCollectionId = parseInt(overId.replace('collection-', ''), 10);
-      
+
       if (!dragData || !dragData.beats) {  // Changed from beat to beats
         console.error("Missing drag data");
         return;
@@ -360,7 +358,7 @@ function AppContainer() {
       const beatsToAdd = dragData.beats;
       console.log("Adding beats to collection:", beatsToAdd, targetCollectionId);
       // Handle multiple beats
-      beatsToAdd.forEach(beat => {
+      beatsToAdd.forEach((beat: { id: number; }) => {
         console.log("Adding beat to collection:", beat.id, targetCollectionId);
         handleAddToCollection(targetCollectionId, beat.id);
       });
@@ -483,33 +481,17 @@ function AppContainer() {
     return <SplashScreen closeSplashScreen={() => setShowSplashScreen(false)} />;
   }
 
-  const handleBeatsChange = (newBeats: Beat[]) => {
-    setBeats(newBeats);
-  };
-
-  const handleBeatSelection = (beat: Beat) => {
-    console.log("Selected beats:", selectedBeats);
-    setSelectedBeats(prev => {
-      const exists = prev.some(b => b.id === beat.id);
-      if (exists) {
-        return prev.filter(b => b.id !== beat.id);
-      }
-      return [...prev, beat];
-    });
-  };
-
-  const currentBeats = collectionIdMatch ? collectionBeats : beats;
-
   if (error) return <div className="flex items-center justify-center h-screen">Error: {error.message}</div>;
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
-      <div className="flex bg-slate-900 justify-center overflow-scroll">
+      <div className="flex bg-slate-900 justify-center h-screen">
         <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-600 p-6">
+        <div className="flex-1 flex flex-col">
+        <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
             <h1 className="text-3xl font-bold font-guerilla mb-4 py-0">BEATBANK</h1>
             <TableContext.Provider value={{ tableInstance, setTableInstance }}>
+            <div className="flex flex-col flex-1"> 
               <TableHeader
                 selectedBeats={selectedBeats}
                 setIsEditingBeat={setIsEditing}
@@ -533,11 +515,9 @@ function AppContainer() {
                         onBeatPlay={playBeat}
                         selectedBeats={selectedBeats}
                         setSelectedBeats={setSelectedBeats}
-                        onBeatSelect={handleBeatSelection}
                         isEditing={isEditing}
                         setIsEditing={setIsEditing}
                         fetchData={fetchData}
-                        onBeatsChange={handleBeatsChange}
                         columnVisibility={columnVisibility}
                         setColumnVisibility={setColumnVisibility}
                         onDragEnd={handleDragEnd}
@@ -569,6 +549,7 @@ function AppContainer() {
                   />
                 </Routes>
               </SortableContext>
+              </div>
             </TableContext.Provider>
 
             {/* Overlay when dragging files */}
@@ -582,7 +563,7 @@ function AppContainer() {
           </main>
         </div>
       </div>
-      <div className="flex bg-slate-900 justify-center overflow-scroll">
+      <div className="flex bg-slate-900 justify-center">
         <BeatJockey
           isPlaying={isPlaying}
           currentBeat={currentBeat}
