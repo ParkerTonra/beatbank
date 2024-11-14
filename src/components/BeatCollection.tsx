@@ -61,6 +61,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
         isEditing={isEditing}
         setIsEditing={setIsEditing}
         selectedBeats={selectedBeats}
+        setSelectedBeats={setSelectedBeats}
         fetchData={fetchData}
         fetchSetData={fetchSetData}
         onBeatsChange={handleBeatsChange}
