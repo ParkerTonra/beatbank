@@ -108,8 +108,7 @@ function BeatTable({
         tableInstance.getRowModel().rows.forEach(row => {
           row.toggleSelected(true);
         });
-  
-        // Update selected beats state with all beats
+
         setSelectedBeats(beats || []);
       }
     };
@@ -222,6 +221,7 @@ function BeatTable({
                 row={rowElement as Row<Beat>}
                 key={rowElement.id}
                 onRowSelection={onRowSelection}
+                selectedBeats={selectedBeats}
               />
             ))}
           </tbody>
