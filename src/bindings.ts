@@ -28,15 +28,15 @@ export type BeatCollection = {
   };
 
   export type ColumnVis = {
-    id: boolean;
-    title: boolean;
-    bpm: boolean;
-    musical_key: boolean;
-    duration: boolean;
-    artist: boolean;
-    date_added: boolean;
-    file_path: boolean;
-};
+  title: boolean;
+  bpm: boolean;
+  musical_key: boolean;
+  duration: boolean;
+  artist: boolean;
+  date_added: boolean;
+  file_path: boolean;
+  id: boolean;
+}
 
 export type EditThisBeat = {
   id: number;
@@ -69,4 +69,26 @@ export interface RowOrder {
 export interface CollOrder {
   beat_id: number;
   collection_order: number;
+}
+
+export interface ColumnVisibility {
+  title: boolean;
+  bpm: boolean;
+  musical_key: boolean;
+  duration: boolean;
+  artist: boolean;
+  date_added: boolean;
+  file_path: boolean;
+  id: boolean;
+}
+
+export interface ColumnVisibilityState {
+  title: boolean;
+  bpm: boolean;
+  musical_key: boolean;
+  duration: boolean;
+  artist: boolean;
+  date_added: boolean;
+  file_path: boolean;
+  id: boolean;
 }

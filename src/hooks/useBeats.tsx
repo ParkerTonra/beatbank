@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
-import { Beat, BeatCollection } from "./../bindings";
+import { Beat, BeatCollection, ColumnVisibilityState } from "./../bindings";
+
 
 const defaultColumnVisibility = {
   title: true,

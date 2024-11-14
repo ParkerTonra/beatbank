@@ -17,13 +17,21 @@ function DraggableRow({ row, onRowSelection }: DraggableRowProps) {
     },
   });
 
+  const handleClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
+    // Prevent click from firing when dragging
+    if (!isDragging) {
+      console.log("Row clicked, calling onRowSelection"); // Debug log
+      onRowSelection(e, row);
+    }
+  };
+
   return (
     <>
       <tr
         ref={setNodeRef}
         {...attributes}
         {...listeners}
-        onClick={(e) => onRowSelection(e, row)}
+        onClick={handleClick}
         className={`cursor-pointer max-h-[50px] ${row.getIsSelected() ? 'bg-blue-900' : ''}`}
       >
         {row.getVisibleCells().map((cell: Cell<Beat, unknown>) => (

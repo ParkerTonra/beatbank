@@ -10,7 +10,7 @@ import {
   VisibilityState, SortingState, Row, getSortedRowModel,
 } from "@tanstack/react-table";
 import { createColumnDef } from "./../models/ColumnDef.tsx";
-import { Beat, ColumnVis, EditThisBeat } from "./../bindings.ts";
+import { Beat, ColumnVis, ColumnVisibility, ColumnVisibilityState, EditThisBeat } from "./../bindings.ts";
 import {
   DragEndEvent,
 } from "@dnd-kit/core";
@@ -23,31 +23,36 @@ import { TableHeader } from "./TableHeader.tsx";
 interface BeatTableProps {
   beats: Beat[];
   onBeatPlay: (beat: Beat) => void;
-  selectedBeat: Beat | null;
-  setSelectedBeat: React.Dispatch<React.SetStateAction<Beat | null>>;
-  fetchData?: () => void;
-  fetchSetData?: (id: number) => void;
-  onBeatsChange: (newBeats: Beat[]) => void;
-  columnVisibility: ColumnVis;
-  setColumnVisibility: (columnVis: ColumnVis) => void;
-  saveRowOrder: (beatsToSave: Beat[]) => Promise<void>;
-  saveCollectionOrder: (collectionId: number, beatsToSave: Beat[]) => Promise<void>;
-  //onAddBeatToCollection: (beatId: number, collectionId: number) => void;
+  selectedBeats: Beat[];
+  onBeatSelect: (beat: Beat) => void;
+  isEditing: boolean;
+  setIsEditing: (isEditing: boolean) => void;
+  fetchData: () => void;
+  onBeatsChange: (beats: Beat[]) => void;
+columnVisibility: ColumnVisibilityState;  // Use the same type as useBeats
+  setColumnVisibility: (visibility: ColumnVisibilityState) => void;
   onDragEnd: (event: DragEndEvent) => void;
+  saveRowOrder: (beats: Beat[]) => Promise<void>;
+  saveCollectionOrder: (collectionId: number, beats: Beat[]) => Promise<void>;
+  fetchSetData: (setId: number) => Promise<void>;
 }
 
 function BeatTable({
   beats,
   onBeatPlay,
+  selectedBeats,
+  onBeatSelect,
+  isEditing,
+  setIsEditing,
   fetchData,
   columnVisibility,
   setColumnVisibility,
 }: BeatTableProps) {
   // row selection state
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [showEditColumnsDialog, setShowEditColumnsDialog] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([])
+
 
   const [isEditingBeat, setIsEditingBeat] = useState(false);
 
@@ -55,6 +60,29 @@ function BeatTable({
     () => createColumnDef(onBeatPlay),
     []
   );
+
+  const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>, beat: Beat) => {
+    console.log("Row clicked:", beat);
+    if (e.ctrlKey || e.metaKey) {
+      // Multi-select with Ctrl/Cmd
+      onBeatSelect(beat);
+    } else if (e.shiftKey && selectedBeats.length > 0) {
+      // Shift-click range selection
+      const beatIds = beats.map(b => b.id);
+      const clickedIndex = beatIds.indexOf(beat.id);
+      const lastSelectedIndex = beatIds.indexOf(selectedBeats[selectedBeats.length - 1].id);
+      
+      const [start, end] = clickedIndex < lastSelectedIndex 
+        ? [clickedIndex, lastSelectedIndex]
+        : [lastSelectedIndex, clickedIndex];
+      
+      const rangeBeats = beats.slice(start, end + 1);
+      rangeBeats.forEach(b => onBeatSelect(b));
+    } else {
+      // Single select
+      onBeatSelect(beat);
+    }
+  };
 
   const tableInstance = useReactTable<Beat>({
     columns: finalColumnDef,
@@ -64,9 +92,7 @@ function BeatTable({
     columnResizeMode: "onChange" as ColumnResizeMode,
     onColumnSizingChange: setColumnSizing,
     getRowId: (row: Record<string, any>) => row.id,
-    onRowSelectionChange: setRowSelection,
     state: {
-      rowSelection,
       columnVisibility,
       columnSizing,
       sorting,
@@ -77,7 +103,7 @@ function BeatTable({
     enableSorting: true,
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
-  });
+  })
 
   const getRowRange = (rows: Row<Beat>[], currentIndex: number, selectedIndex: number): Row<Beat>[] => {
     const [firstIndex, lastIndex] = currentIndex < selectedIndex
@@ -89,17 +115,30 @@ function BeatTable({
   const lastSelectedIndex = useRef('');
 
   const onRowSelection = (e: React.MouseEvent<HTMLTableRowElement>, row): void => {
-    if (e.shiftKey) {
-      const { rows, rowsById } = tableInstance.getRowModel();
-      const rowsToToggle = getRowRange(rows as Row<Beat>[], Number(row.index), Number(lastSelectedIndex.current));
-      const isCellSelected = rowsById[row.id].getIsSelected();
-      rowsToToggle.forEach((_row) => _row.toggleSelected(!isCellSelected));
+    // Get the beat from the row
+    const beat = row.original;
+    console.log("Row clicked:", beat);
+  
+    if (e.ctrlKey || e.metaKey) {
+      // Multi-select with Ctrl/Cmd
+      onBeatSelect(beat);
+    } else if (e.shiftKey && selectedBeats.length > 0) {
+      // Shift-click range selection
+      const beatIds = beats.map(b => b.id);
+      const clickedIndex = beatIds.indexOf(beat.id);
+      const lastSelectedIndex = beatIds.indexOf(selectedBeats[selectedBeats.length - 1].id);
+      
+      const [start, end] = clickedIndex < lastSelectedIndex 
+        ? [clickedIndex, lastSelectedIndex]
+        : [lastSelectedIndex, clickedIndex];
+      
+      const rangeBeats = beats.slice(start, end + 1);
+      rangeBeats.forEach(b => onBeatSelect(b));
     } else {
-      row.toggleSelected();
+      // Single select
+      onBeatSelect(beat);
     }
-
-    lastSelectedIndex.current = row.index;
-  }
+  };
 
   if (columnVisibility === undefined) {
     return <div>Loading...</div>;
@@ -107,11 +146,6 @@ function BeatTable({
 
   return (
     <div className="w-full">
-      <TableHeader
-        setShowEditColumnsDialog={setShowEditColumnsDialog}
-        selectedBeats={tableInstance.getSelectedRowModel().rows as Row<Beat>[]}
-        setIsEditingBeat={setIsEditingBeat}
-      />
       <div className="flex flex-col h-[calc(100%-250px)] w-full select-none overflow-x-auto">
         <table className="w-full mb-4 h-full">
           <thead>
@@ -160,11 +194,9 @@ function BeatTable({
           <tbody>
             {tableInstance.getRowModel().rows.map((rowElement) => (
               <DraggableRow
-                table={tableInstance}
                 row={rowElement as Row<Beat>}
                 key={rowElement.id}
                 onRowSelection={onRowSelection}
-                isSelected={rowElement.getIsSelected()}
               />
             ))}
           </tbody>
@@ -215,7 +247,6 @@ function BeatTable({
                   beat={tableInstance.getSelectedRowModel().rows[0].original as Beat}
                   onClose={() => {
                     setIsEditingBeat(false);
-                    setRowSelection({});
                   }}
                   onSave={(updatedBeat: EditThisBeat) => {
                     console.log("Saving updated beat...");
