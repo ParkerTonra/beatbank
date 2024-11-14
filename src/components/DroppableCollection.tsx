@@ -1,5 +1,5 @@
 import { useDroppable, useDndContext } from '@dnd-kit/core';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { BeatCollection } from '../bindings';
 
 interface DroppableCollectionProps {
@@ -28,8 +28,7 @@ const DroppableCollection: React.FC<DroppableCollectionProps> = ({ collection })
     <li
       ref={setNodeRef}
       onClick={handleClick}
-      className={`${setId == collection.id ? "bg-gray-600" : "bg-gray-700"} p-2 rounded hover:bg-gray-600 transition duration-200 cursor-pointer ${
-        isOver ? 'border-2 border-green-500' : ''
+      className={`${setId === collection.id.toString() ? "bg-gray-600" : "bg-gray-700"} p-2 rounded hover:bg-gray-600 transition duration-200 cursor-pointer ${        isOver ? 'border-2 border-green-500' : ''
       }`}
     >
       {collection.set_name}

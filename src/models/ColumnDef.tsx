@@ -43,7 +43,7 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
     accessorKey: "title",
     header: "Title",
     size: 250,
-    cell: ({ cell }) => <div className="truncate">{cell.getValue()}</div>
+    cell: ({ cell }) => <div className="truncate">{cell.getValue() as string}</div>,
   },
   {
     accessorKey: "bpm",
@@ -68,7 +68,7 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
   {
     accessorKey: "date_created",
     header: "Date Added",
-    cell: ({ cell }) => formatDate(cell.getValue()),
+    cell: ({ cell }) => formatDate(cell.getValue() as string),
     maxSize: 40
   },
   {
