@@ -22,6 +22,7 @@ interface TableHeaderProps {
 
 export const TableHeader = ({
   selectedBeats,
+  //@ts-ignore
   setIsEditingBeat,
   beatActionItems,
   addBeatItems,
