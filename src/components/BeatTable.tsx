@@ -29,8 +29,8 @@ interface BeatTableProps {
   setIsEditing: (isEditing: boolean) => void;
   fetchData: () => void;
   onBeatsChange: (beats: Beat[]) => void;
-  columnVisibility: ColumnVisibilityState;  // Use the same type as useBeats
-  setColumnVisibility: (visibility: ColumnVisibilityState) => void;
+  columnVisibility: VisibilityState;
+  setColumnVisibility: (updater: (prev: VisibilityState) => VisibilityState) => void;
   onDragEnd: (event: DragEndEvent) => void;
   saveRowOrder: (beats: Beat[]) => Promise<void>;
   saveCollectionOrder: (collectionId: number, beats: Beat[]) => Promise<void>;
@@ -59,29 +59,6 @@ function BeatTable({
     () => createColumnDef(onBeatPlay),
     []
   );
-
-  const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>, beat: Beat) => {
-    console.log("Row clicked:", beat);
-    if (e.ctrlKey || e.metaKey) {
-      // Multi-select with Ctrl/Cmd
-      onBeatSelect(beat);
-    } else if (e.shiftKey && selectedBeats.length > 0) {
-      // Shift-click range selection
-      const beatIds = beats.map(b => b.id);
-      const clickedIndex = beatIds.indexOf(beat.id);
-      const lastSelectedIndex = beatIds.indexOf(selectedBeats[selectedBeats.length - 1].id);
-      
-      const [start, end] = clickedIndex < lastSelectedIndex 
-        ? [clickedIndex, lastSelectedIndex]
-        : [lastSelectedIndex, clickedIndex];
-      
-      const rangeBeats = beats.slice(start, end + 1);
-      rangeBeats.forEach(b => onBeatSelect(b));
-    } else {
-      // Single select
-      onBeatSelect(beat);
-    }
-  };
 
   const tableInstance = useReactTable<Beat>({
     columns: finalColumnDef,
@@ -114,13 +91,12 @@ function BeatTable({
   const lastSelectedIndex = useRef('');
 
   const onRowSelection = (e: React.MouseEvent<HTMLTableRowElement>, row): void => {
-    // Get the beat from the row
     const beat = row.original;
     console.log("Row clicked:", beat);
   
     if (e.ctrlKey || e.metaKey) {
-      // Multi-select with Ctrl/Cmd
-      row.toggleSelected(); // Toggle highlighting
+      // Multi-select with Ctrl/Cmd - Toggle behavior
+      row.toggleSelected();
       setSelectedBeats(prev => {
         const exists = prev.some(b => b.id === beat.id);
         if (exists) {
@@ -133,25 +109,24 @@ function BeatTable({
       const { rows } = tableInstance.getRowModel();
       const rowsToToggle = getRowRange(rows as Row<Beat>[], Number(row.index), Number(lastSelectedIndex.current));
       
-      // Add all beats in range to selection
-      const beatsInRange = rowsToToggle.map(row => row.original);
-      setSelectedBeats([...selectedBeats, ...beatsInRange]);
-      
-      // Toggle highlighting for all rows in range
+      // Select all rows in the range
       rowsToToggle.forEach((_row) => {
         _row.toggleSelected(true);
       });
+      
+      // Update selected beats with the range
+      const beatsInRange = rowsToToggle.map(row => row.original);
+      setSelectedBeats(beatsInRange);
     } else {
-      // Single select - deselect all other rows first
+      // Single select - deselect all other rows and select only this one
       tableInstance.getRowModel().rows.forEach(_row => {
-        if (_row.id !== row.id) {
-          _row.toggleSelected(false);
-        }
+        _row.toggleSelected(false);
       });
       row.toggleSelected(true);
       
-      // Clear previous selections and select only this beat
-      onBeatSelect(beat);    }
+      // Set only this beat as selected
+      setSelectedBeats([beat]);
+    }
   
     lastSelectedIndex.current = row.index;
   };
