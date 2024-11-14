@@ -16,7 +16,6 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { message } from "@tauri-apps/api/dialog";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { HashRouter as Router, Route, Routes, useLocation } from "react-router-dom";
-import BeatCollTable from "./components/BeatCollection";
 import { listen } from '@tauri-apps/api/event';
 import BeatJockey from "./components/BeatJockey";
 import { useAudio } from "./hooks/useAudio";
@@ -24,11 +23,9 @@ import { FileEntry, readDir } from "@tauri-apps/api/fs";
 import TableHeader from "./components/TableHeader";
 
 
-import { ColumnResizeMode, ColumnSizingState, getCoreRowModel, getSortedRowModel, Row, SortingState, Table, useReactTable } from "@tanstack/react-table";
+import {ColumnSizingState,SortingState, Table, } from "@tanstack/react-table";
 import { open, OpenDialogOptions } from "@tauri-apps/api/dialog";
 import { MenuItem } from "primereact/menuitem";
-import { Dialog } from "primereact/dialog";
-import { createColumnDef } from "./models/ColumnDef";
 import { TableContext } from "./contexts/TableContext";
 import BeatCollectionComponent from "./components/BeatCollection";
 
@@ -109,13 +106,6 @@ function AppContainer() {
     directory: true,
   } as OpenDialogOptions;
 
-  const fileDialogOptions: OpenDialogOptions = {
-    multiple: true,
-    filters: [{
-      name: 'Audio Files',
-      extensions: ['flac', 'wav', 'mp3', 'ogg', 'm4a', 'aac', 'aiff', 'wma']
-    }]
-  } as OpenDialogOptions;
 
   const handleFolderUpload = async () => {
     try {
@@ -171,27 +161,16 @@ function AppContainer() {
     };
   }, []);
 
-  const handleAddToCollBtnClick = async (collectionId: number) => {
-    if (selectedBeats.length === 0) {
-      message('Please select at least one beat.', { title: 'Error', type: 'error' });
-      return;
-    }
-
-    for (const beat of selectedBeats) {
-      await invoke('add_beat_to_collection', { beatId: beat.id, collectionId });
-    }
-    fetchData();
-  };
 
   const addBeatsToSet = async (collectionId: number) => {
     if (!selectedBeats.length) {
       message('Please select a beat first.', { title: 'Error', type: 'error' });
       return;
     }
-    await invoke('add_beats_to_collection', {
-      ids: selectedBeats.map(beat => beat.id),
-      collectionId
-    }).then(() => fetchData());
+    const beatsSelectedIds = selectedBeats.map(beat => beat.id);
+    beatsSelectedIds.forEach(async (beatId) => {
+      handleAddToCollection(collectionId, beatId);
+    });
   };
 
   const removeBeatsFromSet = async () => {
@@ -310,6 +289,8 @@ function AppContainer() {
       setUploadStatus(`Error selecting file: ${error}`);
     }
   };
+
+  
 
   const handleAddToCollection = async (collectionId: number, beatId: number) => {
     try {
