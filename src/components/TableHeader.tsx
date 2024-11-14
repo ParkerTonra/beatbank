@@ -1,13 +1,13 @@
 // In TableHeader.tsx
+import { useState } from "react";
 import { Beat } from "../bindings";
-import { Row } from "@tanstack/react-table";
 import DropdownMenu from "./DropdownMenu";
 import { Dialog } from "primereact/dialog";
 import { MenuItem } from "primereact/menuitem";
+import { Table } from "@tanstack/react-table";
 
 interface TableHeaderProps {
   selectedBeats: Beat[];
-  setShowEditColumnsDialog: (isVisible: boolean) => void;
   setIsEditingBeat: (isEditing: boolean) => void;
   beatActionItems: MenuItem[];
   addBeatItems: MenuItem[];
@@ -15,26 +15,72 @@ interface TableHeaderProps {
   showStatusDialog: boolean;
   setShowStatusDialog: (show: boolean) => void;
   uploadedFiles: string[];
+  tableInstance: Table<Beat>; // Add proper typing
+  showEditColumnsDialog: boolean;
+  setShowEditColumnsDialog: (show: boolean) => void;
 }
 
 export const TableHeader = ({
   selectedBeats,
-  setShowEditColumnsDialog,
+  setIsEditingBeat,
   beatActionItems,
   addBeatItems,
   uploadStatus,
   showStatusDialog,
   setShowStatusDialog,
   uploadedFiles,
+  tableInstance,
+  showEditColumnsDialog,
+  setShowEditColumnsDialog,
 }: TableHeaderProps) => {
   return (
     <div className="w-full flex">
       <button
-        onClick={() => setShowEditColumnsDialog(true)}
-        className="mr-2 mb-2"
-      >
-        <span className="pi pi-pencil mr-2" /> Edit Columns
-      </button>
+      onClick={() => setShowEditColumnsDialog(true)}
+      className="mr-2 mb-2"
+    >
+      <span className="pi pi-pencil mr-2" /> Edit Columns
+    </button>
+    
+      <Dialog
+          header="Edit Columns"
+          visible={showEditColumnsDialog}
+          className="bg-blue-900 w-3/4 h-1/2 p-4 rounded-md border-2 border-black"
+          modal
+          onHide={() => setShowEditColumnsDialog(false)}
+        >
+          <div className="flex px-4 shadow rounded mt-12 text-sm space-x-4">
+            <div className="px-1">
+              <label>
+                <input
+                  className="flex-row"
+                  type="checkbox"
+                  checked={tableInstance.getIsAllColumnsVisible()}
+                  onChange={tableInstance.getToggleAllColumnsVisibilityHandler()}
+                />{" "}
+                Toggle All
+              </label>
+            </div>
+
+            {tableInstance.getAllLeafColumns().map((column) => {
+              if (column.id === "drag-handle") {
+                return;
+              }
+              return (
+                <div key={column.id} className="mb-36">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={column.getIsVisible()}
+                      onChange={column.getToggleVisibilityHandler()}
+                    />{" "}
+                    {column.id}
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+        </Dialog>
       
       <DropdownMenu 
         className="mr-2" 

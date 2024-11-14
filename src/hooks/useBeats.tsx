@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { Beat, BeatCollection, ColumnVisibilityState } from "./../bindings";
+import { VisibilityState } from "@tanstack/react-table";
 
 
 const defaultColumnVisibility = {
@@ -17,7 +18,16 @@ const defaultColumnVisibility = {
 export const useBeats = () => {
   const [beats, setBeats] = useState<Beat[]>([]);
   const [collectionBeats, setCollectionBeats] = useState<Beat[]>([]);
-  const [columnVisibility, setColumnVisibility] = useState(defaultColumnVisibility);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
+    title: true,
+    bpm: true,
+    musical_key: true,
+    duration: true,
+    artist: true,
+    date_added: true,
+    file_path: true,
+    id: true
+  });
   const [beatCollections, setBeatCollections] = useState<BeatCollection[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
