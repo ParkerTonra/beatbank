@@ -88,10 +88,22 @@ fn add_beat(state: State<AppState>, file_path: String) -> Result<String, String>
     println!("New beat added with id: {}", inserted_beat.id);
 
     // Analyze and update the beat synchronously
-    analyze_and_update_beat(inserted_beat.id, file_path.clone(), conn)?;
+    //analyze_and_update_beat(inserted_beat.id, file_path.clone(), conn)?;
+
+    analyze_dummy(inserted_beat.id, file_path.clone(), conn)?;
 
     Ok(format!("New beat added with id: {}", inserted_beat.id))
 }
+// dummy function to avoid using the audio_analyzer.py file. does nothing.
+fn analyze_dummy(
+    beat_id: i32, 
+    file_path: String, 
+    conn: &mut diesel::SqliteConnection // Pass connection as mutable reference
+) -> Result<(), String> {
+    println!("Analysis currently disabled.");
+    Ok(())
+}
+
 
 fn analyze_and_update_beat(
     beat_id: i32, 

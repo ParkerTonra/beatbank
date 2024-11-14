@@ -10,16 +10,16 @@ interface BeatCollProps {
   onBeatPlay: (beat: Beat) => void;
   isEditing: boolean;
   setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
-  selectedBeat: Beat | null;
-  setSelectedBeat: React.Dispatch<React.SetStateAction<Beat | null>>;
+  selectedBeats: Beat[];
+  setSelectedBeats: React.Dispatch<React.SetStateAction<Beat[]>>;
   saveRowOrder: (beatsToSave: Beat[]) => Promise<void>;
   saveCollectionOrder: (collectionId: number, beatsToSave: Beat[]) => Promise<void>;
   beats: Beat[];
 }
 
 const BeatCollectionComponent: React.FC<BeatCollProps> = ({
-  onDragEnd, onBeatPlay, isEditing, setIsEditing, selectedBeat,
-  setSelectedBeat, saveRowOrder, saveCollectionOrder, beats
+  onDragEnd, onBeatPlay, isEditing, setIsEditing, selectedBeats,
+  setSelectedBeats, saveRowOrder, saveCollectionOrder, beats
 }) => {
   const { id } = useParams<{ id: string }>();
   const {
@@ -30,6 +30,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
     fetchSetData,
     columnVisibility,
     setColumnVisibility,
+    fetchData,
   } = useBeats();
 
   useEffect(() => {
@@ -55,12 +56,12 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
       <p>Date Played: {currentCollection.date_played || 'N/A'}</p>
       <BeatTable
         beats={beats}
-        onBeatSelect={(beat: Beat) => setSelectedBeat(beat)}
+        onBeatSelect={(beat: Beat) => setSelectedBeats([beat])}
         onBeatPlay={onBeatPlay}
         isEditing={isEditing}
         setIsEditing={setIsEditing}
-        selectedBeat={selectedBeat}
-        setSelectedBeat={setSelectedBeat}
+        selectedBeats={selectedBeats}
+        fetchData={fetchData}
         fetchSetData={fetchSetData}
         onBeatsChange={handleBeatsChange}
         columnVisibility={columnVisibility}

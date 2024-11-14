@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { Beat, CollOrder, RowOrder } from "./bindings";
+import { Beat, CollOrder, RowOrder, ColumnVis, ColumnVisibility } from "./bindings";
 import Sidebar from "./components/Sidebar";
 import "./App.css";
 import "./Main.css";
 import 'primeicons/primeicons.css';
 import { SplashScreen } from "./components/SplashScreen";
 import BeatTable from "./components/BeatTable";
+import 'primereact/resources/themes/lara-dark-indigo/theme.css';
+import 'primereact/resources/primereact.min.css';
+import 'primeicons/primeicons.css';
 import { useBeats } from "./hooks/useBeats";
 import { loadSettings, saveSettings, getSettingsPath } from './store';
 import { DndContext, DragEndEvent, DragStartEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
@@ -18,14 +21,30 @@ import BeatCollTable from "./components/BeatCollection";
 import { listen } from '@tauri-apps/api/event';
 import BeatJockey from "./components/BeatJockey";
 import { useAudio } from "./hooks/useAudio";
+import useMultiSelect from "./hooks/useMultiSelect";
+import { FileEntry, readDir } from "@tauri-apps/api/fs";
+import TableHeader from "./components/TableHeader";
+
+
+import { Row } from "@tanstack/react-table";
+import { open, OpenDialogOptions } from "@tauri-apps/api/dialog";
+import { MenuItem } from "primereact/menuitem";
+import { Dialog } from "primereact/dialog";
 
 function AppContainer() {
   const [showSplashScreen, setShowSplashScreen] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [selectedBeat, setSelectedBeat] = useState<Beat | null>(null);
+  const [selectedBeats, setSelectedBeats] = useState<Beat[]>([]);
   const [theme, setTheme] = useState<string>('light');
   const [settingsPath, setSettingsPath] = useState<string>('');
   const [isFileDragging, setIsFileDragging] = useState(false);
+  
+
+  const [isEditingBeat, setIsEditingBeat] = useState(false);
+  const [showEditColumnsDialog, setShowEditColumnsDialog] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string>('');
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
 
   const location = useLocation();
   const collectionIdMatch = location.pathname.match(/\/collection\/(\d+)/);
@@ -33,6 +52,38 @@ function AppContainer() {
   const collectionId = collectionIdMatch ? parseInt(collectionIdMatch[1], 10) : null;
 
   const { isPlaying, currentBeat, playBeat, stopBeat, togglePlayPause, audioRef } = useAudio();
+
+  const folderDialogOptions: OpenDialogOptions = {
+    multiple: true,
+    directory: true,
+  } as OpenDialogOptions;
+
+  const fileDialogOptions: OpenDialogOptions = {
+    multiple: true,
+    filters: [{
+      name: 'Audio Files',
+      extensions: ['flac', 'wav', 'mp3', 'ogg', 'm4a', 'aac', 'aiff', 'wma']
+    }]
+  } as OpenDialogOptions;
+
+  const handleFolderUpload = async () => {
+    try {
+      const selected = await open(folderDialogOptions);
+
+      if (selected) {
+        const paths = Array.isArray(selected) ? selected : [selected];
+        for (const filePath of paths) {
+          const entries = await readDir(filePath);
+          await processEntries(entries);
+          fetchData();
+        }
+      }
+    } catch (error) {
+      console.error("Error selecting file:", error);
+      setUploadStatus(`Error selecting file: ${error}`);
+    }
+  };
+
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 10 } }),
@@ -72,15 +123,123 @@ function AppContainer() {
   }, []);
 
   const handleAddToCollBtnClick = async (collectionId: number) => {
-    if (!selectedBeat) {
+    if (selectedBeats.length === 0) {
+      message('Please select at least one beat.', { title: 'Error', type: 'error' });
+      return;
+    }
+
+    for (const beat of selectedBeats) {
+      await invoke('add_beat_to_collection', { beatId: beat.id, collectionId });
+    }
+    fetchData();
+  };
+
+  const addBeatsToSet = async (collectionId: number) => {
+    if (!selectedBeats.length) {
       message('Please select a beat first.', { title: 'Error', type: 'error' });
       return;
     }
-    let beatId = selectedBeat.id;
-    console.log('adding beat to collection:', beatId, collectionId);
-    await invoke('add_beat_to_collection', { beatId, collectionId });
-    // Refresh data or update state as needed
-    fetchData();
+    await invoke('add_beats_to_collection', {
+      ids: selectedBeats.map(beat => beat.id),
+      collectionId
+    }).then(() => fetchData());
+  };
+
+  const removeBeatsFromSet = async () => {
+    if (!selectedBeats.length) {
+      message('Please select a beat first.', { title: 'Error', type: 'error' });
+      return;
+    }
+    await invoke('remove_beats_from_collection', {
+      ids: selectedBeats.map(beat => beat.id),
+      collectionId: collectionId
+    }).then(() => fetchData());
+  };
+
+  const handleEditBeat = async () => {
+    if (selectedBeats.length !== 1) {
+      console.log("No beat selected");
+      message("No beat selected");
+      return;
+    }
+    setIsEditingBeat(true);
+  };
+
+  const handleBeatDelete = async () => {
+    if (!selectedBeats.length) {
+      console.warn("No beat selected");
+      setUploadStatus("No beat selected");
+      return;
+    }
+    try {
+      const result = await invoke('delete_beats', {
+        ids: selectedBeats.map(beat => beat.id)
+      });
+      await fetchData();
+      setUploadStatus(prevStatus => prevStatus + `\n${result}`);
+    } catch (error) {
+      console.error("Error deleting beat:", error);
+      setUploadStatus(prevStatus => prevStatus + `\nError deleting beat: ${error}`);
+    }
+  };
+
+  async function processEntries(entries: FileEntry[]) {
+    const promises = [];
+    const filePaths = [];
+    for (const filepath of entries) {
+      if (filepath.children) {
+        await processEntries(filepath.children);
+      } else {
+        filePaths.push(filepath.path)
+        const validExtensions = ['flac', 'wav', 'mp3', 'ogg', 'm4a', 'aac', 'aiff', 'wma'];
+        const extension = (filepath.name || "").split(".").pop() || "";
+        if (validExtensions.indexOf(extension) >= 0) {
+          setUploadedFiles(Array.isArray(filePaths) ? filePaths : [filePaths]);
+          promises.push(invoke('add_beat', {
+            filePath: filepath.path
+          }));
+        }
+      }
+    }
+    Promise.all(promises).then((values) => {
+      fetchData();
+      setUploadStatus(values.join("\n"));
+    }, function (err) {
+      console.error(err)
+    });
+  }
+
+  const handleFileUpload = async () => {
+    try {
+      const filePaths = await open({
+        directory: false,
+        multiple: true,
+        filters: [{
+          name: 'Audio Files',
+          extensions: ['flac', 'wav', 'mp3', 'ogg', 'm4a', 'aac', 'aiff', 'wma']
+        }]
+      });
+
+      if (filePaths && filePaths.length > 0) {
+        setUploadedFiles(Array.isArray(filePaths) ? filePaths : [filePaths]);
+
+        for (const filePath of (Array.isArray(filePaths) ? filePaths : [filePaths])) {
+          try {
+            const result = await invoke('add_beat', {
+              filePath: filePath,
+            });
+            fetchData();
+            setUploadStatus(prevStatus => prevStatus + `\n${result}`);
+          } catch (error) {
+            console.error("Error adding beat:", error);
+            setUploadStatus(prevStatus => prevStatus + `\nError uploading ${filePath}: ${error}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error selecting file:", error);
+      setUploadStatus(`Error selecting file: ${error}`);
+    }
   };
 
   const handleAddToCollection = async (collectionId: number, beatId: number) => {
@@ -98,7 +257,7 @@ function AppContainer() {
       const beatId = parseInt(activeId.replace(/^(sortable-|beat-)/, ''), 10);
       const draggedBeat = beats.find(beat => beat.id === beatId);
       if (draggedBeat) {
-        setSelectedBeat(draggedBeat);
+        setSelectedBeats([draggedBeat]);
       }
     }
   };
@@ -185,6 +344,47 @@ function AppContainer() {
     }
   };
 
+  // Define the beatActionItems with proper typing
+  const getBeatActionItems = (): MenuItem[] => [
+    {
+      label: "Add to set",
+      icon: "pi pi-plus",
+      items: beatCollections.map(set => ({
+        label: set.set_name,
+        // Fix: Call addBeatsToSet instead of handleAddToCollection
+        command: () => addBeatsToSet(set.id)
+      }))
+    },
+    {
+      label: "Delete",
+      icon: "pi pi-trash",
+      command: handleBeatDelete,
+    },
+    ...(selectedBeats.length === 1 ? [{
+      label: "Edit",
+      icon: "pi pi-pencil",
+      command: handleEditBeat,
+    }] : []),
+    ...(collectionId ? [{
+      label: "Remove from set",
+      icon: "pi pi-minus",
+      command: removeBeatsFromSet,
+    }] : [])
+  ];
+
+  const addBeatItems: MenuItem[] = [
+    {
+      label: "Add Beat",
+      icon: "pi pi-plus",
+      command: handleFileUpload,
+    },
+    {
+      label: "Add Folder",
+      icon: "pi pi-plus",
+      command: handleFolderUpload,
+    },
+  ];
+
   const saveRowOrder = async (beatsToSave: Beat[]) => {
     // Don't try to save if we have no beats
     if (!beatsToSave.length) return;
@@ -249,7 +449,6 @@ function AppContainer() {
   };
 
 
-
   if (showSplashScreen) {
     return <SplashScreen closeSplashScreen={() => setShowSplashScreen(false)} />;
   }
@@ -259,8 +458,16 @@ function AppContainer() {
   };
 
   const handleBeatSelection = (beat: Beat) => {
-    setSelectedBeat(beat);
+    console.log("Selecting beat:", beat); // Add logging
+    setSelectedBeats(prev => {
+      const exists = prev.some(b => b.id === beat.id);
+      if (exists) {
+        return prev.filter(b => b.id !== beat.id);
+      }
+      return [...prev, beat];
+    });
   };
+
 
   if (error) return <div className="flex items-center justify-center h-screen">Error: {error.message}</div>;
 
@@ -271,45 +478,55 @@ function AppContainer() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-600 p-6">
             <h1 className="text-3xl font-bold font-guerilla mb-4 py-0">BEATBANK</h1>
+            <TableHeader
+              selectedBeats={selectedBeats}
+              setShowEditColumnsDialog={setShowEditColumnsDialog}
+              setIsEditingBeat={setIsEditingBeat}
+              beatActionItems={getBeatActionItems()}
+              addBeatItems={addBeatItems}
+              uploadStatus={uploadStatus}
+              showStatusDialog={showStatusDialog}
+              setShowStatusDialog={setShowStatusDialog}
+              uploadedFiles={uploadedFiles}
+            />
             <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
               strategy={verticalListSortingStrategy}>
               <Routes>
-                {/* default route for main beat table */}
                 <Route
                   path="/"
                   element={
                     <BeatTable
                       beats={beats}
                       onBeatPlay={playBeat}
-                      onBeatSelect={handleBeatSelection}
+                      selectedBeats={selectedBeats}
+                      onBeatSelect={handleBeatSelection} // Make sure this prop is being used in BeatTable
                       isEditing={isEditing}
                       setIsEditing={setIsEditing}
-                      selectedBeat={selectedBeat}
-                      setSelectedBeat={setSelectedBeat}
                       fetchData={fetchData}
                       onBeatsChange={handleBeatsChange}
-                      onAddBeatToCollection={handleAddToCollection}
                       columnVisibility={columnVisibility}
                       setColumnVisibility={setColumnVisibility}
                       onDragEnd={handleDragEnd}
                       saveRowOrder={saveRowOrder}
                       saveCollectionOrder={saveCollectionOrder}
+                      fetchSetData={fetchSetData}
                     />
                   }
                 />
                 <Route
                   path="/collection/:id"
-                  element={<BeatCollTable
-                    beats={collectionBeats}
-                    onDragEnd={handleDragEnd}
-                    onBeatPlay={playBeat}
-                    isEditing={isEditing}
-                    setIsEditing={setIsEditing}
-                    selectedBeat={selectedBeat}
-                    setSelectedBeat={setSelectedBeat}
-                    saveRowOrder={saveRowOrder}
-                    saveCollectionOrder={saveCollectionOrder}
-                  />}
+                  element={
+                    <BeatCollTable
+                      beats={collectionBeats}
+                      onDragEnd={handleDragEnd}
+                      onBeatPlay={playBeat}
+                      isEditing={isEditing}
+                      setIsEditing={setIsEditing}
+                      selectedBeats={selectedBeats}
+                      setSelectedBeats={setSelectedBeats}
+                      saveRowOrder={saveRowOrder}
+                      saveCollectionOrder={saveCollectionOrder}
+                    />}
                 />
               </Routes>
             </SortableContext>
