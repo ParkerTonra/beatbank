@@ -39,8 +39,6 @@ function AppContainer() {
   const [settingsPath, setSettingsPath] = useState<string>('');
   const [isFileDragging, setIsFileDragging] = useState(false);
   
-
-  const [isEditingBeat, setIsEditingBeat] = useState(false);
   const [showEditColumnsDialog, setShowEditColumnsDialog] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const [showStatusDialog, setShowStatusDialog] = useState(false);
@@ -166,8 +164,6 @@ function AppContainer() {
   };
 
   const handleEditBeat = async () => {
-    //delete after debug
-    console.log("Editing beat:", selectedBeats[0]);
     if (selectedBeats.length !== 1) {
       console.log("No beat selected");
       message("No beat selected");
