@@ -12,7 +12,7 @@ use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
 
-use crate::{models::{Beat, BeatChangeset, BeatCollection, NewBeat, NewBeatCollection}, schema::set_beat::order_in_collection};
+use crate::models::{Beat, BeatChangeset, BeatCollection, NewBeat, NewBeatCollection};
 
 
 pub fn establish_connection() -> SqliteConnection {

@@ -1,12 +1,11 @@
-import { useState, useMemo, useRef, useEffect, Dispatch, SetStateAction } from "react";
+import { useMemo, useRef, useEffect, Dispatch, SetStateAction } from "react";
 import {
   useReactTable,
   flexRender,
   getCoreRowModel,
   ColumnResizeMode,
-  ColumnSizingState,
   OnChangeFn,
-  VisibilityState, SortingState, Row, getSortedRowModel,
+  VisibilityState, Row, getSortedRowModel,
 } from "@tanstack/react-table";
 import { createColumnDef } from "./../models/ColumnDef.tsx";
 import { Beat, EditThisBeat } from "./../bindings.ts";
@@ -16,7 +15,7 @@ import {
 import DraggableRow from "./DraggableRow.tsx";
 import { invoke } from "@tauri-apps/api/tauri";
 import EditBeatCard from "./EditBeatCard.tsx";
-import { Dialog } from "primereact/dialog";
+
 import { useTableContext } from "../contexts/TableContext.tsx";
 interface BeatTableProps {
   beats?: Beat[];
@@ -35,6 +34,7 @@ interface BeatTableProps {
   showEditColumnsDialog: boolean;
   setShowEditColumnsDialog: (show: boolean) => void;
   collectionId?: number;
+  handleRefresh: () => void;
 }
 
 function BeatTable({
@@ -49,6 +49,7 @@ function BeatTable({
   setColumnVisibility,
   collectionId,
   fetchSetData,
+  handleRefresh,
 }: BeatTableProps) {
 
 
@@ -256,7 +257,7 @@ function BeatTable({
                       })
                         .then((response) => {
                           console.log("Beat successfully updated:", response);
-                          fetchData();
+                          handleRefresh();
                         })
                         .catch((error) => {
                           console.error("Error updating beat:", error);

@@ -82,15 +82,15 @@ function AppContainer() {
   useEffect(() => {
     const fetchSettings = async () => {
       console.log("loading settings, path:", settingsPath);
-      const settings = await loadSettings(); // Load settings from the backend
-      setTheme(settings.theme); // Update the theme state with the loaded settings
+      const settings = await loadSettings();
+      setTheme(settings.theme);
 
-      const path = await getSettingsPath(); // Fetch and log the settings path
-      setSettingsPath(path); // Update the state to display the settings path
+      const path = await getSettingsPath();
+      setSettingsPath(path);
     };
 
-    fetchSettings(); // Invoke the fetchSettings function when the component mounts
-  }, []); // Empty dependency array ensures this runs only once
+    fetchSettings();
+  }, []);
 
   useEffect(() => {
     if (collectionId) {
@@ -195,6 +195,14 @@ function AppContainer() {
     }
   };
 
+  const handleRefresh = async () => {
+    if (collectionId) {
+      await fetchSetData(collectionId);
+    } else {
+      await fetchData();
+    }
+  };
+
   const handleEditBeat = async () => {
     if (selectedBeats.length !== 1) {
       console.log("No beat selected");
@@ -203,6 +211,7 @@ function AppContainer() {
     }
     setIsEditing(true);
   };
+  
 
   const handleBeatDelete = async () => {
     if (!selectedBeats.length) {
@@ -293,7 +302,7 @@ function AppContainer() {
   const handleAddToCollection = async (collectionId: number, beatId: number) => {
     try {
       await invoke('add_beat_to_collection', { beatId, collectionId });
-      fetchData(); // Refresh data or update state as needed
+      fetchData();
     } catch (error) {
       console.error('Error adding beat to collection:', error);
     }
@@ -350,7 +359,7 @@ function AppContainer() {
     if (overId.startsWith('collection-') && activeId.startsWith('beat-') || activeId.startsWith('selected-beats-')) {
       const targetCollectionId = parseInt(overId.replace('collection-', ''), 10);
 
-      if (!dragData || !dragData.beats) {  // Changed from beat to beats
+      if (!dragData || !dragData.beats) {
         console.error("Missing drag data");
         return;
       }
@@ -469,6 +478,7 @@ function AppContainer() {
 
 
   // Define a function to handle theme changes
+  //@ts-ignore
   const handleThemeChange = async () => {
     const newTheme = theme === 'light' ? 'dark' : 'light'; // Toggle between light and dark themes
     setTheme(newTheme); // Update the theme state
@@ -526,6 +536,7 @@ function AppContainer() {
                         fetchSetData={fetchSetData}
                         showEditColumnsDialog={showEditColumnsDialog}
                         setShowEditColumnsDialog={setShowEditColumnsDialog}
+                        handleRefresh={handleRefresh}
                       />
                     }
                   />
@@ -545,6 +556,7 @@ function AppContainer() {
                         showEditColumnsDialog={showEditColumnsDialog}
                         setShowEditColumnsDialog={setShowEditColumnsDialog}
                         beats={collectionBeats}
+                        handleRefresh={handleRefresh}
                       />}
                   />
                 </Routes>

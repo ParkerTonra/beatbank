@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
-import { Beat, BeatCollection, ColumnVisibilityState } from "./../bindings";
+import { Beat, BeatCollection } from "./../bindings";
 import { VisibilityState } from "@tanstack/react-table";
 
 

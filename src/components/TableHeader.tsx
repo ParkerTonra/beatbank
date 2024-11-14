@@ -1,10 +1,10 @@
 // In TableHeader.tsx
-import { useState } from "react";
+
 import { Beat } from "../bindings";
 import DropdownMenu from "./DropdownMenu";
 import { Dialog } from "primereact/dialog";
 import { MenuItem } from "primereact/menuitem";
-import { Table } from "@tanstack/react-table";
+
 import { useTableContext } from "../contexts/TableContext";
 
 interface TableHeaderProps {

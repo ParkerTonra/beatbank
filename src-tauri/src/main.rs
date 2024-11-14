@@ -100,7 +100,7 @@ fn analyze_dummy(
     file_path: String, 
     conn: &mut diesel::SqliteConnection // Pass connection as mutable reference
 ) -> Result<(), String> {
-    println!("Analysis currently disabled.");
+    println!("Analysis currently disabled. Returning dummy values.");
     Ok(())
 }
 
