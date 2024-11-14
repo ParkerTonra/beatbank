@@ -121,23 +121,31 @@ function BeatTable({
   
     if (e.ctrlKey || e.metaKey) {
       // Multi-select with Ctrl/Cmd
+      row.toggleSelected(); // Toggle highlighting
       onBeatSelect(beat);
     } else if (e.shiftKey && selectedBeats.length > 0) {
       // Shift-click range selection
-      const beatIds = beats.map(b => b.id);
-      const clickedIndex = beatIds.indexOf(beat.id);
-      const lastSelectedIndex = beatIds.indexOf(selectedBeats[selectedBeats.length - 1].id);
+      const { rows, rowsById } = tableInstance.getRowModel();
+      const rowsToToggle = getRowRange(rows as Row<Beat>[], Number(row.index), Number(lastSelectedIndex.current));
+      const isCellSelected = rowsById[row.id].getIsSelected();
       
-      const [start, end] = clickedIndex < lastSelectedIndex 
-        ? [clickedIndex, lastSelectedIndex]
-        : [lastSelectedIndex, clickedIndex];
-      
-      const rangeBeats = beats.slice(start, end + 1);
-      rangeBeats.forEach(b => onBeatSelect(b));
+      // Toggle highlighting for all rows in range
+      rowsToToggle.forEach((_row) => {
+        _row.toggleSelected(!isCellSelected);
+        onBeatSelect(_row.original);
+      });
     } else {
-      // Single select
+      // Single select - deselect all other rows first
+      tableInstance.getRowModel().rows.forEach(_row => {
+        if (_row.id !== row.id) {
+          _row.toggleSelected(false);
+        }
+      });
+      row.toggleSelected(true);
       onBeatSelect(beat);
     }
+  
+    lastSelectedIndex.current = row.index;
   };
 
   if (columnVisibility === undefined) {
