@@ -34,7 +34,6 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
   saveCollectionOrder,
   showEditColumnsDialog,
   setShowEditColumnsDialog,
-  onBeatsChange,
   fetchData,
 }) => {
   const { id } = useParams<{ id: string }>();
@@ -106,11 +105,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
     });
   }, [setSelectedBeats]);
 
-  // Custom handler for beats change that ensures collection data is updated
-  const handleBeatsChange = useCallback((newBeats: Beat[]) => {
-    onBeatsChange(newBeats);
-    setCollectionBeats(newBeats);
-  }, [onBeatsChange, setCollectionBeats]);
+  
 
   if (loading) return <div className="p-4">Loading...</div>;
   if (error) return <div className="p-4 text-red-500">Error: {error.message}</div>;
@@ -128,7 +123,6 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
 
       <BeatTable
         beats={beats}
-        onBeatSelect={handleBeatSelect}
         onBeatPlay={onBeatPlay}
         isEditing={isEditing}
         setIsEditing={setIsEditing}
@@ -136,7 +130,6 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
         setSelectedBeats={setSelectedBeats}
         fetchData={handleCollectionUpdate}
         fetchSetData={fetchSetData}
-        onBeatsChange={handleBeatsChange}
         columnVisibility={columnVisibility}
         setColumnVisibility={setColumnVisibility}
         onDragEnd={onDragEnd}
