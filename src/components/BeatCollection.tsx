@@ -19,6 +19,7 @@ interface BeatCollProps {
   showEditColumnsDialog: boolean;
   setShowEditColumnsDialog: (show: boolean) => void;
   beats: Beat[];
+  handleRefresh: () => void;
 
 }
 
@@ -35,10 +36,10 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
   showEditColumnsDialog,
   setShowEditColumnsDialog,
   fetchData,
+  handleRefresh,
 }) => {
   const { id } = useParams<{ id: string }>();
   const {
-    collectionBeats,
     setCollectionBeats,
     currentCollection,
     loading,
@@ -94,19 +95,6 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
     }
   }, [fetchData]);
 
-  // Custom handler for beat selection that works specifically for collections
-  const handleBeatSelect = useCallback((beat: Beat) => {
-    setSelectedBeats(prev => {
-      const exists = prev.some(b => b.id === beat.id);
-      if (exists) {
-        return prev.filter(b => b.id !== beat.id);
-      }
-      return [...prev, beat];
-    });
-  }, [setSelectedBeats]);
-
-  
-
   if (loading) return <div className="p-4">Loading...</div>;
   if (error) return <div className="p-4 text-red-500">Error: {error.message}</div>;
   if (!currentCollection) return <div className="p-4">No collection found</div>;
@@ -137,6 +125,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
         saveCollectionOrder={saveCollectionOrder}
         showEditColumnsDialog={showEditColumnsDialog}
         setShowEditColumnsDialog={setShowEditColumnsDialog}
+        handleRefresh={handleRefresh}
       />
     </div>
   );
