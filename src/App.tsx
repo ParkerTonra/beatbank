@@ -207,9 +207,11 @@ function AppContainer() {
         collectionId: collectionId
       });
 
-      // Always fetch collection data after modifying collection
+      // Check if we're in a collection and refresh accordingly
       if (collectionId) {
-        fetchData();
+        await fetchSetData(collectionId);
+      } else {
+        await fetchData();
       }
     } catch (error) {
       console.error('Error removing beats from collection:', error);
@@ -581,7 +583,7 @@ function AppContainer() {
                         fetchData={fetchData}
                         showEditColumnsDialog={showEditColumnsDialog}
                         setShowEditColumnsDialog={setShowEditColumnsDialog}
-
+                        beats={collectionBeats}
                       />}
                   />
                 </Routes>

@@ -36,6 +36,7 @@ interface BeatTableProps {
   fetchSetData: (setId: number) => Promise<void>;
   showEditColumnsDialog: boolean;
   setShowEditColumnsDialog: (show: boolean) => void;
+  collectionId?: number;
 }
 
 function BeatTable({
@@ -50,13 +51,11 @@ function BeatTable({
   onBeatsChange,
   columnVisibility,
   setColumnVisibility,
-  onDragEnd,
-  saveRowOrder,
-  saveCollectionOrder,
+  collectionId,
   fetchSetData,
-  showEditColumnsDialog,
-  setShowEditColumnsDialog,
 }: BeatTableProps) {
+  
+
   // row selection state
   const lastSelectedIndex = useRef('');
   const { setTableInstance } = useTableContext();
@@ -65,6 +64,13 @@ function BeatTable({
     () => createColumnDef(onBeatPlay),
     [onBeatPlay]
   );
+
+  //if collectionId exists, useEffect to fetchData whenever collectionId changes
+  useEffect(() => {
+    if (collectionId) {
+      fetchSetData(collectionId);
+    }
+  }, [collectionId, fetchData]);
 
   const tableInstance = useReactTable<Beat>({
     columns: finalColumnDef,
