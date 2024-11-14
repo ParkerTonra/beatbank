@@ -24,12 +24,13 @@ interface BeatTableProps {
   beats: Beat[];
   onBeatPlay: (beat: Beat) => void;
   selectedBeats: Beat[];
+  setSelectedBeats: (beats: Beat[]) => void;
   onBeatSelect: (beat: Beat) => void;
   isEditing: boolean;
   setIsEditing: (isEditing: boolean) => void;
   fetchData: () => void;
   onBeatsChange: (beats: Beat[]) => void;
-columnVisibility: ColumnVisibilityState;  // Use the same type as useBeats
+  columnVisibility: ColumnVisibilityState;  // Use the same type as useBeats
   setColumnVisibility: (visibility: ColumnVisibilityState) => void;
   onDragEnd: (event: DragEndEvent) => void;
   saveRowOrder: (beats: Beat[]) => Promise<void>;
@@ -41,6 +42,7 @@ function BeatTable({
   beats,
   onBeatPlay,
   selectedBeats,
+  setSelectedBeats,
   onBeatSelect,
   isEditing,
   setIsEditing,
@@ -53,8 +55,6 @@ function BeatTable({
   const [showEditColumnsDialog, setShowEditColumnsDialog] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([])
 
-
-  const [isEditingBeat, setIsEditingBeat] = useState(false);
 
   const finalColumnDef = useMemo(
     () => createColumnDef(onBeatPlay),
@@ -122,17 +122,25 @@ function BeatTable({
     if (e.ctrlKey || e.metaKey) {
       // Multi-select with Ctrl/Cmd
       row.toggleSelected(); // Toggle highlighting
-      onBeatSelect(beat);
+      setSelectedBeats(prev => {
+        const exists = prev.some(b => b.id === beat.id);
+        if (exists) {
+          return prev.filter(b => b.id !== beat.id);
+        }
+        return [...prev, beat];
+      });
     } else if (e.shiftKey && selectedBeats.length > 0) {
       // Shift-click range selection
-      const { rows, rowsById } = tableInstance.getRowModel();
+      const { rows } = tableInstance.getRowModel();
       const rowsToToggle = getRowRange(rows as Row<Beat>[], Number(row.index), Number(lastSelectedIndex.current));
-      const isCellSelected = rowsById[row.id].getIsSelected();
+      
+      // Add all beats in range to selection
+      const beatsInRange = rowsToToggle.map(row => row.original);
+      setSelectedBeats([...selectedBeats, ...beatsInRange]);
       
       // Toggle highlighting for all rows in range
       rowsToToggle.forEach((_row) => {
-        _row.toggleSelected(!isCellSelected);
-        onBeatSelect(_row.original);
+        _row.toggleSelected(true);
       });
     } else {
       // Single select - deselect all other rows first
@@ -142,8 +150,9 @@ function BeatTable({
         }
       });
       row.toggleSelected(true);
-      onBeatSelect(beat);
-    }
+      
+      // Clear previous selections and select only this beat
+      onBeatSelect(beat);    }
   
     lastSelectedIndex.current = row.index;
   };
@@ -248,18 +257,18 @@ function BeatTable({
             })}
           </div>
         </Dialog>
-        {isEditingBeat && tableInstance.getSelectedRowModel().rows.length === 1 && (
+        {isEditing && selectedBeats.length === 1 && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg p-6 max-w-md w-full">
                 <EditBeatCard
                   beat={tableInstance.getSelectedRowModel().rows[0].original as Beat}
                   onClose={() => {
-                    setIsEditingBeat(false);
+                    setIsEditing(false);
                   }}
                   onSave={(updatedBeat: EditThisBeat) => {
                     console.log("Saving updated beat...");
-                    setIsEditingBeat(false);
-                    setRowSelection({});
+                    setIsEditing(false);
+                    setSelectedBeats([]);
 
                     invoke("update_beat", {
                       beat: updatedBeat

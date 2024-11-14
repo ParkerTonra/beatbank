@@ -157,12 +157,14 @@ function AppContainer() {
   };
 
   const handleEditBeat = async () => {
+    //delete after debug
+    console.log("Editing beat:", selectedBeats[0]);
     if (selectedBeats.length !== 1) {
       console.log("No beat selected");
       message("No beat selected");
       return;
     }
-    setIsEditingBeat(true);
+    setIsEditing(true);
   };
 
   const handleBeatDelete = async () => {
@@ -499,6 +501,7 @@ function AppContainer() {
                       beats={beats}
                       onBeatPlay={playBeat}
                       selectedBeats={selectedBeats}
+                      setSelectedBeats={setSelectedBeats}
                       onBeatSelect={handleBeatSelection} // Make sure this prop is being used in BeatTable
                       isEditing={isEditing}
                       setIsEditing={setIsEditing}
