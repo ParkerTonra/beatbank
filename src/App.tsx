@@ -53,7 +53,7 @@ function AppContainer() {
   const collectionIdMatch = location.pathname.match(/\/collection\/(\d+)/);
   const isInCollection = Boolean(collectionIdMatch);
   const collectionId = collectionIdMatch ? parseInt(collectionIdMatch[1], 10) : null;
-  
+
 
   const { isPlaying, currentBeat, playBeat, stopBeat, togglePlayPause, audioRef } = useAudio();
 
@@ -358,17 +358,29 @@ function AppContainer() {
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    console.log("Drag end event:", event);
     const { active, over } = event;
     if (!over || !active) return;
 
     const activeId = active.id.toString();
+    const dragData = active.data.current;
     const overId = over.id.toString();
 
-    // Handle dropping a beat into a collection
-    if (overId.startsWith('collection-') && activeId.startsWith('beat-')) {
+    if (overId.startsWith('collection-') && activeId.startsWith('beat-') || activeId.startsWith('selected-beats-')) {
       const targetCollectionId = parseInt(overId.replace('collection-', ''), 10);
-      const beatId = parseInt(activeId.replace('beat-', ''), 10);
-      handleAddToCollection(targetCollectionId, beatId);
+      
+      if (!dragData || !dragData.beats) {  // Changed from beat to beats
+        console.error("Missing drag data");
+        return;
+      }
+
+      const beatsToAdd = dragData.beats;
+      console.log("Adding beats to collection:", beatsToAdd, targetCollectionId);
+      // Handle multiple beats
+      beatsToAdd.forEach(beat => {
+        console.log("Adding beat to collection:", beat.id, targetCollectionId);
+        handleAddToCollection(targetCollectionId, beat.id);
+      });
       return;
     }
 
@@ -534,7 +546,7 @@ function AppContainer() {
                     path="/"
                     element={
                       <BeatTable
-                        beats = {beats}
+                        beats={beats}
                         onBeatPlay={playBeat}
                         selectedBeats={selectedBeats}
                         setSelectedBeats={setSelectedBeats}
