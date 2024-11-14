@@ -68,10 +68,13 @@ export const useBeats = () => {
     try {
       // Fetch beat collection data
       const collectionResponse = await invoke<BeatCollection>('get_beat_collection', { id: setId });
+      console.log("Collection response:", collectionResponse);
       setCurrentCollection(collectionResponse);
-      
+     
       // Fetch beats in the collection
       const beatsResponse = await invoke<Beat[]>('get_beats_in_collection', { id: setId });
+      console.log("Beats response:", beatsResponse);
+      
       if (Array.isArray(beatsResponse)) {
         setCollectionBeats(beatsResponse);
       } else {

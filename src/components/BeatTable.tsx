@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   useReactTable,
   flexRender,
@@ -19,7 +19,7 @@ import EditBeatCard from "./EditBeatCard.tsx";
 import { Dialog } from "primereact/dialog";
 import { useTableContext } from "../contexts/TableContext.tsx";
 interface BeatTableProps {
-  beats: Beat[];
+  beats?: Beat[];
   onBeatPlay: (beat: Beat) => void;
   selectedBeats: Beat[];
   setSelectedBeats: (beats: Beat[]) => void;
@@ -58,10 +58,36 @@ function BeatTable({
   setShowEditColumnsDialog,
 }: BeatTableProps) {
   // row selection state
+  const lastSelectedIndex = useRef('');
+  const { setTableInstance } = useTableContext();
 
-  const { tableInstance } = useTableContext();
+  const finalColumnDef = useMemo(
+    () => createColumnDef(onBeatPlay),
+    [onBeatPlay]
+  );
 
-  if (!tableInstance) {
+  const tableInstance = useReactTable<Beat>({
+    columns: finalColumnDef,
+    data: beats || [],
+    getCoreRowModel: getCoreRowModel(),
+    enableColumnResizing: true,
+    columnResizeMode: 'onChange' as ColumnResizeMode,
+    getRowId: (row) => row.id.toString(),
+    state: {
+      columnVisibility,
+    },
+    enableRowSelection: true,
+    enableMultiRowSelection: true,
+    onColumnVisibilityChange: setColumnVisibility,
+    enableSorting: true,
+    getSortedRowModel: getSortedRowModel(),
+  });
+
+  useEffect(() => {
+    setTableInstance(tableInstance);
+  }, [tableInstance, setTableInstance]);
+
+  if (!tableInstance || !beats || columnVisibility === undefined) {
     return <div>Loading...</div>;
   }
 
@@ -71,8 +97,7 @@ function BeatTable({
       : [selectedIndex, currentIndex];
     return rows.slice(firstIndex, lastIndex + 1);
   };
-
-  const lastSelectedIndex = useRef('');
+    
 
   const onRowSelection = (e: React.MouseEvent<HTMLTableRowElement>, row): void => {
     const beat = row.original;
@@ -107,9 +132,8 @@ function BeatTable({
         _row.toggleSelected(false);
       });
       row.toggleSelected(true);
-      
-      // Set only this beat as selected
       setSelectedBeats([beat]);
+      
     }
   
     lastSelectedIndex.current = row.index;
@@ -122,45 +146,7 @@ function BeatTable({
   return (
     
     <div className="w-full">
-      <Dialog
-          header="Edit Columns"
-          visible={showEditColumnsDialog}
-          className="bg-blue-900 w-3/4 h-1/2 p-4 rounded-md border-2 border-black"
-          modal
-          onHide={() => setShowEditColumnsDialog(false)}
-        >
-          <div className="flex px-4 shadow rounded mt-12 text-sm space-x-4">
-            <div className="px-1">
-              <label>
-                <input
-                  className="flex-row"
-                  type="checkbox"
-                  checked={tableInstance.getIsAllColumnsVisible()}
-                  onChange={tableInstance.getToggleAllColumnsVisibilityHandler()}
-                />{" "}
-                Toggle All
-              </label>
-            </div>
-
-            {tableInstance.getAllLeafColumns().map((column) => {
-              if (column.id === "drag-handle") {
-                return;
-              }
-              return (
-                <div key={column.id} className="mb-36">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={column.getIsVisible()}
-                      onChange={column.getToggleVisibilityHandler()}
-                    />{" "}
-                    {column.id}
-                  </label>
-                </div>
-              );
-            })}
-          </div>
-        </Dialog>
+      
       <div className="flex flex-col h-[calc(100%-250px)] w-full select-none overflow-x-auto">
         <table className="w-full mb-4 h-full">
           <thead>
