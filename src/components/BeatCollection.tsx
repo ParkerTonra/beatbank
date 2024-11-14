@@ -4,6 +4,7 @@ import BeatTable from './BeatTable';
 import { useBeats } from '../hooks/useBeats';
 import { Beat } from '../bindings';
 import { DragEndEvent } from '@dnd-kit/core';
+import { useAudio } from '../hooks/useAudio'; // Import the hook
 
 interface BeatCollProps {
   onDragEnd: (event: DragEndEvent) => void;
@@ -48,7 +49,8 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd }) => {
     // Implement this function to add a beat to a collection
     console.log('Adding beat to collection:', beatId, collectionId);
   };
-
+  
+  const { playBeat } = useAudio(); // Destructure the playBeat function
 
   return (
     <div>
@@ -68,6 +70,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({ onDragEnd }) => {
         setColumnVisibility={setColumnVisibility}
         onAddBeatToCollection={handleAddBeatToCollection}
         onDragEnd={onDragEnd}
+        onBeatPlay={playBeat}
       />
     </div>
   );
