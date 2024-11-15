@@ -50,16 +50,16 @@ export const TableHeader = ({
           modal
           onHide={() => setShowEditColumnsDialog(false)}
         >
-          <div className="flex px-4 shadow rounded mt-12 text-sm space-x-4">
-            <div className="px-1">
-              <label>
+          <div className="px-4 shadow rounded mt-4 text-sm grid grid-cols-2 gap-4">
+            <div>
+              <label className="inline-flex cursor-pointer">
                 <input
-                  className="flex-row"
                   type="checkbox"
                   checked={tableInstance.getIsAllColumnsVisible()}
                   onChange={tableInstance.getToggleAllColumnsVisibilityHandler()}
-                />{" "}
-                Toggle All
+                  className="w-4 mr-2"
+                />
+                <span className="font-bold mt-[-2px]">Toggle All</span>
               </label>
             </div>
 
@@ -68,16 +68,15 @@ export const TableHeader = ({
                 return;
               }
               return (
-                <div key={column.id} className="mb-36">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={column.getIsVisible()}
-                      onChange={column.getToggleVisibilityHandler()}
-                    />{" "}
-                    {column.id}
-                  </label>
-                </div>
+                <label className="inline-flex justify-start cursor-pointer mb-2">
+                  <input
+                    type="checkbox"
+                    checked={column.getIsVisible()}
+                    onChange={column.getToggleVisibilityHandler()}
+                    className="w-4 mr-2"
+                  />{" "}
+                  <span className="capitalize mt-[-2px]">{column.id.split("_").join(" ")}</span>
+                </label>
               );
             })}
           </div>
