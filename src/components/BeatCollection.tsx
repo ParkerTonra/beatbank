@@ -95,7 +95,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
     }
   }, [fetchData]);
 
-  if (loading) return <div className="p-4">Loading...</div>;
+  if (loading) return <div className="p-4"></div>;
   if (error) return <div className="p-4 text-red-500">Error: {error.message}</div>;
   if (!currentCollection) return <div className="p-4">No collection found</div>;
 
@@ -103,11 +103,13 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
     <div className="p-4">
       <div className="mb-6 flex w-full justify-between">
         <h2 className="text-2xl font-bold mb-2 pl-0">{currentCollection.set_name}</h2>
-        <div className="mt-4">
-          Venue: {currentCollection.venue || 'N/A'}
-        </div>
-        <div className="mt-4">
-          Date Played: {currentCollection.date_played || 'N/A'}
+        <div className="mt-4 flex">
+          <div className="mr-4">
+            Venue: {currentCollection.venue || 'N/A'}
+          </div>
+          <div>
+            Date Played: {currentCollection.date_played || 'N/A'}
+          </div>
         </div>
       </div>
 
