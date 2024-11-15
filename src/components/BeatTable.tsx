@@ -5,7 +5,7 @@ import {
   getCoreRowModel,
   ColumnResizeMode,
   OnChangeFn,
-  VisibilityState, Row, getSortedRowModel,
+  VisibilityState, Row, getSortedRowModel, Table,
 } from "@tanstack/react-table";
 import { createColumnDef } from "./../models/ColumnDef.tsx";
 import { Beat, EditThisBeat } from "./../bindings.ts";
@@ -87,7 +87,7 @@ function BeatTable({
   });
 
   useEffect(() => {
-    setTableInstance(tableInstance);
+    setTableInstance(tableInstance as Table<Beat>);
   }, [tableInstance, setTableInstance]);
 
   if (!tableInstance || !beats || columnVisibility === undefined) {

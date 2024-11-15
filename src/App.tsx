@@ -65,19 +65,14 @@ function AppContainer() {
     setCollectionBeats
   } = useBeats();
 
-  //memos
-
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 10 } }),
     useSensor(TouchSensor)
   );
 
-  //effects
   useEffect(() => {
     fetchData();
   }, []);
-
-
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -122,9 +117,6 @@ function AppContainer() {
       setUploadStatus(`Error selecting file: ${error}`);
     }
   };
-
-
-
 
 
   useEffect(() => {
@@ -472,21 +464,6 @@ function AppContainer() {
     }
   };
 
-
-
-
-
-
-  // Define a function to handle theme changes
-  //@ts-ignore
-  const handleThemeChange = async () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light'; // Toggle between light and dark themes
-    setTheme(newTheme); // Update the theme state
-
-    await saveSettings({ theme: newTheme }); // Save the new theme settings to the backend
-  };
-
-
   if (showSplashScreen) {
     return <SplashScreen closeSplashScreen={() => setShowSplashScreen(false)} />;
   }
@@ -499,9 +476,12 @@ function AppContainer() {
         <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
         <div className="flex-1 flex flex-col">
         <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
-            <h1 className="text-3xl font-bold font-guerilla mb-4 py-0">BEATBANK</h1>
+            <span className="w-full flex justify-end fixed right-4">
+              <h1 className="text-3xl font-bold font-guerilla py-0 mt-2.5">BEATBANK</h1>
+              <img src="src/assets/BeatbankLogo2.png" width={60} height={100} />
+            </span>
             <TableContext.Provider value={{ tableInstance, setTableInstance }}>
-            <div className="flex flex-col flex-1"> 
+            <div className="flex flex-col flex-1">
               <TableHeader
                 selectedBeats={selectedBeats}
                 setIsEditingBeat={setIsEditing}

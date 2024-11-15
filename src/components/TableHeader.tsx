@@ -37,18 +37,18 @@ export const TableHeader = ({
   return (
     <div className="w-full flex">
       <button
-      onClick={() => setShowEditColumnsDialog(true)}
-      className="mr-2 mb-2"
-    >
-      <span className="pi pi-pencil mr-2" /> Edit Columns
-    </button>
-    {tableInstance && (
-      <Dialog
-          header="Edit Columns"
-          visible={showEditColumnsDialog}
-          className="bg-blue-900 w-3/4 h-1/2 p-4 rounded-md border-2 border-black"
-          modal
-          onHide={() => setShowEditColumnsDialog(false)}
+        onClick={() => setShowEditColumnsDialog(true)}
+        className="mr-2 mb-2"
+      >
+        <span className="pi pi-pencil mr-2" /> Edit Columns
+      </button>
+      {tableInstance && (
+        <Dialog
+            header="Edit Columns"
+            visible={showEditColumnsDialog}
+            className="bg-blue-900 w-3/4 h-1/2 p-4 rounded-md border-2 border-black"
+            modal
+            onHide={() => setShowEditColumnsDialog(false)}
         >
           <div className="px-4 shadow rounded mt-4 text-sm grid grid-cols-2 gap-4">
             <div>
