@@ -40,7 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div className="w-64 h-screen bg-gray-800 text-white p-4 flex flex-col">
-      <h2 className="text-xl font-bold mb-4">Beat Collections</h2>
+      <h1 className="text-3xl font-bold font-guerilla py-0 mb-4">BEATBANK</h1>
       <form onSubmit={handleNewBeatCollection} className="mb-4">
         <input
           type="text"
