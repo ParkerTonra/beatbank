@@ -91,7 +91,7 @@ function BeatTable({
   }, [tableInstance, setTableInstance]);
 
   if (!tableInstance || !beats || columnVisibility === undefined) {
-    return <div>Loading...</div>;
+    return <div></div>;
   }
 
   const getRowRange = (rows: Row<Beat>[], currentIndex: number, selectedIndex: number): Row<Beat>[] => {
@@ -166,7 +166,7 @@ function BeatTable({
   };
 
   if (columnVisibility === undefined) {
-    return <div>Loading...</div>;
+    return <div></div>;
   }
 
   return (
