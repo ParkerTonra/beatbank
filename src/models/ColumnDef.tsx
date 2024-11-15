@@ -37,7 +37,7 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
   {
     accessorKey: "id",
     header: "ID",
-    maxSize: 1,
+    maxSize: 30,
   },
   {
     accessorKey: "title",

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Beat, CollOrder, RowOrder } from "./bindings";
 import Sidebar from "./components/Sidebar";
 import "./App.css";
@@ -476,8 +476,7 @@ function AppContainer() {
         <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
         <div className="flex-1 flex flex-col">
         <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
-            <span className="w-full flex justify-end fixed right-4">
-              <h1 className="text-3xl font-bold font-guerilla py-0 mt-2.5">BEATBANK</h1>
+            <span className="fixed right-4">
               <img src="src/assets/BeatbankLogo2.png" width={60} height={100} />
             </span>
             <TableContext.Provider value={{ tableInstance, setTableInstance }}>
@@ -500,6 +499,12 @@ function AppContainer() {
                   <Route
                     path="/"
                     element={
+                    <>
+                      <div className="p-4">
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-bold mb-2 p-0">All Beats</h2>
+                        </div>
+                      </div>
                       <BeatTable
                         beats={beats}
                         onBeatPlay={playBeat}
@@ -518,6 +523,7 @@ function AppContainer() {
                         setShowEditColumnsDialog={setShowEditColumnsDialog}
                         handleRefresh={handleRefresh}
                       />
+                    </>
                     }
                   />
                   <Route

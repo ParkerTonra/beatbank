@@ -101,11 +101,13 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
 
   return (
     <div className="p-4">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">{currentCollection.set_name}</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <p>Venue: {currentCollection.venue || 'N/A'}</p>
-          <p>Date Played: {currentCollection.date_played || 'N/A'}</p>
+      <div className="mb-6 flex w-full justify-between">
+        <h2 className="text-2xl font-bold mb-2 pl-0">{currentCollection.set_name}</h2>
+        <div className="mt-4">
+          Venue: {currentCollection.venue || 'N/A'}
+        </div>
+        <div className="mt-4">
+          Date Played: {currentCollection.date_played || 'N/A'}
         </div>
       </div>
 
