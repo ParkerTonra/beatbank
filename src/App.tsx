@@ -476,7 +476,7 @@ function AppContainer() {
         <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
         <div className="flex-1 flex flex-col">
         <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
-            <span className="fixed right-4">
+            <span className="fixed right-4 top-2">
               <img src="src/assets/BeatbankLogo2.png" width={60} height={100} />
             </span>
             <TableContext.Provider value={{ tableInstance, setTableInstance }}>
