@@ -187,6 +187,7 @@ function BeatTable({
                         style={{
                           width: header.getSize(),
                           maxWidth: header.getSize(),
+                          minWidth: header.getSize(),
                         }}
                         onClick={() => header.column.toggleSorting()}
                       >
@@ -212,8 +213,7 @@ function BeatTable({
                           <div
                             onMouseDown={header.getResizeHandler()}
                             onTouchStart={header.getResizeHandler()}
-                            className={`resizer ${header.column.getIsResizing() ? "isResizing" : ""
-                              }`}
+                            className={`resizer ${header.column.getIsResizing() ? "isResizing" : ""}`}
                           />
                         )}
                       </th>
