@@ -63,7 +63,7 @@ function DraggableRow({ row, onRowSelection, selectedBeats}: DraggableRowProps) 
         {...attributes}
         {...listeners}
         onClick={handleClick}
-        className={`cursor-pointer max-h-[50px] ${row.getIsSelected() ? 'bg-blue-900' : ''}`}
+        className={`border-b-2 border-gray-500 cursor-pointer max-h-[50px] ${row.getIsSelected() ? 'bg-blue-900' : ''}`}
       >
         {row.getVisibleCells().map((cell: Cell<Beat, unknown>) => (
           <td 
@@ -74,6 +74,7 @@ function DraggableRow({ row, onRowSelection, selectedBeats}: DraggableRowProps) 
               maxWidth: cell.column.getSize(),
               overflowX: "hidden",
               paddingLeft: "4px",
+
             }}
           >
             {flexRender(cell.column.columnDef.cell, cell.getContext())}

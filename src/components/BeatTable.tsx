@@ -186,6 +186,7 @@ function BeatTable({
                         className="relative pr-4 text-left border-gray-800 border-b-4 cursor-pointer mr-2"
                         style={{
                           width: header.getSize(),
+                          maxWidth: header.getSize(),
                         }}
                         onClick={() => header.column.toggleSorting()}
                       >
