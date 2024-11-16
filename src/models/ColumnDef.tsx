@@ -25,14 +25,15 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
     accessorKey: "drag-handle",
     header: "",
     cell: ({ row }: { row: Row }) => (
-      <div>
+      <div className="flex justify-center">
         <RowDragHandleCell row={row.original} />
       </div>
       
     ),
     enableHiding: false,
     enableResizing: false,
-    size: 30
+    maxSize: 30,
+    minSize: 30
   },
   {
     accessorKey: "id",
@@ -42,23 +43,23 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
   {
     accessorKey: "title",
     header: "Title",
-    size: 250,
+    size: 450,
     cell: ({ cell }) => <div className="truncate">{cell.getValue() as string}</div>,
   },
   {
     accessorKey: "bpm",
     header: "BPM",
-    size: 35,
+    minSize: 30,
   },
   {
     accessorKey: "musical_key",
     header: "Key",
-    size: 50,
+    minSize: 50,
   },
   {
     accessorKey: "duration",
     header: "Duration",
-    size: 20,
+    minSize: 60,
     cell: ({ row }) => formatSecs(row.original.duration),
   },
   {
@@ -68,8 +69,8 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
   {
     accessorKey: "date_created",
     header: "Date Added",
+    minSize: 40,
     cell: ({ cell }) => formatDate(cell.getValue() as string),
-    maxSize: 40
   },
   {
     accessorKey: "file_path",
@@ -79,12 +80,15 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
     accessorKey: "play-handle",
     header: "Play",
     cell: ({ row }) => (
-      <RowPlayHandleCell
-        rowId={row.original.id.toString()}
-        onPlay={() => onBeatPlay(row.original)}
-      />
+      <div className="flex justify-center">
+        <RowPlayHandleCell
+          rowId={row.original.id.toString()}
+          onPlay={() => onBeatPlay(row.original)}
+        />
+      </div>
     ),
-    size: 20,
+    size: 50,
+    enableResizing: false,
   }
 ];
 // function setAudioSrc(src: string): void {
