@@ -411,7 +411,22 @@ fn main() {
                 info!("Application ready");
             }
             tauri::RunEvent::WindowEvent { label, event, .. } => {
-                error!("Window '{}' error: {:?}", label, event);
+                // Only log specific window events we care about
+                match event {
+                    // Ignore these common window events
+                    tauri::WindowEvent::Focused(_) => {},
+                    tauri::WindowEvent::Moved(_) => {},
+                    tauri::WindowEvent::ScaleFactorChanged { .. } => {},
+                    // Log only important window events
+                    tauri::WindowEvent::CloseRequested { .. } => {
+                        info!("Window '{}' close requested", label);
+                    }
+                    tauri::WindowEvent::Destroyed => {
+                        info!("Window '{}' destroyed", label);
+                    }
+                    // Log unexpected window events as errors
+                    _ => error!("Window '{}' unexpected event: {:?}", label, event),
+                }
             }
             _ => {}
         });
