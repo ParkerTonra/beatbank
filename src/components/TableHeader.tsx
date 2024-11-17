@@ -6,6 +6,7 @@ import { Dialog } from "primereact/dialog";
 import { MenuItem } from "primereact/menuitem";
 
 import { useTableContext } from "../contexts/TableContext";
+import { useEffect, useState } from "react";
 
 interface TableHeaderProps {
   selectedBeats: Beat[];
@@ -19,6 +20,8 @@ interface TableHeaderProps {
   showEditColumnsDialog: boolean;
   setShowEditColumnsDialog: (show: boolean) => void;
 }
+
+
 
 export const TableHeader = ({
   selectedBeats,
@@ -34,6 +37,39 @@ export const TableHeader = ({
   setShowEditColumnsDialog,
 }: TableHeaderProps) => {
   const { tableInstance } = useTableContext();
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
+
+  // Update visibility state when columns change
+  useEffect(() => {
+    if (tableInstance && showEditColumnsDialog) {
+      const visibilityState = tableInstance.getAllLeafColumns()
+        .reduce((acc, column) => ({
+          ...acc,
+          [column.id]: column.getIsVisible()
+        }), {});
+      setColumnVisibility(visibilityState);
+    }
+  }, [tableInstance, showEditColumnsDialog]);
+
+  const handleToggleAll = () => {
+    if (!tableInstance) return;
+    
+    const newValue = !tableInstance.getIsAllColumnsVisible();
+    tableInstance.toggleAllColumnsVisible();
+    
+    const newVisibility = tableInstance.getAllLeafColumns()
+      .reduce((acc, column) => ({
+        ...acc,
+        [column.id]: newValue
+      }), {});
+    setColumnVisibility(newVisibility);
+  };
+
+  const handleToggleColumn = (column: any) => {
+    const newValue = !column.getIsVisible();
+    column.toggleVisibility();
+    setColumnVisibility(prev => ({ ...prev, [column.id]: newValue }));
+  };
   return (
     <div className="w-full flex">
       <button
@@ -44,69 +80,68 @@ export const TableHeader = ({
       </button>
       {tableInstance && (
         <Dialog
-            header="Edit Columns"
-            visible={showEditColumnsDialog}
-            className="bg-blue-900 w-3/4 h-1/2 p-4 rounded-md border-2 border-black"
-            modal
-            onHide={() => setShowEditColumnsDialog(false)}
+          header="Edit Columns"
+          visible={showEditColumnsDialog}
+          className="bg-blue-900 w-3/4 h-1/2 p-4 rounded-md border-2 border-black"
+          modal
+          onHide={() => setShowEditColumnsDialog(false)}
         >
           <div className="px-4 shadow rounded mt-4 text-sm grid grid-cols-2 gap-4">
+            {/* Toggle All columns */}
             <div>
               <label className="inline-flex cursor-pointer">
                 <input
                   type="checkbox"
                   checked={tableInstance.getIsAllColumnsVisible()}
-                  onChange={tableInstance.getToggleAllColumnsVisibilityHandler()}
+                  onChange={handleToggleAll}
                   className="w-4 mr-2"
                 />
                 <span className="font-bold mt-[-2px]">Toggle All</span>
               </label>
             </div>
 
-            {tableInstance.getAllLeafColumns().map((column) => {
-              if (column.id === "drag-handle") {
-                return;
-              }
-              return (
-                <label className="inline-flex justify-start cursor-pointer mb-2">
+            {/* Toggle by column*/}
+            {tableInstance.getAllLeafColumns()
+              .filter(column => column.id !== "drag-handle")
+              .map(column => (
+                <label key={column.id} className="inline-flex justify-start cursor-pointer mb-2">
                   <input
                     type="checkbox"
-                    checked={column.getIsVisible()}
-                    onChange={column.getToggleVisibilityHandler()}
+                    checked={columnVisibility[column.id] ?? false}
+                    onChange={() => handleToggleColumn(column)}
                     className="w-4 mr-2"
-                  />{" "}
+                  />
                   <span className="capitalize mt-[-2px]">{column.id.split("_").join(" ")}</span>
                 </label>
-              );
-            })}
+              ))}
           </div>
         </Dialog>
       )}
-      
-      <DropdownMenu 
-        className="mr-2" 
-        title="Add" 
-        icon="pi pi-plus" 
-        items={addBeatItems} 
+
+      <DropdownMenu
+        className="mr-2"
+        title="Add"
+        icon="pi pi-plus"
+        items={addBeatItems}
       />
-      
+
       {selectedBeats.length > 0 && (
-        <DropdownMenu 
-          title={`Beat Settings (${selectedBeats.length})`} 
-          icon="pi pi-cog"  
-          items={beatActionItems} 
+        <DropdownMenu
+          title={`Beat Settings (${selectedBeats.length})`}
+          icon="pi pi-cog"
+          items={beatActionItems}
         />
       )}
 
       {uploadStatus && (
-        <button 
-          onClick={() => setShowStatusDialog(true)} 
+        <button
+          onClick={() => setShowStatusDialog(true)}
           className="ml-2 absolute right-4 top-2"
         >
-          <span className="pi pi-info-circle"/>
+          <span className="pi pi-info-circle" />
         </button>
       )}
-      
+
       <Dialog
         header="Upload Status"
         visible={showStatusDialog}
