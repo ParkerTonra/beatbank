@@ -100,7 +100,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
   if (!currentCollection) return <div className="p-4">No collection found</div>;
 
   return (
-    <div>
+    <>
       <div className="mb-6 flex w-full justify-between">
         <h2 className="text-2xl font-bold pl-0 pb-0">{currentCollection.set_name}</h2>
         <div className="mt-4 flex">
@@ -131,7 +131,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
         setShowEditColumnsDialog={setShowEditColumnsDialog}
         handleRefresh={handleRefresh}
       />
-    </div>
+    </>
   );
 };
 
