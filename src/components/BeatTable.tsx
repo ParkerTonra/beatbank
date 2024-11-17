@@ -157,9 +157,14 @@ function BeatTable({
       tableInstance.getRowModel().rows.forEach(_row => {
         _row.toggleSelected(false);
       });
-      row.toggleSelected(true);
-      setSelectedBeats([beat]);
 
+      if (row.getIsSelected()) {
+        row.toggleSelected(false);
+        setSelectedBeats([]);
+      } else {
+        row.toggleSelected(true);
+        setSelectedBeats([beat]);
+      }
     }
 
     lastSelectedIndex.current = row.index.toString();
