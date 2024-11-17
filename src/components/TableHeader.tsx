@@ -70,6 +70,8 @@ export const TableHeader = ({
     column.toggleVisibility();
     setColumnVisibility(prev => ({ ...prev, [column.id]: newValue }));
   };
+
+
   return (
     <div className="w-full flex">
       <button
@@ -92,7 +94,7 @@ export const TableHeader = ({
               <label className="inline-flex cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={tableInstance.getIsAllColumnsVisible()}
+                  checked={Object.values(columnVisibility).every(c => c)}
                   onChange={handleToggleAll}
                   className="w-4 mr-2"
                 />
