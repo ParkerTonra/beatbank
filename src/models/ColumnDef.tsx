@@ -38,7 +38,9 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
   {
     accessorKey: "id",
     header: "ID",
-    maxSize: 30,
+    maxSize: 60,
+    minSize: 60,
+    size: 60,
   },
   {
     accessorKey: "title",
@@ -49,27 +51,33 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
   {
     accessorKey: "bpm",
     header: "BPM",
-    minSize: 30,
+    minSize: 80,
+    size: 80,
   },
   {
     accessorKey: "musical_key",
     header: "Key",
-    minSize: 50,
+    minSize: 80,
+    size: 80,
   },
   {
     accessorKey: "duration",
     header: "Duration",
-    minSize: 60,
+    minSize: 100,
+    size: 100,
     cell: ({ row }) => formatSecs(row.original.duration),
   },
   {
     accessorKey: "artist",
     header: "Artist",
+    minSize: 100,
+    size: 100,
   },
   {
     accessorKey: "date_created",
     header: "Date Added",
-    minSize: 40,
+    minSize: 130,
+    size: 130,
     cell: ({ cell }) => formatDate(cell.getValue() as string),
   },
   {

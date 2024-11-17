@@ -100,9 +100,9 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
   if (!currentCollection) return <div className="p-4">No collection found</div>;
 
   return (
-    <div className="p-4">
+    <div>
       <div className="mb-6 flex w-full justify-between">
-        <h2 className="text-2xl font-bold mb-2 pl-0">{currentCollection.set_name}</h2>
+        <h2 className="text-2xl font-bold pl-0 pb-0">{currentCollection.set_name}</h2>
         <div className="mt-4 flex">
           <div className="mr-4">
             Venue: {currentCollection.venue || 'N/A'}

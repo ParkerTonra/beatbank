@@ -72,9 +72,9 @@ function DraggableRow({ row, onRowSelection, selectedBeats}: DraggableRowProps) 
             style={{
               width: cell.column.getSize(),
               maxWidth: cell.column.getSize(),
+              minWidth: cell.column.getSize(),
               overflowX: "hidden",
               paddingLeft: "4px",
-
             }}
           >
             {flexRender(cell.column.columnDef.cell, cell.getContext())}

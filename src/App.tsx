@@ -472,15 +472,15 @@ function AppContainer() {
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
-      <div className="flex bg-slate-900 justify-center h-screen">
+      <div className="flex bg-slate-900 justify-center h-screen overflow-x-hidden">
         <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-x-auto">
         <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
             <span className="fixed right-4 top-2">
               <img src="src/assets/BeatbankLogo2.png" width={60} height={100} />
             </span>
             <TableContext.Provider value={{ tableInstance, setTableInstance }}>
-            <div className="flex flex-col flex-1">
+            <div className="flex flex-col flex-1 h-full">
               <TableHeader
                 selectedBeats={selectedBeats}
                 setIsEditingBeat={setIsEditing}
@@ -500,9 +500,9 @@ function AppContainer() {
                     path="/"
                     element={
                     <>
-                      <div className="p-4">
+                      <div>
                         <div className="mb-6">
-                          <h2 className="text-2xl font-bold mb-2 p-0">All Beats</h2>
+                          <h2 className="text-2xl font-bold mb-2 pl-0 pb-0">All Beats</h2>
                         </div>
                       </div>
                       <BeatTable

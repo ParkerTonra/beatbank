@@ -170,13 +170,13 @@ function BeatTable({
   }
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col overflow-x-auto max-w-full">
       {/* Main table container with fixed height and scroll */}
       <div className="flex-1 min-h-0"> {/* This ensures the container can shrink */}
         <div className="h-full relative">
           {/* Header wrapper - fixed position */}
           <div className="sticky top-0 z-10 ">
-            <table className="w-full">
+            <table className="w-full min-h-full">
               <thead>
                 {tableInstance.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>
@@ -223,7 +223,7 @@ function BeatTable({
               </thead>
             </table>
           </div>
-          <div className=" h-[calc(100%-48px)]">
+          <div className="h-[calc(100%-48px)]">
             <table className="w-full">
               <tbody>
                 {tableInstance.getRowModel().rows.map((rowElement) => (
