@@ -1,11 +1,10 @@
 use diesel::result::Error as DieselError;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use log::info;
+use tauri::{api::path::app_data_dir, Config};
 use std::error::Error;
 use chrono::Utc;
 use diesel::prelude::*;
-use dotenvy::dotenv;
-use std::env;
 
 use std::path::Path;
 use std::fs::File;
@@ -18,45 +17,28 @@ use crate::models::{Beat, BeatChangeset, BeatCollection, NewBeat, NewBeatCollect
 
 // At the top of your file with other constants
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
+
 pub fn establish_connection() -> Result<SqliteConnection, Box<dyn std::error::Error>> {
-    println!("Establishing connection to database");
-    // In development, use dotenv
-    #[cfg(debug_assertions)]
-    {
-        info!("Running in development mode");
-        dotenv().ok();
-        let database_url = std::env::var("DATABASE_URL")
-            .expect("DATABASE_URL must be set");
-        info!("Using database URL: {}", database_url);
+    // Get app data directory using Tauri
+    let app_dir = app_data_dir(&Config::default())
+        .ok_or("Failed to get app data directory")?;
+    
+    // Create data directory if it doesn't exist
+    std::fs::create_dir_all(&app_dir)?;
+    
+    // Create database path
+    let db_path = app_dir.join("database.sqlite");
+    let database_url = format!("sqlite://{}", db_path.to_str().unwrap());
 
-        let mut connection = SqliteConnection::establish(&database_url)
-            .map_err(|e| format!("Error connecting to {}: {}", database_url, e))?;
+    let mut connection = SqliteConnection::establish(&database_url)
+        .map_err(|e| format!("Error connecting to {}: {}", database_url, e))?;
 
-        // Run the migrations
-        connection.run_pending_migrations(MIGRATIONS)
+    // Run the migrations
+    connection.run_pending_migrations(MIGRATIONS)
         .map_err(|e| format!("Error running migrations: {}", e))?;
-
-        info!("Database migrations completed successfully");
-        Ok(connection)
-    }
-
-    #[cfg(not(debug_assertions))]
-    {
-        info!("Running in production mode");
-        let app_dir: std::path::PathBuf = tauri::api::path::app_data_dir(&tauri::Config::default())
-            .ok_or("Failed to get app data directory")?;
-            
-        info!("App data directory: {}", app_dir.display());
         
-        std::fs::create_dir_all(&app_dir)
-            .map_err(|e| format!("Failed to create app directory: {}", e))?;
-        
-        let database_path = app_dir.join("database.sqlite");
-        let database_url = format!("sqlite://{}", database_path.display());
-        
-        info!("Using database at: {}", database_url);
-        return Ok(SqliteConnection::establish(&database_url)?);
-    }
+    info!("Database migrations completed successfully");
+    Ok(connection)
 }
 
 pub fn add_beat(
