@@ -6,7 +6,7 @@ interface RowPlayHandleCellProps {
   onPlay: () => void;
 }
 
-const RowPlayHandleCell: React.FC<RowPlayHandleCellProps> = ({  onPlay }) => {
+const RowPlayHandleCell: React.FC<RowPlayHandleCellProps> = ({ onPlay }) => {
   return (
     <button onClick={onPlay} className="bg-transparent">
       <Play size={18} color='darkgray' />
