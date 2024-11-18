@@ -6,7 +6,6 @@ import DroppableCollection from "./DroppableCollection";
 
 interface SidebarProps {
   collections: BeatCollection[];
-  onAddBeatToCollection: (collectionId: number, beatId: number) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -57,8 +56,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </form>
       <div className="flex-1 overflow-y-auto">
-        <h3 className="text-lg font-semibold mb-2">My sets:</h3>
-        <ul className="space-y-2">
+        <h3 className="text-lg font-semibold mb-2" id="set-list">My sets:</h3>
+        <ul className="space-y-2" aria-labelledby="set-list">
           <Link to="/">
             <li className="block w-full text-left p-2 bg-gray-500 py-4 hover:bg-gray-600 rounded h-12 items-center justify-start cursor-pointer">
                 All Beats

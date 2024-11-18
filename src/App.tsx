@@ -1,16 +1,15 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Beat, CollOrder, RowOrder } from "./bindings";
 import Sidebar from "./components/Sidebar";
 import "./App.css";
 import "./Main.css";
-import 'primeicons/primeicons.css';
 import { SplashScreen } from "./components/SplashScreen";
 import BeatTable from "./components/BeatTable";
 import 'primereact/resources/themes/lara-dark-indigo/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 import { useBeats } from "./hooks/useBeats";
-import { loadSettings, saveSettings, getSettingsPath } from './store';
+import { loadSettings, getSettingsPath } from './store';
 import { DndContext, DragEndEvent, DragStartEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { invoke } from "@tauri-apps/api/tauri";
 import { message } from "@tauri-apps/api/dialog";
@@ -34,7 +33,7 @@ function AppContainer() {
   const [showSplashScreen, setShowSplashScreen] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedBeats, setSelectedBeats] = useState<Beat[]>([]);
-  const [theme, setTheme] = useState<string>('light');
+  const [_, setTheme] = useState<string>('light');
   const [settingsPath, setSettingsPath] = useState<string>('');
   const [isFileDragging, setIsFileDragging] = useState(false);
   const [showEditColumnsDialog, setShowEditColumnsDialog] = useState(false);
@@ -288,8 +287,6 @@ function AppContainer() {
     }
   };
 
-
-
   const handleAddToCollection = async (collectionId: number, beatId: number) => {
     try {
       await invoke('add_beat_to_collection', { beatId, collectionId });
@@ -472,91 +469,90 @@ function AppContainer() {
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
       <div className="flex bg-slate-900 justify-center h-screen overflow-x-hidden">
-        <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
+        <Sidebar collections={beatCollections} />
         <div className="flex-1 flex flex-col overflow-x-auto">
-        <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
+          <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
             <span className="fixed right-4 top-2">
               <img src="src/assets/BeatbankLogo2.png" width={60} height={100} />
             </span>
-            <TableContext.Provider value={{ tableInstance, setTableInstance }}>
-            <div className="flex flex-col flex-1 h-full">
-              <TableHeader
-                selectedBeats={selectedBeats}
-                setIsEditingBeat={setIsEditing}
-                beatActionItems={getBeatActionItems()}
-                addBeatItems={addBeatItems}
-                uploadStatus={uploadStatus}
-                showStatusDialog={showStatusDialog}
-                setShowStatusDialog={setShowStatusDialog}
-                uploadedFiles={uploadedFiles}
-                showEditColumnsDialog={showEditColumnsDialog}
-                setShowEditColumnsDialog={setShowEditColumnsDialog}
-              />
-              <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
-                strategy={verticalListSortingStrategy}>
-                <Routes>
-                  <Route
-                    path="/"
-                    element={
-                    <>
-                      <div>
-                        <div className="mb-6">
-                          <h2 className="text-2xl font-bold mb-2 pl-0 pb-0">All Beats</h2>
-                        </div>
-                      </div>
-                      <BeatTable
-                        beats={beats}
-                        onBeatPlay={playBeat}
-                        selectedBeats={selectedBeats}
-                        setSelectedBeats={setSelectedBeats}
-                        isEditing={isEditing}
-                        setIsEditing={setIsEditing}
-                        fetchData={fetchData}
-                        columnVisibility={columnVisibility}
-                        setColumnVisibility={setColumnVisibility}
-                        onDragEnd={handleDragEnd}
-                        saveRowOrder={saveRowOrder}
-                        saveCollectionOrder={saveCollectionOrder}
-                        fetchSetData={fetchSetData}
-                        showEditColumnsDialog={showEditColumnsDialog}
-                        setShowEditColumnsDialog={setShowEditColumnsDialog}
-                        handleRefresh={handleRefresh}
-                      />
-                    </>
-                    }
+              <TableContext.Provider value={{ tableInstance, setTableInstance }}>
+                <div className="flex flex-col flex-1 h-full">
+                  <TableHeader
+                    selectedBeats={selectedBeats}
+                    setIsEditingBeat={setIsEditing}
+                    beatActionItems={getBeatActionItems()}
+                    addBeatItems={addBeatItems}
+                    uploadStatus={uploadStatus}
+                    showStatusDialog={showStatusDialog}
+                    setShowStatusDialog={setShowStatusDialog}
+                    uploadedFiles={uploadedFiles}
+                    showEditColumnsDialog={showEditColumnsDialog}
+                    setShowEditColumnsDialog={setShowEditColumnsDialog}
                   />
-                  <Route
-                    path="/collection/:id"
-                    element={
-                      <BeatCollectionComponent
-                        onDragEnd={handleDragEnd}
-                        onBeatPlay={playBeat}
-                        isEditing={isEditing}
-                        setIsEditing={setIsEditing}
-                        selectedBeats={selectedBeats}
-                        setSelectedBeats={setSelectedBeats}
-                        saveRowOrder={saveRowOrder}
-                        saveCollectionOrder={saveCollectionOrder}
-                        fetchData={fetchData}
-                        showEditColumnsDialog={showEditColumnsDialog}
-                        setShowEditColumnsDialog={setShowEditColumnsDialog}
-                        beats={collectionBeats}
-                        handleRefresh={handleRefresh}
-                      />}
-                  />
-                </Routes>
-              </SortableContext>
-              </div>
-            </TableContext.Provider>
-
-            {/* Overlay when dragging files */}
-            {isFileDragging && (
-              <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
-                <div className="text-2xl font-bold text-white text-center bg-black bg-opacity-75 p-6 rounded-lg">
-                  Drop files here
+                    <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)} strategy={verticalListSortingStrategy}>
+                      <Routes>
+                        <Route
+                          path="/"
+                          element={
+                          <>
+                            <div>
+                              <div className="mb-6">
+                                <h2 className="text-2xl font-bold mb-2 pl-0 pb-0">All Beats</h2>
+                              </div>
+                            </div>
+                            <BeatTable
+                              beats={beats}
+                              onBeatPlay={playBeat}
+                              selectedBeats={selectedBeats}
+                              setSelectedBeats={setSelectedBeats}
+                              isEditing={isEditing}
+                              setIsEditing={setIsEditing}
+                              fetchData={fetchData}
+                              columnVisibility={columnVisibility}
+                              setColumnVisibility={setColumnVisibility}
+                              onDragEnd={handleDragEnd}
+                              saveRowOrder={saveRowOrder}
+                              saveCollectionOrder={saveCollectionOrder}
+                              fetchSetData={fetchSetData}
+                              showEditColumnsDialog={showEditColumnsDialog}
+                              setShowEditColumnsDialog={setShowEditColumnsDialog}
+                              handleRefresh={handleRefresh}
+                            />
+                          </>
+                          }
+                        />
+                        <Route
+                          path="/collection/:id"
+                          element={
+                            <BeatCollectionComponent
+                              onDragEnd={handleDragEnd}
+                              onBeatPlay={playBeat}
+                              isEditing={isEditing}
+                              setIsEditing={setIsEditing}
+                              selectedBeats={selectedBeats}
+                              setSelectedBeats={setSelectedBeats}
+                              saveRowOrder={saveRowOrder}
+                              saveCollectionOrder={saveCollectionOrder}
+                              fetchData={fetchData}
+                              showEditColumnsDialog={showEditColumnsDialog}
+                              setShowEditColumnsDialog={setShowEditColumnsDialog}
+                              beats={collectionBeats}
+                              handleRefresh={handleRefresh}
+                            />}
+                        />
+                      </Routes>
+                    </SortableContext>
                 </div>
-              </div>
-            )}
+              </TableContext.Provider>
+
+              {/* Overlay when dragging files */}
+              {isFileDragging && (
+                <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="text-2xl font-bold text-white text-center bg-black bg-opacity-75 p-6 rounded-lg">
+                    Drop files here
+                  </div>
+                </div>
+              )}
           </main>
         </div>
       </div>
