@@ -19,21 +19,44 @@ use crate::models::{Beat, BeatChangeset, BeatCollection, NewBeat, NewBeatCollect
 // At the top of your file with other constants
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 pub fn establish_connection() -> Result<SqliteConnection, Box<dyn std::error::Error>> {
-    dotenv().ok();
-    
-    let database_url = env::var("SQLITE_DATABASE_URL")
-        .or_else(|_| env::var("DATABASE_URL"))
-        .map_err(|e| format!("DATABASE_URL not set: {}", e))?;
+    println!("Establishing connection to database");
+    // In development, use dotenv
+    #[cfg(debug_assertions)]
+    {
+        info!("Running in development mode");
+        dotenv().ok();
+        let database_url = std::env::var("DATABASE_URL")
+            .expect("DATABASE_URL must be set");
+        info!("Using database URL: {}", database_url);
 
-    let mut connection = SqliteConnection::establish(&database_url)
-        .map_err(|e| format!("Error connecting to {}: {}", database_url, e))?;
+        let mut connection = SqliteConnection::establish(&database_url)
+            .map_err(|e| format!("Error connecting to {}: {}", database_url, e))?;
 
-    // Run the migrations
-    connection.run_pending_migrations(MIGRATIONS)
+        // Run the migrations
+        connection.run_pending_migrations(MIGRATIONS)
         .map_err(|e| format!("Error running migrations: {}", e))?;
 
-    info!("Database migrations completed successfully");
-    Ok(connection)
+        info!("Database migrations completed successfully");
+        Ok(connection)
+    }
+
+    #[cfg(not(debug_assertions))]
+    {
+        info!("Running in production mode");
+        let app_dir: std::path::PathBuf = tauri::api::path::app_data_dir(&tauri::Config::default())
+            .ok_or("Failed to get app data directory")?;
+            
+        info!("App data directory: {}", app_dir.display());
+        
+        std::fs::create_dir_all(&app_dir)
+            .map_err(|e| format!("Failed to create app directory: {}", e))?;
+        
+        let database_path = app_dir.join("database.sqlite");
+        let database_url = format!("sqlite://{}", database_path.display());
+        
+        info!("Using database at: {}", database_url);
+        return Ok(SqliteConnection::establish(&database_url)?);
+    }
 }
 
 pub fn add_beat(
