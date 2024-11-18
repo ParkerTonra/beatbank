@@ -376,22 +376,6 @@ fn main() {
             let window = app.get_window("main").unwrap();
             window.open_devtools(); // Open devtools on debug builds
             }
-            
-            
-            
-            // Log the resource directory path
-            if let Some(resource_path) = app.path_resolver().resource_dir() {
-                info!("Resource directory: {:?}", resource_path);
-            } else {
-                error!("Could not determine resource directory path");
-            }
-            
-            // Log the app directory path
-            if let Some(app_path) = app.path_resolver().app_dir() {
-                info!("App directory: {:?}", app_path);
-            } else {
-                error!("Could not determine app directory path");
-            }
 
             let state: State<AppState> = app.state();
             let mut conn_guard = state.conn.lock().map_err(|e| {
