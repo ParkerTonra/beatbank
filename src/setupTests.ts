@@ -15,4 +15,6 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 global.console.warn = jest.fn();
+global.console.error = jest.fn();
 
+global.window.__TAURI_IPC__ = jest.fn();  // Mock __TAURI_IPC__

@@ -1,5 +1,5 @@
 module.exports = {
-  collectCoverage: true,
+  collectCoverage: false,
   collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/*.d.ts',
     '!**/vendor/**'],
   coverageDirectory: 'coverage',
@@ -19,12 +19,10 @@ module.exports = {
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
 
   preset: "ts-jest",
-  setupFilesAfterEnv: ['./setupTests.ts'],
-  testEnvironment: "jest-environment-jsdom",
+  setupFilesAfterEnv: ['./src/setupTests.ts'],
+  testEnvironment: "jsdom",
   transform: {
-    '^.+\\.tsx?$': 'ts-jest',  // Transform TypeScript files
-    '^.+\\.jsx?$': 'babel-jest', // Transform JSX files
-    "^.+\\.css$": "jest-transform-stub",
+    "^.+\\.[tj]sx?$": "babel-jest", // Transpile TS/TSX/JS/JSX using Babel
   },
   transformIgnorePatterns: ["node_module/(?!primereact)"],
 }
