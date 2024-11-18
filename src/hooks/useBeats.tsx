@@ -1,6 +1,8 @@
 import { useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { Beat, BeatCollection } from "./../bindings";
+import { VisibilityState } from "@tanstack/react-table";
+
 
 const defaultColumnVisibility = {
   title: true,
@@ -16,7 +18,16 @@ const defaultColumnVisibility = {
 export const useBeats = () => {
   const [beats, setBeats] = useState<Beat[]>([]);
   const [collectionBeats, setCollectionBeats] = useState<Beat[]>([]);
-  const [columnVisibility, setColumnVisibility] = useState(defaultColumnVisibility);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
+    title: true,
+    bpm: true,
+    musical_key: true,
+    duration: true,
+    artist: true,
+    date_added: true,
+    file_path: true,
+    id: true
+  });
   const [beatCollections, setBeatCollections] = useState<BeatCollection[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -57,10 +68,13 @@ export const useBeats = () => {
     try {
       // Fetch beat collection data
       const collectionResponse = await invoke<BeatCollection>('get_beat_collection', { id: setId });
+      console.log("Collection response:", collectionResponse);
       setCurrentCollection(collectionResponse);
-      
+     
       // Fetch beats in the collection
       const beatsResponse = await invoke<Beat[]>('get_beats_in_collection', { id: setId });
+      console.log("Beats response:", beatsResponse);
+      
       if (Array.isArray(beatsResponse)) {
         setCollectionBeats(beatsResponse);
       } else {

@@ -1,7 +1,5 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
-mod audio_analysis;
 mod db;
 mod models;
 mod schema;
@@ -15,7 +13,8 @@ use std::{
     path::Path,
     sync::{Arc, Mutex},
 };
-
+use log::{error, info, warn};
+use crate::models::BeatChangeset;
 use crate::models::{Beat, BeatCollection};
 use tauri::{ Manager, State};
 
@@ -87,55 +86,19 @@ fn add_beat(state: State<AppState>, file_path: String) -> Result<String, String>
     println!("New beat added with id: {}", inserted_beat.id);
 
     // Analyze and update the beat synchronously
-    analyze_and_update_beat(inserted_beat.id, file_path.clone(), conn)?;
+    //analyze_and_update_beat(inserted_beat.id, file_path.clone(), conn)?;
+
+    analyze_dummy(inserted_beat.id, file_path.clone(), conn)?;
 
     Ok(format!("New beat added with id: {}", inserted_beat.id))
 }
-
-fn analyze_and_update_beat(
+// dummy function to avoid using the audio_analyzer.py file. does nothing.
+fn analyze_dummy(
     beat_id: i32, 
     file_path: String, 
     conn: &mut diesel::SqliteConnection // Pass connection as mutable reference
 ) -> Result<(), String> {
-    use crate::audio_analysis::analyze_audio;
-
-    println!("Starting analysis for file: {}", file_path);
-
-    // Check if the connection works before running analysis
-    if diesel::select(diesel::dsl::sql::<diesel::sql_types::Integer>("1"))
-        .load::<i32>(conn)
-        .is_err()
-    {
-        println!("Database connection test failed");
-        return Err("Connection check failed".into());
-    }
-    println!("Connection check passed");
-
-    //Call your Python analysis function
-    match analyze_audio(
-        &file_path) {
-        Ok((key, tempo)) => {
-            println!("Analysis Result: Key: {}, Tempo: {}", key, tempo); // Debug output
-            let musical_key_str = key.to_string(); // Ensure key is a String
-
-            // Update the database
-            diesel::update(crate::schema::beats::dsl::beats.find(beat_id))
-                .set((
-                    crate::schema::beats::dsl::musical_key.eq(Some(musical_key_str)),
-                    crate::schema::beats::dsl::bpm.eq(Some(tempo)),
-                ))
-                .execute(conn)
-                .map_err(|e| {
-                    println!("Error updating beat: {:?}", e); // Log the error
-                    e.to_string()
-                })?;
-        }
-        Err(e) => {
-            println!("Failed to analyze audio. Error: {}", e); // Log the error
-            return Err(e.to_string()); // Return the error as a Result
-        }
-    }
-
+    println!("Analysis currently disabled. Returning dummy values.");
     Ok(())
 }
 
@@ -146,7 +109,17 @@ fn delete_beat(id: i32, state: State<AppState>) -> Result<(), String> {
     db::delete_beat(&mut *conn, id).map_err(|e| e.to_string())?;
     Ok(())
 }
-use crate::models::BeatChangeset;
+
+
+#[tauri::command]
+fn delete_beats(ids: Vec<i32>, state: State<AppState>) -> Result<(), String> {
+    let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
+    let conn = &mut conn_guard.conn;
+    db::delete_beats(&mut *conn, ids).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
 #[tauri::command]
 fn update_beat(beat: BeatChangeset, state: State<AppState>) -> Result<(), String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
@@ -171,13 +144,13 @@ fn save_collection_order(
 ) -> Result<(), String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
-    
+
     db::save_collection_order(
         conn,
         payload.coll_order,
         payload.collection_id
     ).map_err(|e| e.to_string())?;
-    
+
     Ok(())
 }
 
@@ -255,6 +228,38 @@ fn add_beat_to_collection(
     db::add_beat_to_collection(&mut *conn, collection_id, beat_id).map_err(|e| e.to_string())?;
     Ok(())
 }
+
+#[tauri::command]
+fn add_beats_to_collection(
+    state: State<AppState>,
+    collection_id: i32,
+    ids: Vec<i32>,
+) -> Result<(), String> {
+    let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
+    let conn = &mut conn_guard.conn;
+    db::add_beats_to_collection(&mut *conn, collection_id, ids).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+fn remove_beats_from_collection(
+    state: State<AppState>,
+    collection_id: i32,
+    ids: Vec<i32>,
+) -> Result<(), String> {
+    println!("Removing beats from collection...");
+    let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
+    let conn = &mut conn_guard.conn;
+
+
+    println!("Removing beats from collection...");
+    db::remove_beats_from_collection(&mut *conn, collection_id, ids).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+
 // Opens the file location in the default file manager & selects the file
 // Needs to be tested on Mac & Linux
 #[tauri::command]
@@ -296,13 +301,18 @@ async fn open_file_location(path: String) -> Result<(), String> {
 
     Ok(())
 }
-fn main() {
-    println!("Starting beatbank...");
 
+
+fn main() {
+    env_logger::init();
+    println!("Starting beatbank...");
     let conn = DatabaseConnection {
-        conn: db::establish_connection(),
+        conn: db::establish_connection().unwrap_or_else(|e| {
+            error!("Failed to establish database connection: {}", e);
+            panic!("Database connection failed: {}", e)
+        }),
     };
-    println!("Connection established!");
+    info!("Database connection established successfully");
 
     let app_state = AppState {
         conn: Arc::new(Mutex::new(conn)),
@@ -315,12 +325,15 @@ fn main() {
             fetch_beats,
             add_beat,
             delete_beat,
+            delete_beats,
             update_beat,
-            fetch_column_vis, 
-            new_beat_collection, 
+            fetch_column_vis,
+            new_beat_collection,
             fetch_collections,
             delete_beat_collection,
             add_beat_to_collection,
+            add_beats_to_collection,
+            remove_beats_from_collection,
             get_beat_collection,
             get_beats_in_collection,
             save_row_order,
@@ -331,28 +344,90 @@ fn main() {
             store::get_settings_path
         ])
         .setup(|app| {
-            // Enable foreign keys for SQLite
+            info!("Starting application setup...");
+
+            #[cfg(debug_assertions)] // only include this code on debug builds
+            {
+            let window = app.get_window("main").unwrap();
+            window.open_devtools(); // Open devtools on debug builds
+            }
+            
+            
+            
+            // Log the resource directory path
+            if let Some(resource_path) = app.path_resolver().resource_dir() {
+                info!("Resource directory: {:?}", resource_path);
+            } else {
+                error!("Could not determine resource directory path");
+            }
+            
+            // Log the app directory path
+            if let Some(app_path) = app.path_resolver().app_dir() {
+                info!("App directory: {:?}", app_path);
+            } else {
+                error!("Could not determine app directory path");
+            }
+
             let state: State<AppState> = app.state();
-            let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
+            let mut conn_guard = state.conn.lock().map_err(|e| {
+                error!("Failed to acquire database lock: {:?}", e);
+                e.to_string()
+            })?;
+            
+            info!("Setting up foreign keys...");
             diesel::sql_query("PRAGMA foreign_keys = ON")
                 .execute(&mut conn_guard.conn)
-                .map_err(|e| e.to_string())?;
+                .map_err(|e| format!("Failed to enable foreign keys: {:?}", e))?;
+            
+            info!("Setup completed successfully");
             Ok(())
         })
         .on_window_event(|e| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = e.event() {
+                info!("Window close requested, beginning cleanup...");
                 api.prevent_close();
                 let window = e.window().clone();
                 let app_handle = window.app_handle();
-                // Perform cleanup in a separate thread
+                
                 std::thread::spawn(move || {
-                    println!("Cleaning up before exit...");
-                    // Give time for any pending operations to complete
+                    info!("Cleaning up before exit...");
                     std::thread::sleep(std::time::Duration::from_millis(100));
+                    info!("Cleanup complete, exiting application");
                     app_handle.exit(0);
                 });
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .map_err(|e| {
+            error!("Failed to build application: {:?}", e);
+            e
+        })
+        .expect("error while running tauri application")
+        .run(|_app_handle, event| match event {
+            tauri::RunEvent::ExitRequested { api, .. } => {
+                info!("Application exit requested");
+            }
+            tauri::RunEvent::Ready => {
+                info!("Application ready");
+            }
+            tauri::RunEvent::WindowEvent { label, event, .. } => {
+                // Only log specific window events we care about
+                match event {
+                    // Ignore these common window events
+                    tauri::WindowEvent::Focused(_) => {},
+                    tauri::WindowEvent::Moved(_) => {},
+                    tauri::WindowEvent::ScaleFactorChanged { .. } => {},
+                    // Log only important window events
+                    tauri::WindowEvent::CloseRequested { .. } => {
+                        info!("Window '{}' close requested", label);
+                    }
+                    tauri::WindowEvent::Destroyed => {
+                        info!("Window '{}' destroyed", label);
+                    }
+                    // Log unexpected window events as errors
+                    _ => error!("Window '{}' unexpected event: {:?}", label, event),
+                }
+            }
+            _ => {}
+        });
 }
