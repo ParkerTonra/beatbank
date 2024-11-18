@@ -2,6 +2,7 @@ import RowDragHandleCell from "./../components/RowDragHandleCell.tsx";
 import RowPlayHandleCell from "./../components/RowPlayHandleCell.tsx";
 import { ColumnDef } from "@tanstack/react-table";
 import { Beat } from "../bindings";
+import { format } from "date-fns";
 
 interface Row {
   id: string;
@@ -15,55 +16,69 @@ const formatSecs = (secs?: number): string => {
   return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
 };
 
+const formatDate = (datetime: string): string => {
+  return format(new Date(datetime), "yyyy-MM-dd");
+};
+
 export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Beat>[] => [
   {
     accessorKey: "drag-handle",
     header: "",
     cell: ({ row }: { row: Row }) => (
-      <div>
+      <div className="flex justify-center">
         <RowDragHandleCell row={row.original} />
       </div>
       
     ),
-    size: 35,
     enableHiding: false,
     enableResizing: false,
+    maxSize: 30,
+    minSize: 30
   },
   {
     accessorKey: "id",
     header: "ID",
-    maxSize: 1,
+    maxSize: 60,
+    minSize: 60,
+    size: 60,
   },
   {
     accessorKey: "title",
     header: "Title",
-    size: 260
+    size: 450,
+    cell: ({ cell }) => <div className="truncate">{cell.getValue() as string}</div>,
   },
   {
     accessorKey: "bpm",
     header: "BPM",
-    size: 35,
+    minSize: 80,
+    size: 80,
   },
   {
     accessorKey: "musical_key",
     header: "Key",
-    size: 35,
-    enableResizing: false,
+    minSize: 80,
+    size: 80,
   },
   {
     accessorKey: "duration",
     header: "Duration",
-    size: 35,
+    minSize: 100,
+    size: 100,
     cell: ({ row }) => formatSecs(row.original.duration),
   },
   {
     accessorKey: "artist",
     header: "Artist",
+    minSize: 100,
+    size: 100,
   },
-
   {
     accessorKey: "date_created",
     header: "Date Added",
+    minSize: 130,
+    size: 130,
+    cell: ({ cell }) => formatDate(cell.getValue() as string),
   },
   {
     accessorKey: "file_path",
@@ -73,12 +88,15 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
     accessorKey: "play-handle",
     header: "Play",
     cell: ({ row }) => (
-      <RowPlayHandleCell
-        rowId={row.original.id.toString()}
-        onPlay={() => onBeatPlay(row.original)}
-      />
+      <div className="flex justify-center">
+        <RowPlayHandleCell
+          rowId={row.original.id.toString()}
+          onPlay={() => onBeatPlay(row.original)}
+        />
+      </div>
     ),
-    size: 20,
+    size: 50,
+    enableResizing: false,
   }
 ];
 // function setAudioSrc(src: string): void {

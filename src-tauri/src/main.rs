@@ -1,7 +1,5 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
-mod audio_analysis;
 mod db;
 mod models;
 mod schema;
@@ -15,8 +13,8 @@ use std::{
     path::Path,
     sync::{Arc, Mutex},
 };
-
-use log::{error, info};
+use log::{error, info, warn};
+use crate::models::BeatChangeset;
 use crate::models::{Beat, BeatCollection};
 use tauri::{ Manager, State};
 
@@ -88,7 +86,9 @@ fn add_beat(state: State<AppState>, file_path: String) -> Result<String, String>
     println!("New beat added with id: {}", inserted_beat.id);
 
     // Analyze and update the beat synchronously
-    analyze_and_update_beat(inserted_beat.id, file_path.clone(), conn)?;
+    //analyze_and_update_beat(inserted_beat.id, file_path.clone(), conn)?;
+
+    analyze_dummy(inserted_beat.id, file_path.clone(), conn)?;
 
     Ok(format!("New beat added with id: {}", inserted_beat.id))
 }
@@ -134,7 +134,17 @@ fn delete_beat(id: i32, state: State<AppState>) -> Result<(), String> {
     db::delete_beat(&mut *conn, id).map_err(|e| e.to_string())?;
     Ok(())
 }
-use crate::models::BeatChangeset;
+
+
+#[tauri::command]
+fn delete_beats(ids: Vec<i32>, state: State<AppState>) -> Result<(), String> {
+    let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
+    let conn = &mut conn_guard.conn;
+    db::delete_beats(&mut *conn, ids).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
 #[tauri::command]
 fn update_beat(beat: BeatChangeset, state: State<AppState>) -> Result<(), String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
@@ -159,13 +169,13 @@ fn save_collection_order(
 ) -> Result<(), String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
-    
+
     db::save_collection_order(
         conn,
         payload.coll_order,
         payload.collection_id
     ).map_err(|e| e.to_string())?;
-    
+
     Ok(())
 }
 
@@ -243,6 +253,38 @@ fn add_beat_to_collection(
     db::add_beat_to_collection(&mut *conn, collection_id, beat_id).map_err(|e| e.to_string())?;
     Ok(())
 }
+
+#[tauri::command]
+fn add_beats_to_collection(
+    state: State<AppState>,
+    collection_id: i32,
+    ids: Vec<i32>,
+) -> Result<(), String> {
+    let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
+    let conn = &mut conn_guard.conn;
+    db::add_beats_to_collection(&mut *conn, collection_id, ids).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+fn remove_beats_from_collection(
+    state: State<AppState>,
+    collection_id: i32,
+    ids: Vec<i32>,
+) -> Result<(), String> {
+    println!("Removing beats from collection...");
+    let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
+    let conn = &mut conn_guard.conn;
+
+
+    println!("Removing beats from collection...");
+    db::remove_beats_from_collection(&mut *conn, collection_id, ids).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+
 // Opens the file location in the default file manager & selects the file
 // Needs to be tested on Mac & Linux
 #[tauri::command]
@@ -284,6 +326,8 @@ async fn open_file_location(path: String) -> Result<(), String> {
 
     Ok(())
 }
+
+
 fn main() {
     env_logger::init();
     println!("Starting beatbank...");
@@ -306,12 +350,15 @@ fn main() {
             fetch_beats,
             add_beat,
             delete_beat,
+            delete_beats,
             update_beat,
-            fetch_column_vis, 
-            new_beat_collection, 
+            fetch_column_vis,
+            new_beat_collection,
             fetch_collections,
             delete_beat_collection,
             add_beat_to_collection,
+            add_beats_to_collection,
+            remove_beats_from_collection,
             get_beat_collection,
             get_beats_in_collection,
             save_row_order,
@@ -370,6 +417,7 @@ fn main() {
                 std::thread::spawn(move || {
                     info!("Cleaning up before exit...");
                     std::thread::sleep(std::time::Duration::from_millis(100));
+                    info!("Cleanup complete, exiting application");
                     info!("Cleanup complete, exiting application");
                     app_handle.exit(0);
                 });

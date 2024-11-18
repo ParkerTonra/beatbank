@@ -13,14 +13,16 @@ use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
 use crate::models::{Beat, BeatChangeset, BeatCollection, NewBeat, NewBeatCollection};
 
+// At the top of your file with other constants
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
-pub fn establish_connection() -> Result<SqliteConnection, Box<dyn std::error::Error>> {
+pub fn establish_connection() -> Result<Result<SqliteConnection, Box<dyn std::error::Error>>, Box<dyn std::error::Error>> {
     dotenv().ok();
-    
+        
     let database_url = env::var("SQLITE_DATABASE_URL")
         .or_else(|_| env::var("DATABASE_URL"))
         .map_err(|e| format!("DATABASE_URL not set: {}", e))?;
@@ -114,6 +116,14 @@ pub fn delete_beat(conn: &mut SqliteConnection, id: i32) -> Result<(), DieselErr
         .map(|_| ())
 }
 
+pub fn delete_beats(conn: &mut SqliteConnection, ids: Vec<i32>) -> Result<(), DieselError> {
+    use crate::schema::beats;
+
+    diesel::delete(beats::table.filter(beats::id.eq_any(ids)))
+        .execute(conn)
+        .map(|_| ())
+}
+
 pub fn update_beat(conn: &mut SqliteConnection, beat: BeatChangeset) -> Result<(), DieselError> {
     use crate::schema::beats::dsl::*;
 
@@ -170,6 +180,42 @@ pub fn add_beat_to_collection(
         ))
         .execute(conn)
         .map(|_| ())
+}
+
+pub fn add_beats_to_collection(
+    conn: &mut SqliteConnection,
+    collection_id: i32,
+    ids: Vec<i32>,
+) -> Result<(), DieselError> {
+    use crate::schema::set_beat;
+
+    // Create a list of values to insert for each beat_id in beat_ids
+    let new_records: Vec<_> = ids
+        .into_iter()
+        .map(|beat_id| (set_beat::dsl::beat_id.eq(beat_id), set_beat::dsl::beat_collection_id.eq(collection_id)))
+        .collect();
+
+    // Insert all the new records into the set_beat table in a single batch
+    diesel::insert_into(set_beat::table)
+        .values(&new_records)
+        .execute(conn)
+        .map(|_| ())
+}
+
+pub fn remove_beats_from_collection(
+    conn: &mut SqliteConnection,
+    collection_id: i32,
+    ids: Vec<i32>,
+) -> Result<(), DieselError> {
+    use crate::schema::set_beat::dsl::{set_beat, beat_collection_id, beat_id};
+    println!("Removing beats from collection: {:?}", ids);
+    diesel::delete(
+        set_beat
+            .filter(beat_collection_id.eq(collection_id))
+            .filter(beat_id.eq_any(ids)),
+    )
+    .execute(conn)
+    .map(|_| ())
 }
 
 pub fn get_beat_collection(
