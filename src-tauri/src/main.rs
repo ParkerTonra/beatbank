@@ -4,6 +4,7 @@ mod db;
 mod models;
 mod schema;
 mod store;
+mod audio_analysis;
 use diesel::prelude::*;
 use models::CollOrder;
 use serde::Deserialize;
@@ -86,19 +87,43 @@ fn add_beat(state: State<AppState>, file_path: String) -> Result<String, String>
     println!("New beat added with id: {}", inserted_beat.id);
 
     // Analyze and update the beat synchronously
-    //analyze_and_update_beat(inserted_beat.id, file_path.clone(), conn)?;
-
-    analyze_dummy(inserted_beat.id, file_path.clone(), conn)?;
+    analyze_and_update_beat(inserted_beat.id, file_path.clone(), conn)?;
 
     Ok(format!("New beat added with id: {}", inserted_beat.id))
 }
-// dummy function to avoid using the audio_analyzer.py file. does nothing.
-fn analyze_dummy(
-    beat_id: i32, 
-    file_path: String, 
-    conn: &mut diesel::SqliteConnection // Pass connection as mutable reference
+
+use crate::audio_analysis::analyze_audio;
+fn analyze_and_update_beat(
+    beat_id: i32,
+    beat_path: String,
+    conn: &mut diesel::SqliteConnection
 ) -> Result<(), String> {
-    println!("Analysis currently disabled. Returning dummy values.");
+    // Check if the connection works before running analysis
+    if diesel::select(diesel::dsl::sql::<diesel::sql_types::Integer>("1"))
+        .load::<i32>(conn)
+        .is_err()
+    {
+        println!("Database connection test failed");
+        return Err("Connection check failed".into());
+    }
+    println!("Connection check passed");
+
+    // Convert the file path to a strin
+
+    // Run the audio analysis
+    let analysis_result = analyze_audio(&beat_path)?;
+    let (bpm_string, bpm_float) = analysis_result;
+    
+    println!("Analysis complete. BPM: {}", bpm_string);
+    use crate::schema::beats::dsl::*; 
+    // Update the beat in the database with the detected BPM
+    diesel::update(beats.find(beat_id))
+        .set(bpm.eq(bpm_float as f64))  // Assuming your bpm column is f64
+        .execute(conn)
+        .map_err(|e| format!("Failed to update beat: {}", e))?;
+
+    println!("Successfully updated beat {} with BPM {}", beat_id, bpm_string);
+    
     Ok(())
 }
 
@@ -393,6 +418,7 @@ fn main() {
                     info!("Cleaning up before exit...");
                     std::thread::sleep(std::time::Duration::from_millis(100));
                     info!("Cleanup complete, exiting application");
+                    info!("Cleanup complete, exiting application");
                     app_handle.exit(0);
                 });
             }
@@ -404,7 +430,7 @@ fn main() {
         })
         .expect("error while running tauri application")
         .run(|_app_handle, event| match event {
-            tauri::RunEvent::ExitRequested { api, .. } => {
+            tauri::RunEvent::ExitRequested {  .. } => {
                 info!("Application exit requested");
             }
             tauri::RunEvent::Ready => {

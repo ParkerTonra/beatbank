@@ -1,4 +1,5 @@
 use diesel::result::Error as DieselError;
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use log::info;
 use std::error::Error;
 use chrono::Utc;
@@ -12,14 +13,11 @@ use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
 use crate::models::{Beat, BeatChangeset, BeatCollection, NewBeat, NewBeatCollection};
 
-
 // At the top of your file with other constants
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
-
 pub fn establish_connection() -> Result<SqliteConnection, Box<dyn std::error::Error>> {
     dotenv().ok();
     
