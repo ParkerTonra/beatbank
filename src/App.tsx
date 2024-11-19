@@ -96,7 +96,7 @@ function AppContainer() {
             if (settings.is_first_time) {
                 // Show welcome message and complete setup
                 await message('Welcome to beatbank!');
-                await invoke('complete_first_time_setup');
+                await invoke('first_time_setup');
             } else {
                 await message('Welcome back to beatbank!');
             }
