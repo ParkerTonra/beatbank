@@ -56,8 +56,16 @@
         "icons/icon.ico"
       ],
       "resources": [
-        "../src/assets/*"
-      ]
+        "../src/assets/*",
+        "resources/*"
+      ],
+      "macOS": {
+        "entitlements": null,
+        "exceptionDomain": "",
+        "frameworks": [],
+        "providerShortName": null,
+        "signingIdentity": null
+      }
     }
   }
 }

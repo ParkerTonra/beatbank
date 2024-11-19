@@ -17,7 +17,7 @@ use std::{
 use log::{error, info, warn};
 use crate::models::BeatChangeset;
 use crate::models::{Beat, BeatCollection};
-use tauri::{ Manager, State};
+use tauri::{ Manager, State, AppHandle};
 
 struct DatabaseConnection {
     conn: SqliteConnection,
@@ -69,36 +69,42 @@ fn fetch_column_vis() -> String {
 }
 
 #[tauri::command]
-fn add_beat(state: State<AppState>, file_path: String) -> Result<String, String> {
+fn add_beat(state: State<AppState>, app_handle: AppHandle, file_path: String) -> Result<String, String> {
     let file_name = Path::new(&file_path)
         .file_name()
         .and_then(|name| name.to_str())
-        .and_then(|name| name.rsplitn(2, '.').nth(1)) // Split from the end, get the part before the last period
+        .and_then(|name| name.rsplitn(2, '.').nth(1))
         .unwrap_or("Unknown")
         .to_string();
 
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
 
-    // Store the inserted beat result
     let inserted_beat =
         db::add_beat(&mut *conn, &file_name, &file_path).map_err(|e| e.to_string())?;
 
     println!("New beat added with id: {}", inserted_beat.id);
 
-    // Analyze and update the beat synchronously
-    analyze_and_update_beat(inserted_beat.id, file_path.clone(), conn)?;
+    // Pass app_handle for release builds
+    #[cfg(debug_assertions)]
+    analyze_and_update_beat(inserted_beat.id, file_path.clone(), conn, None)?;
+    
+    #[cfg(not(debug_assertions))]
+    analyze_and_update_beat(inserted_beat.id, file_path.clone(), conn, Some(&app_handle))?;
 
     Ok(format!("New beat added with id: {}", inserted_beat.id))
 }
 
-use crate::audio_analysis::analyze_audio;
 fn analyze_and_update_beat(
-    beat_id: i32,
-    beat_path: String,
-    conn: &mut diesel::SqliteConnection
+    beat_id: i32, 
+    file_path: String,
+    conn: &mut diesel::SqliteConnection,
+    app_handle: Option<&AppHandle>,
 ) -> Result<(), String> {
-    // Check if the connection works before running analysis
+    use crate::audio_analysis::analyze_audio;
+
+    println!("Starting analysis for file: {}", file_path);
+
     if diesel::select(diesel::dsl::sql::<diesel::sql_types::Integer>("1"))
         .load::<i32>(conn)
         .is_err()
@@ -108,22 +114,28 @@ fn analyze_and_update_beat(
     }
     println!("Connection check passed");
 
-    // Convert the file path to a strin
+    match analyze_audio(&file_path, app_handle) {
+        Ok((key, tempo)) => {
+            println!("Analysis Result: Key: {}, Tempo: {}", key, tempo);
+            let musical_key_str = key.to_string();
 
-    // Run the audio analysis
-    let analysis_result = analyze_audio(&beat_path)?;
-    let (bpm_string, bpm_float) = analysis_result;
-    
-    println!("Analysis complete. BPM: {}", bpm_string);
-    use crate::schema::beats::dsl::*; 
-    // Update the beat in the database with the detected BPM
-    diesel::update(beats.find(beat_id))
-        .set(bpm.eq(bpm_float as f64))  // Assuming your bpm column is f64
-        .execute(conn)
-        .map_err(|e| format!("Failed to update beat: {}", e))?;
+            diesel::update(crate::schema::beats::dsl::beats.find(beat_id))
+                .set((
+                    crate::schema::beats::dsl::musical_key.eq(Some(musical_key_str)),
+                    crate::schema::beats::dsl::bpm.eq(Some(tempo)),
+                ))
+                .execute(conn)
+                .map_err(|e| {
+                    println!("Error updating beat: {:?}", e);
+                    e.to_string()
+                })?;
+        }
+        Err(e) => {
+            println!("Failed to analyze audio. Error: {}", e);
+            return Err(e.to_string());
+        }
+    }
 
-    println!("Successfully updated beat {} with BPM {}", beat_id, bpm_string);
-    
     Ok(())
 }
 
