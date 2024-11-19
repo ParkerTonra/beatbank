@@ -37,5 +37,7 @@ src-tauri/src/__pycache__/audio_analyzer.cpython-312.pyc
 
 
 # large files. use lfs from git to push these to remote
+# Binary files
 src-tauri/resources/audio_analyzer-x86_64-pc-windows-msvc.exe
 src-tauri/src/build/audio_analyzer/audio_analyzer.pkg
+src-tauri/src/build/audio_analyzer_win/audio_analyzer.pkg
