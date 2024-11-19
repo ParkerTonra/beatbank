@@ -58,15 +58,7 @@ Ensure you have the following installed on your system:
    After the build process completes, an .exe file will be generated in the src-tauri/target/release directory of your project.
   
 
-
-TODO/ideas
-style cleanup + buttons
-TODO:
-- [] add songs to set with button
-- [] edit set name
-- [] make default column sizes look nice
-- FF button
-  ideas:
+Future Enhancements:
 - Allow users to star sets to prioritize favs/ones being worked on.
 - BeatSet page has multiple tabs / ways to look at the set
 
