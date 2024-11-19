@@ -138,7 +138,7 @@ export const TableHeader = ({
       {uploadStatus && (
         <button
           onClick={() => setShowStatusDialog(true)}
-          className="ml-2 absolute right-4 top-2"
+          className="ml-2 absolute right-24 top-4"
         >
           <span className="pi pi-info-circle" />
         </button>
