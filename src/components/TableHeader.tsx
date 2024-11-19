@@ -19,6 +19,7 @@ interface TableHeaderProps {
   uploadedFiles: string[];
   showEditColumnsDialog: boolean;
   setShowEditColumnsDialog: (show: boolean) => void;
+  handleForceFirstTimeSetup: () => void;
 }
 
 
@@ -35,6 +36,7 @@ export const TableHeader = ({
   uploadedFiles,
   showEditColumnsDialog,
   setShowEditColumnsDialog,
+  handleForceFirstTimeSetup,
 }: TableHeaderProps) => {
   const { tableInstance } = useTableContext();
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
@@ -134,6 +136,9 @@ export const TableHeader = ({
           items={beatActionItems}
         />
       )}
+      <button onClick={handleForceFirstTimeSetup} className="ml-2 right-4 top-2">
+        <span>Force Wipe</span>
+      </button>
 
       {uploadStatus && (
         <button
@@ -143,6 +148,7 @@ export const TableHeader = ({
           <span className="pi pi-info-circle" />
         </button>
       )}
+      
 
       <Dialog
         header="Upload Status"

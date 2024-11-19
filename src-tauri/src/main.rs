@@ -328,12 +328,14 @@ async fn open_file_location(path: String) -> Result<(), String> {
 fn main() {
     env_logger::init();
     println!("Starting beatbank...");
+    
     let conn = DatabaseConnection {
         conn: db::establish_connection().unwrap_or_else(|e| {
             error!("Failed to establish database connection: {}", e);
             panic!("Database connection failed: {}", e)
         }),
     };
+    
     info!("Database connection established successfully");
 
     let app_state = AppState {
@@ -366,6 +368,8 @@ fn main() {
             store::get_settings_path,
             store::check_is_first_time,
             store::first_time_setup,
+            store::force_first_time_setup,
+            
         ])
         .setup(|app| {
             info!("Starting application setup...");

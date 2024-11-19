@@ -10,7 +10,7 @@ import 'primereact/resources/themes/lara-dark-indigo/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
 import { useBeats } from "./hooks/useBeats";
-import { loadSettings, getSettingsPath } from './store';
+import { loadSettings, getSettingsPath, forceFirstTimeSetup } from './store';
 import { DndContext, DragEndEvent, DragStartEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { invoke } from "@tauri-apps/api/tauri";
 import { message } from "@tauri-apps/api/dialog";
@@ -37,6 +37,7 @@ function AppContainer() {
   // todo: theme
   //@ts-ignore
   const [theme, setTheme] = useState<string>('light');
+  //@ts-ignore
   const [settingsPath, setSettingsPath] = useState<string>('');
   const [isFileDragging, setIsFileDragging] = useState(false);
   const [showEditColumnsDialog, setShowEditColumnsDialog] = useState(false);
@@ -51,16 +52,6 @@ function AppContainer() {
   const isInCollection = Boolean(collectionIdMatch);
   const collectionId = collectionIdMatch ? parseInt(collectionIdMatch[1], 10) : null;
   const { isPlaying, currentBeat, playBeat, stopBeat, togglePlayPause, audioRef } = useAudio();
-  
-  async function completeFirstTimeSetup() {
-    const isFirstTime = await invoke('check_is_first_time');
-    if (isFirstTime) {
-      await invoke('first_time_setup');
-      message('welcome to beatbank!');
-    } else {
-      message('welcome back to beatbank!');
-    }
-  }
   
 
   const {
@@ -125,6 +116,16 @@ function AppContainer() {
     directory: true,
   } as OpenDialogOptions;
 
+  const handleForceSetup = async () => {
+    try {
+      await forceFirstTimeSetup();
+      // Reload the page or reinitialize the app
+      window.location.reload();
+    } catch (error) {
+      console.error('Error forcing first time setup:', error);
+      await message('Error forcing first time setup', { type: 'error' });
+    }
+  };
 
   const handleFolderUpload = async () => {
     try {
@@ -519,6 +520,7 @@ function AppContainer() {
                 uploadedFiles={uploadedFiles}
                 showEditColumnsDialog={showEditColumnsDialog}
                 setShowEditColumnsDialog={setShowEditColumnsDialog}
+                handleForceFirstTimeSetup={handleForceSetup}
               />
               <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
                 strategy={verticalListSortingStrategy}>

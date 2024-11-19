@@ -1,7 +1,10 @@
+use diesel_migrations::MigrationHarness;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, read_to_string, write};
 use std::path::PathBuf;
 use tauri::api::path;
+use crate::db::{self, establish_connection};
+use crate::main;
 
 #[derive(Serialize, Deserialize)]
 pub struct Settings {
@@ -50,6 +53,23 @@ pub fn resolve_project_root_path(file_name: &str) -> Result<PathBuf, String> {
         .map_err(|e| format!("Failed to create app directory: {}", e))?;
     
     Ok(app_dir.join(file_name))
+}
+
+#[tauri::command]
+pub async fn force_first_time_setup() -> Result<(), String> {
+    println!("Forcing first time setup...");
+    // Reset settings to default with is_first_time = true
+    let settings_path = resolve_project_root_path("settings.json")
+        .map_err(|e| format!("Failed to resolve settings path: {}", e))?;
+    
+    let default_settings = Settings::default(); // This will have is_first_time = true
+    let contents = serde_json::to_string(&default_settings)
+        .map_err(|e| format!("Failed to serialize settings: {}", e))?;
+    
+    write(&settings_path, contents)
+        .map_err(|e| format!("Failed to save settings: {}", e))?;
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -119,27 +139,54 @@ pub async fn save_settings(settings: Settings) -> Result<(), String> {
 #[tauri::command]
 pub async fn first_time_setup() -> Result<(), String> {
     println!("Running first time setup...");
+    
+    // Clear and reinitialize database
+    let mut connection = db::establish_connection()
+        .map_err(|e| format!("Failed to establish database connection: {}", e))?;
+    
+    db::clear_database(&mut connection)
+        .map_err(|e| format!("Failed to clear database: {}", e))?;
+
+    // Update settings
     let settings_path = resolve_project_root_path("settings.json")
         .map_err(|e| format!("Failed to resolve settings path: {}", e))?;
-    
+
     let mut settings = if settings_path.exists() {
         read_to_string(&settings_path)
             .map_err(|e| format!("Failed to read settings file: {}", e))
             .and_then(|contents| {
-                serde_json::from_str(&contents)
-                    .map_err(|e| format!("Failed to parse settings: {}", e))
+                match serde_json::from_str(&contents) {
+                    Ok(settings) => Ok(settings),
+                    Err(_) => migrate_old_settings(&contents)
+                }
             })?
     } else {
         Settings::default()
     };
 
-    settings.set_first_time(false);  // Use the setter method
+    settings.set_first_time(false);
     
     let contents = serde_json::to_string(&settings)
         .map_err(|e| format!("Failed to serialize settings: {}", e))?;
     
     write(settings_path, contents)
         .map_err(|e| format!("Failed to save settings: {}", e))
+}
+
+fn migrate_old_settings(contents: &str) -> Result<Settings, String> {
+    #[derive(Deserialize)]
+    struct OldSettings {
+        theme: String,
+    }
+
+    let old_settings: OldSettings = serde_json::from_str(contents)
+        .map_err(|e| format!("Failed to parse old settings format: {}", e))?;
+
+    Ok(Settings {
+        version: 1,
+        theme: old_settings.theme,
+        is_first_time: true,
+    })
 }
 
 #[tauri::command]
@@ -154,3 +201,4 @@ pub async fn get_settings_path() -> Result<String, String> {
         .map_err(|e| format!("Failed to resolve settings path: {}", e))?;
     Ok(settings_path.to_string_lossy().into_owned())
 }
+

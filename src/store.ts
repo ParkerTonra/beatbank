@@ -32,3 +32,7 @@ export async function getSettingsPath(): Promise<string> {
   return await invoke('get_settings_path');
 }
 
+export async function forceFirstTimeSetup(): Promise<void> {
+  await invoke('force_first_time_setup');
+}
+

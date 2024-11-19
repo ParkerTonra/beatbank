@@ -15,7 +15,6 @@ use symphonia::core::probe::Hint;
 
 use crate::models::{Beat, BeatChangeset, BeatCollection, NewBeat, NewBeatCollection};
 
-// At the top of your file with other constants
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
 pub fn establish_connection() -> Result<SqliteConnection, Box<dyn std::error::Error>> {
@@ -29,16 +28,39 @@ pub fn establish_connection() -> Result<SqliteConnection, Box<dyn std::error::Er
     // Create database path
     let db_path = app_dir.join("database.sqlite");
     let database_url = format!("sqlite://{}", db_path.to_str().unwrap());
-
+    
     let mut connection = SqliteConnection::establish(&database_url)
         .map_err(|e| format!("Error connecting to {}: {}", database_url, e))?;
+    
+    // Initialize database with migrations
+    initialize_database(&mut connection)?;
+    
+    Ok(connection)
+}
 
+fn initialize_database(connection: &mut SqliteConnection) -> Result<(), Box<dyn std::error::Error>> {
     // Run the migrations
     connection.run_pending_migrations(MIGRATIONS)
         .map_err(|e| format!("Error running migrations: {}", e))?;
-        
     info!("Database migrations completed successfully");
-    Ok(connection)
+    Ok(())
+}
+
+pub fn clear_database(connection: &mut SqliteConnection) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::schema::*;
+    
+    connection.transaction::<_, diesel::result::Error, _>(|conn| {
+        // Delete from all tables in reverse order of dependencies
+        diesel::delete(set_beat::table).execute(conn)?;
+        diesel::delete(beat_collection::table).execute(conn)?;
+        diesel::delete(beats::table).execute(conn)?;
+        Ok(())
+    })?;
+
+    // Re-run migrations to restore tables
+    initialize_database(connection)?;
+
+    Ok(())
 }
 
 pub fn add_beat(
