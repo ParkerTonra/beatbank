@@ -34,3 +34,8 @@ database.sqlite
 /src-tauri/src/__pycache__
 src-tauri/src/__pycache__/audio_analyzer.cpython-312.pyc
 .DS_Store
+
+
+# large files. use lfs from git to push these to remote
+src-tauri/resources/audio_analyzer-x86_64-pc-windows-msvc.exe
+src-tauri/src/build/audio_analyzer/audio_analyzer.pkg
