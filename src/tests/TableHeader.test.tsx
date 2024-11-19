@@ -1,19 +1,25 @@
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import TableHeader from "../components/TableHeader.tsx";
 
-const setupTableHeader = () => {
+const defaultProps = {
+  selectedBeats: [],
+  setIsEditingBeat: jest.fn(),
+  beatActionItems: [],
+  addBeatItems: [],
+  uploadStatus: "",
+  showStatusDialog: false,
+  setShowStatusDialog: jest.fn(),
+  uploadedFiles: [],
+  showEditColumnsDialog: true,
+  setShowEditColumnsDialog: jest.fn(),
+}
+
+const setupTableHeader = (props = {}) => {
+  const combinedProps = {...defaultProps, ...props};
+
   render(
     <TableHeader
-      selectedBeats={[]}
-      setIsEditingBeat={jest.fn()}
-      beatActionItems={[]}
-      addBeatItems={[]}
-      uploadStatus={""}
-      showStatusDialog={false}
-      setShowStatusDialog={jest.fn()}
-      uploadedFiles={[]}
-      showEditColumnsDialog={false}
-      setShowEditColumnsDialog={jest.fn()}
+      {...combinedProps}
     />);
 }
 
