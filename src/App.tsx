@@ -28,6 +28,8 @@ import { open, OpenDialogOptions } from "@tauri-apps/api/dialog";
 import { MenuItem } from "primereact/menuitem";
 import { TableContext } from "./contexts/TableContext";
 import BeatCollectionComponent from "./components/BeatCollection";
+import BeatbankLogo from './assets/BeatbankLogo.png';
+
 
 function AppContainer() {
   // state
@@ -478,7 +480,7 @@ function AppContainer() {
         <div className="flex-1 flex flex-col overflow-x-auto">
         <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
             <span className="fixed right-4 top-2">
-              <img src="src/assets/BeatbankLogo2.png" width={60} height={100} />
+              <img src={BeatbankLogo} width={60} height={100} />
             </span>
             <TableContext.Provider value={{ tableInstance, setTableInstance }}>
             <div className="flex flex-col flex-1 h-full">
