@@ -26,6 +26,9 @@ struct PythonProcess {
 
 impl PythonProcess {
     fn new(app_handle: Option<&AppHandle>) -> Result<Self, String> {
+        let setup_start = Instant::now();
+        println!("Starting Python service initialization...");
+        
         let py_executable_path = get_executable_path(app_handle);
         
         let mut child = Command::new(py_executable_path)
@@ -38,12 +41,23 @@ impl PythonProcess {
         let writer = BufWriter::new(child.stdin.take().unwrap());
         let reader = BufReader::new(child.stdout.take().unwrap());
         
+        println!("Python service initialization took: {:?}", setup_start.elapsed());
         Ok(PythonProcess {
             child,
             writer,
             reader,
         })
     }
+}
+
+pub fn initialize_python_service(app_handle: Option<&AppHandle>) -> Result<(), String> {
+    let mut process_guard = PYTHON_PROCESS.lock().unwrap();
+    if process_guard.is_none() {
+        println!("Starting Python process...");
+        *process_guard = Some(PythonProcess::new(app_handle)?);
+        println!("Python process started successfully");
+    }
+    Ok(())
 }
 
 fn get_executable_path(app_handle: Option<&AppHandle>) -> PathBuf {
@@ -80,14 +94,10 @@ fn get_executable_path(app_handle: Option<&AppHandle>) -> PathBuf {
 pub fn analyze_audio(file_path: &str, app_handle: Option<&AppHandle>) -> Result<(String, f64), String> {
     let total_start = Instant::now();
     
-    // Get or create Python process
+    // Just get the process, don't try to create it
     let mut process_guard = PYTHON_PROCESS.lock().unwrap();
-    if process_guard.is_none() {
-        println!("Starting Python process...");
-        *process_guard = Some(PythonProcess::new(app_handle)?);
-    }
-    
-    let process = process_guard.as_mut().unwrap();
+    let process = process_guard.as_mut()
+        .ok_or_else(|| "Python process not initialized".to_string())?;
     
     println!("Sending file path: {}", file_path);
     writeln!(process.writer, "{}", file_path)

@@ -18,6 +18,8 @@ use log::{error, info, warn};
 use crate::models::BeatChangeset;
 use crate::models::{Beat, BeatCollection};
 use tauri::{ Manager, State, AppHandle};
+use crate::audio_analysis::initialize_python_service;
+
 
 struct DatabaseConnection {
     conn: SqliteConnection,
@@ -385,8 +387,8 @@ fn main() {
 
             #[cfg(debug_assertions)] // only include this code on debug builds
             {
-            let window = app.get_window("main").unwrap();
-            window.open_devtools(); // Open devtools on debug builds
+                let window = app.get_window("main").unwrap();
+                window.open_devtools(); // Open devtools on debug builds
             }
 
             let state: State<AppState> = app.state();
@@ -399,6 +401,14 @@ fn main() {
             diesel::sql_query("PRAGMA foreign_keys = ON")
                 .execute(&mut conn_guard.conn)
                 .map_err(|e| format!("Failed to enable foreign keys: {:?}", e))?;
+            
+            // Initialize Python service
+            info!("Initializing Python service...");
+            if let Err(e) = initialize_python_service(Some(&app.app_handle())) {
+                error!("Failed to initialize Python service: {}", e);
+                return Err(e.into());
+            }
+            info!("Python service initialized successfully");
             
             info!("Setup completed successfully");
             Ok(())
