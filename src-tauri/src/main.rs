@@ -10,11 +10,9 @@ use models::CollOrder;
 use serde::Deserialize;
 use serde_json;
 use std::{
-    env,
-    path::Path,
-    sync::{Arc, Mutex},
+    env, path::Path, sync::{Arc, Mutex}
 };
-use log::{error, info, warn};
+use log::{error, info};
 use crate::models::BeatChangeset;
 use crate::models::{Beat, BeatCollection};
 use tauri::{ Manager, State};
@@ -327,7 +325,6 @@ async fn open_file_location(path: String) -> Result<(), String> {
     Ok(())
 }
 
-
 fn main() {
     env_logger::init();
     println!("Starting beatbank...");
@@ -366,7 +363,9 @@ fn main() {
             open_file_location,
             store::load_settings,
             store::save_settings,
-            store::get_settings_path
+            store::get_settings_path,
+            store::check_is_first_time,
+            store::first_time_setup,
         ])
         .setup(|app| {
             info!("Starting application setup...");

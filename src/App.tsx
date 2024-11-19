@@ -50,8 +50,18 @@ function AppContainer() {
   const collectionIdMatch = location.pathname.match(/\/collection\/(\d+)/);
   const isInCollection = Boolean(collectionIdMatch);
   const collectionId = collectionIdMatch ? parseInt(collectionIdMatch[1], 10) : null;
-
   const { isPlaying, currentBeat, playBeat, stopBeat, togglePlayPause, audioRef } = useAudio();
+  
+  async function completeFirstTimeSetup() {
+    const isFirstTime = await invoke('check_is_first_time');
+    if (isFirstTime) {
+      await invoke('first_time_setup');
+      message('welcome to beatbank!');
+    } else {
+      message('welcome back to beatbank!');
+    }
+  }
+  
 
   const {
     beats,
@@ -76,23 +86,38 @@ function AppContainer() {
   }, []);
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      console.log("loading settings, path:", settingsPath);
-      const settings = await loadSettings();
-      setTheme(settings.theme);
+    const initializeApp = async () => {
+        try {
+            // First load settings
+            const settings = await loadSettings();
+            setTheme(settings.theme);
+            
+            // Check if it's first time
+            if (settings.is_first_time) {
+                // Show welcome message and complete setup
+                await message('Welcome to beatbank!');
+                await invoke('complete_first_time_setup');
+            } else {
+                await message('Welcome back to beatbank!');
+            }
 
-      const path = await getSettingsPath();
-      setSettingsPath(path);
+            // Get settings path (if needed)
+            const path = await getSettingsPath();
+            setSettingsPath(path);
+
+            // Then fetch data
+            await fetchData();
+
+            // Finally close splash screen
+            setShowSplashScreen(false);
+        } catch (error) {
+            console.error('Error initializing app:', error);
+            // Handle error appropriately
+        }
     };
 
-    fetchSettings();
-  }, []);
-
-  useEffect(() => {
-    if (collectionId) {
-      fetchSetData(collectionId);
-    }
-  }, [collectionId]);
+    initializeApp();
+}, []);
 
   //TODO: consolidate
   const folderDialogOptions: OpenDialogOptions = {
@@ -470,6 +495,7 @@ function AppContainer() {
   }
 
   if (error) return <div className="flex items-center justify-center h-screen">Error: {error.message}</div>;
+
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>

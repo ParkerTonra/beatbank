@@ -15,7 +15,9 @@
 import { invoke } from '@tauri-apps/api/tauri';
 
 interface Settings {
+  version: number;
   theme: string;
+  is_first_time: boolean;
 }
 
 export async function loadSettings(): Promise<Settings> {
