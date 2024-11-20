@@ -291,7 +291,7 @@ fn create_dummy_audio_file() -> Result<PathBuf, String> {
     Ok(dummy_path)
 }
 
-fn get_executable_path(_app_handle: Option<&AppHandle>) -> PathBuf {
+fn get_executable_path(app_handle: Option<&AppHandle>) -> PathBuf {
     #[cfg(debug_assertions)]
     {
         // During development (tauri dev)
@@ -308,9 +308,12 @@ fn get_executable_path(_app_handle: Option<&AppHandle>) -> PathBuf {
     {
         // Release path
         let base_path = if let Some(app) = app_handle {
-            app.path_resolver().resource_dir()
+            app.path_resolver()
+               .resource_dir()
+               .expect("Failed to get resource directory")
         } else {
-            env::current_dir().expect("Failed to get current directory")
+            env::current_dir()
+               .expect("Failed to get current directory")
         };
             
         #[cfg(target_os = "windows")] { 
