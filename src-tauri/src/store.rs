@@ -1,10 +1,9 @@
-use diesel_migrations::MigrationHarness;
 use serde::{Deserialize, Serialize};
 use std::fs::{self, read_to_string, write};
 use std::path::PathBuf;
 use tauri::api::path;
-use crate::db::{self, establish_connection};
-use crate::main;
+use crate::db::{self};
+
 
 #[derive(Serialize, Deserialize)]
 pub struct Settings {
@@ -25,18 +24,14 @@ impl Default for Settings {
 
 impl Settings {
     // Getter methods
-    pub fn get_theme(&self) -> &str {
-        &self.theme
-    }
+    
+    // get & set theme go here, if necessary
 
     pub fn is_first_time(&self) -> bool {
         self.is_first_time
     }
 
-    // Setter methods
-    pub fn set_theme(&mut self, theme: String) {
-        self.theme = theme;
-    }
+    
 
     pub fn set_first_time(&mut self, is_first: bool) {
         self.is_first_time = is_first;
@@ -58,7 +53,15 @@ pub fn resolve_project_root_path(file_name: &str) -> Result<PathBuf, String> {
 #[tauri::command]
 pub async fn force_first_time_setup() -> Result<(), String> {
     println!("Forcing first time setup...");
-    // Reset settings to default with is_first_time = true
+    
+    // Step 1: Clear and reinitialize database
+    let mut connection = db::establish_connection()
+        .map_err(|e| format!("Failed to establish database connection: {}", e))?;
+    
+    db::clear_database(&mut connection)
+        .map_err(|e| format!("Failed to clear database: {}", e))?;
+    
+    // Step 2: Reset settings to default with is_first_time = true
     let settings_path = resolve_project_root_path("settings.json")
         .map_err(|e| format!("Failed to resolve settings path: {}", e))?;
     
@@ -69,6 +72,7 @@ pub async fn force_first_time_setup() -> Result<(), String> {
     write(&settings_path, contents)
         .map_err(|e| format!("Failed to save settings: {}", e))?;
 
+    println!("First time setup completed successfully");
     Ok(())
 }
 

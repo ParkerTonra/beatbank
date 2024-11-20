@@ -335,6 +335,19 @@ async fn open_file_location(path: String) -> Result<(), String> {
 fn main() {
     env_logger::init();
     println!("Starting beatbank...");
+
+     // Add build-specific initialization
+     #[cfg(not(debug_assertions))]
+    {
+        use tokio::runtime::Runtime;
+        // Create a runtime for the async force_first_time_setup
+        let rt = Runtime::new().expect("Failed to create Tokio runtime");
+        if let Err(e) = rt.block_on(store::force_first_time_setup()) {
+            error!("Failed to force first time setup: {}", e);
+            panic!("First time setup failed: {}", e);
+        }
+        info!("Release build: Forced first-time setup completed");
+    }
     
     let conn = DatabaseConnection {
         conn: db::establish_connection().unwrap_or_else(|e| {
