@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Beat, CollOrder, RowOrder } from "./bindings";
+import { Beat, CollOrder, RowOrder, AudioExtension, TempoDetectionExtension } from "./bindings";
 import Sidebar from "./components/Sidebar";
 import "./App.css";
 import "./Main.css";
@@ -299,9 +299,6 @@ function AppContainer() {
       setUploadStatus(prevStatus => prevStatus + `\nError deleting beat: ${error}`);
     }
   };
-
-  type AudioExtension = 'flac' | 'wav' | 'mp3' | 'ogg' | 'm4a' | 'aac' | 'aiff' | 'wma';
-  type TempoDetectionExtension = 'flac' | 'wav' | 'mp3';
 
   const VALID_EXTENSIONS = {
     all: ['flac', 'wav', 'mp3', 'ogg', 'm4a', 'aac', 'aiff', 'wma'] as AudioExtension[],
