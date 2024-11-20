@@ -84,6 +84,13 @@ fn add_beat(state: State<AppState>, file_path: String) -> Result<String, String>
 
     println!("New beat added with id: {}", inserted_beat.id);
 
+    let file_extension = file_path.split('.').last().unwrap_or("");
+
+    // if the file extension is not mp3, flac, or wav, skip the tempo analysis
+    if !["mp3", "flac", "wav"].contains(&file_extension) {
+        return Ok(format!("Tempo analysis unavailable for this file type: {}", file_path));
+    }
+
     // Analyze and update the beat synchronously
     analyze_and_update_beat(inserted_beat.id, file_path.clone(), conn)?;
 

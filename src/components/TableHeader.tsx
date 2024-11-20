@@ -4,6 +4,7 @@ import { Beat } from "../bindings";
 import DropdownMenu from "./DropdownMenu";
 import { Dialog } from "primereact/dialog";
 import { MenuItem } from "primereact/menuitem";
+import { RefreshCcwDot } from  "lucide-react";
 
 import { useTableContext } from "../contexts/TableContext";
 import { useEffect, useState } from "react";
@@ -136,8 +137,8 @@ export const TableHeader = ({
           items={beatActionItems}
         />
       )}
-      <button onClick={handleForceFirstTimeSetup} className="ml-2 right-4 top-2">
-        <span>Force Wipe</span>
+      <button onClick={handleForceFirstTimeSetup} className="h-8 mt-1.5">
+        <RefreshCcwDot size={16} />
       </button>
 
       {uploadStatus && (

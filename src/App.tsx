@@ -103,7 +103,6 @@ function AppContainer() {
             setShowSplashScreen(false);
         } catch (error) {
             console.error('Error initializing app:', error);
-            // Handle error appropriately
         }
     };
 
@@ -118,9 +117,13 @@ function AppContainer() {
 
   const handleForceSetup = async () => {
     try {
-      await forceFirstTimeSetup();
-      // Reload the page or reinitialize the app
-      window.location.reload();
+      // ask user to confirm w/ tauri
+      const confirmed = await confirm('Are you sure you want to wipe your data? This will delete all your beats and collections.');
+      if (confirmed) {
+        await forceFirstTimeSetup();
+        // Reload the page or reinitialize the app
+        window.location.reload();
+      }
     } catch (error) {
       console.error('Error forcing first time setup:', error);
       await message('Error forcing first time setup', { type: 'error' });
@@ -299,6 +302,11 @@ function AppContainer() {
 
         for (const filePath of (Array.isArray(filePaths) ? filePaths : [filePaths])) {
           try {
+            // if file is not mp3, flac, or wav, say "tempo detection unavailable for this file type"
+            const fileExtension: string = filePath.split('.').pop() || '';
+            if (!['mp3', 'flac', 'wav'].includes(fileExtension)) {
+              setUploadStatus(prevStatus => prevStatus + `\nTempo detection unavailable for this file type: ${filePath}`);
+            }
             const result = await invoke('add_beat', {
               filePath: filePath,
             });
