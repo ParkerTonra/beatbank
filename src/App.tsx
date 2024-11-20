@@ -195,6 +195,8 @@ function AppContainer() {
       }, 5000);
     });
 
+
+
     const unlistenCancelled = listen('tauri://file-drop-cancelled', () => {
       clearTimeout(dragTimeoutId);
       setIsFileDragging(false);
@@ -208,6 +210,20 @@ function AppContainer() {
       unlistenCancelled.then(dispose => dispose());
     };
   }, []);
+
+  useEffect(() => {
+    if (cancelUpload) {
+      setIsProcessing(false);
+      setProcessingProgress({
+        filesProcessed: 0,
+        totalFiles: 0,
+        beatsAnalyzed: 0,
+        totalAnalyzable: 0
+      });
+      setCancelUpload(false);
+      setUploadedFiles([]);
+    }
+  }, [cancelUpload]);
 
   const addBeatsToSet = async (collectionId: number) => {
     if (!selectedBeats.length) {
@@ -297,31 +313,31 @@ function AppContainer() {
   };
 
   async function processEntries(entries: FileEntry[]) {
-  try {
-    const filesToProcess: string[] = [];
+    try {
+      const filesToProcess: string[] = [];
 
-    // Collect valid file paths recursively
-    const collectPaths = (entry: FileEntry) => {
-      if (entry.children) {
-        entry.children.forEach(collectPaths);
-      } else {
-        const extension = entry.name?.split('.').pop()?.toLowerCase() || '';
-        if (VALID_EXTENSIONS.all.includes(extension as AudioExtension)) {
-          filesToProcess.push(entry.path);
+      // Collect valid file paths recursively
+      const collectPaths = (entry: FileEntry) => {
+        if (entry.children) {
+          entry.children.forEach(collectPaths);
+        } else {
+          const extension = entry.name?.split('.').pop()?.toLowerCase() || '';
+          if (VALID_EXTENSIONS.all.includes(extension as AudioExtension)) {
+            filesToProcess.push(entry.path);
+          }
         }
-      }
-    };
+      };
 
-    entries.forEach(collectPaths);
-    setUploadedFiles(filesToProcess);
+      entries.forEach(collectPaths);
+      setUploadedFiles(filesToProcess);
 
-    // Process files with the improved implementation
-    await processFiles(filesToProcess);
-  } catch (error) {
-    console.error('Error in processEntries:', error);
-    setUploadStatus(prev => `${prev}\nError processing files: ${error}`);
+      // Process files with the improved implementation
+      await processFiles(filesToProcess);
+    } catch (error) {
+      console.error('Error in processEntries:', error);
+      setUploadStatus(prev => `${prev}\nError processing files: ${error}`);
+    }
   }
-}
 
   const handleFileUpload = async () => {
     try {
@@ -353,7 +369,7 @@ function AppContainer() {
       const extension = path.split('.').pop()?.toLowerCase() || '';
       return isTempoDetectionSupported(extension);
     });
-  
+
     setIsProcessing(true);
     setProcessingProgress({
       filesProcessed: 0,
@@ -361,25 +377,28 @@ function AppContainer() {
       beatsAnalyzed: 0,
       totalAnalyzable: analyzableFiles.length
     });
-  
+
     try {
       // Step 1: Add all files to database first
       const BATCH_SIZE = 3;
       const addedBeats: { beatId: number, filePath: string }[] = [];
-  
+
       for (let i = 0; i < filePaths.length; i += BATCH_SIZE) {
+        if (cancelUpload) {
+          return;
+        }
         const batch = filePaths.slice(i, i + BATCH_SIZE);
-        
+
         const batchResults = await Promise.all(batch.map(async (filePath) => {
           try {
             // Just add to database, don't analyze yet
             const beatId = await invoke('add_beat', { filePath }) as number;
-            
+
             setProcessingProgress(prev => ({
               ...prev,
               filesProcessed: Math.min(prev.filesProcessed + 1, prev.totalFiles)
             }));
-  
+
             const extension = filePath.split('.').pop()?.toLowerCase() || '';
             if (isTempoDetectionSupported(extension)) {
               return { beatId, filePath };
@@ -393,26 +412,29 @@ function AppContainer() {
             return null;
           }
         }));
-  
-        addedBeats.push(...batchResults.filter((result): result is { beatId: number, filePath: string } => 
+
+        addedBeats.push(...batchResults.filter((result): result is { beatId: number, filePath: string } =>
           result !== null
         ));
-  
+
         await fetchData(); // Update UI with new files
         await new Promise(resolve => setTimeout(resolve, 100));
       }
-  
+
       // Step 2: Start BPM analysis for analyzable files
       const analysisPromises = addedBeats.map(async ({ beatId, filePath }) => {
         try {
+          if (cancelUpload) {
+            return;
+          }
           console.log("Starting analysis for beat:", beatId);
           console.log("File path:", filePath);
           // Start analysis and get a promise
           await invoke('analyze_beat', { beatId, filePath });
-          
+
           // Set up listener for analysis completion
           return new Promise<void>(async (resolve) => {
-            const unsubscribe = await listen('beat-analyzed', async (event: any) => {              
+            const unsubscribe = await listen('beat-analyzed', async (event: any) => {
               if (event.payload.beatId === beatId) {
                 setProcessingProgress(prev => ({
                   ...prev,
@@ -431,16 +453,16 @@ function AppContainer() {
           );
         }
       });
-  
+
       // Wait for all analyses to complete or timeout
       await Promise.race([
         Promise.all(analysisPromises),
         new Promise(resolve => setTimeout(resolve, 300000)) // 5 minute timeout
       ]);
-  
+
       await fetchData(); // Final UI update
       setIsProcessing(false);
-      
+
     } catch (error) {
       console.error('Error in processFiles:', error);
       setIsProcessing(false);
@@ -603,6 +625,23 @@ function AppContainer() {
       command: handleFolderUpload,
     },
   ];
+
+  const handleCancel = async () => {
+    setCancelUpload(true);
+    try {
+      await invoke('cancel_processing');
+      setIsProcessing(false);
+      setProcessingProgress({
+        filesProcessed: 0,
+        totalFiles: 0,
+        beatsAnalyzed: 0,
+        totalAnalyzable: 0
+      });
+      setUploadedFiles([]);
+    } catch (error) {
+      console.error('Error cancelling processing:', error);
+    }
+  };
 
   const saveRowOrder = async (beatsToSave: Beat[]) => {
     // Don't try to save if we have no beats
@@ -770,7 +809,7 @@ function AppContainer() {
                     />
                   </div>
                   <div className="flex justify-between text-sm text-gray-300">
-                    <span>Tempo Analyzed:</span>
+                    <span>Tempos Analyzed:</span>
                     <span>
                       {processingProgress.beatsAnalyzed} of {processingProgress.totalAnalyzable}
                       {processingProgress.totalAnalyzable > 0 ?
@@ -781,7 +820,7 @@ function AppContainer() {
                 </div>
 
                 <button
-                  onClick={() => setCancelUpload(true)}
+                  onClick={() => handleCancel()}
                   className="ml-4 p-2 text-white hover:bg-red-500 bg-red-400 rounded-md"
                   title="Cancel"
                 >
@@ -790,18 +829,18 @@ function AppContainer() {
               </div>
             )}
 
-    </main>
+          </main>
         </div >
       </div >
-    <div className="flex bg-slate-900 justify-center">
-      <BeatJockey
-        isPlaying={isPlaying}
-        currentBeat={currentBeat}
-        togglePlayPause={togglePlayPause}
-        stopBeat={stopBeat}
-        audioRef={audioRef}
-      />
-    </div>
+      <div className="flex bg-slate-900 justify-center">
+        <BeatJockey
+          isPlaying={isPlaying}
+          currentBeat={currentBeat}
+          togglePlayPause={togglePlayPause}
+          stopBeat={stopBeat}
+          audioRef={audioRef}
+        />
+      </div>
     </DndContext >
   );
 }

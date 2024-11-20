@@ -1,6 +1,7 @@
 use aubio::{Smpl, Tempo, OnsetMode};
 use std::fs::File;
 use std::path::Path;
+use std::sync::Arc;
 use symphonia::core::errors::Error;
 use symphonia::core::codecs::DecoderOptions;
 use symphonia::core::formats::FormatOptions;
@@ -8,14 +9,21 @@ use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
 
-pub fn analyze_audio(file_path: &str) -> Result<(String, f32), String> {
+use crate::CancellationToken;
+
+pub fn analyze_audio(file_path: &str, cancellation_token: &Arc<CancellationToken>) -> Result<(String, f32), String> {
     println!("Starting analysis for file: {}", file_path);
-    let (audio_data, sample_rate) = load_audio(file_path)?;
-    let bpm = detect_bpm(audio_data, sample_rate)?;
+
+    if cancellation_token.is_cancelled() {
+        return Err("Analysis cancelled".to_string());
+    }
+
+    let (audio_data, sample_rate) = load_audio(file_path, cancellation_token)?;
+    let bpm = detect_bpm(audio_data, sample_rate, cancellation_token)?;
     Ok((format!("{}", bpm), bpm))
 }
 
-fn detect_bpm(audio_data: Vec<Smpl>, sample_rate: u32) -> Result<f32, String> {
+fn detect_bpm(audio_data: Vec<Smpl>, sample_rate: u32, cancellation_token: &Arc<CancellationToken>) -> Result<f32, String> {
     println!("Detecting BPM...");
     
     // Configure parameters
@@ -27,12 +35,14 @@ fn detect_bpm(audio_data: Vec<Smpl>, sample_rate: u32) -> Result<f32, String> {
         .map_err(|e| e.to_string())?;
 
     // Process all frames to detect beats
-    for frame in audio_data.chunks(hop_size) {
-        // Pad the last frame if needed
+    for (i, frame) in audio_data.chunks(hop_size).enumerate() {
+        // Check cancellation periodically (every 100 frames)
+        if i % 100 == 0 && cancellation_token.is_cancelled() {
+            return Err("Analysis cancelled".to_string());
+        }
+        
         let mut padded_frame = vec![0.0; hop_size];
         padded_frame[..frame.len()].copy_from_slice(frame);
-        
-        // Process frame to detect beats
         let _ = tempo.do_result(&padded_frame);
     }
 
@@ -49,7 +59,7 @@ fn detect_bpm(audio_data: Vec<Smpl>, sample_rate: u32) -> Result<f32, String> {
     }
 }
 
-fn load_audio(file_path: &str) -> Result<(Vec<f32>, u32), String> {
+fn load_audio(file_path: &str, cancellation_token: &Arc<CancellationToken>) -> Result<(Vec<f32>, u32), String> {
     println!("Loading audio file...");
     // Create the media source and stream
     let file = File::open(Path::new(file_path)).map_err(|e| e.to_string())?;
@@ -79,8 +89,12 @@ fn load_audio(file_path: &str) -> Result<(Vec<f32>, u32), String> {
 
     let mut audio_data = Vec::new();
     let mut sample_count = 0;
-
+    let mut packet_count = 0;
     loop {
+        if packet_count % 50 == 0 && cancellation_token.is_cancelled() {
+            return Err("Analysis cancelled".to_string());
+        }
+        packet_count += 1;
         let packet = match format.next_packet() {
             Ok(packet) => packet,
             Err(Error::IoError(_)) => {
@@ -109,49 +123,42 @@ fn load_audio(file_path: &str) -> Result<(Vec<f32>, u32), String> {
                 if let Some(channel_data) = buf.planes().planes().get(0) {
                     audio_data.extend_from_slice(channel_data);
                     sample_count += channel_data.len();
-                    println!("Processed {} samples (total: {})", channel_data.len(), sample_count);
                 }
             },
             symphonia::core::audio::AudioBufferRef::U8(buf) => {
                 if let Some(channel_data) = buf.planes().planes().get(0) {
                     audio_data.extend(channel_data.iter().map(|&x| (x as f32 / 128.0) - 1.0));
                     sample_count += channel_data.len();
-                    println!("Processed {} samples (total: {})", channel_data.len(), sample_count);
                 }
             },
             symphonia::core::audio::AudioBufferRef::S16(buf) => {
                 if let Some(channel_data) = buf.planes().planes().get(0) {
                     audio_data.extend(channel_data.iter().map(|&x| x as f32 / 32768.0));
                     sample_count += channel_data.len();
-                    println!("Processed {} samples (total: {})", channel_data.len(), sample_count);
                 }
             },
             symphonia::core::audio::AudioBufferRef::S32(buf) => {
                 if let Some(channel_data) = buf.planes().planes().get(0) {
                     audio_data.extend(channel_data.iter().map(|&x| x as f32 / 2_147_483_648.0));
                     sample_count += channel_data.len();
-                    println!("Processed {} samples (total: {})", channel_data.len(), sample_count);
                 }
             },
             symphonia::core::audio::AudioBufferRef::U16(buf) => {
                 if let Some(channel_data) = buf.planes().planes().get(0) {
                     audio_data.extend(channel_data.iter().map(|&x| (x as f32 / 32768.0) - 1.0));
                     sample_count += channel_data.len();
-                    println!("Processed {} samples (total: {})", channel_data.len(), sample_count);
                 }
             },
             symphonia::core::audio::AudioBufferRef::U32(buf) => {
                 if let Some(channel_data) = buf.planes().planes().get(0) {
                     audio_data.extend(channel_data.iter().map(|&x| x as f32 / 2_147_483_648.0));
                     sample_count += channel_data.len();
-                    println!("Processed {} samples (total: {})", channel_data.len(), sample_count);
                 }
             },
             symphonia::core::audio::AudioBufferRef::S8(buf) => {
                 if let Some(channel_data) = buf.planes().planes().get(0) {
                     audio_data.extend(channel_data.iter().map(|&x| x as f32 / 128.0));
-                    sample_count += channel_data.len();
-                    println!("Processed {} samples (total: {})", channel_data.len(), sample_count);
+                    sample_count += channel_data.len();                
                 }
             },
             _ => {
@@ -163,6 +170,10 @@ fn load_audio(file_path: &str) -> Result<(Vec<f32>, u32), String> {
         if sample_count > 50_000_000 {
             return Err("Audio file too long or possible infinite loop detected".to_string());
         }
+    }
+    
+    if cancellation_token.is_cancelled() {
+        return Err("Analysis cancelled".to_string());
     }
 
     if audio_data.is_empty() {

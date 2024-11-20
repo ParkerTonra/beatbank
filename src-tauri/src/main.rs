@@ -20,6 +20,8 @@ use tauri::{ AppHandle, Manager, State};
 use tokio::spawn;
 use tokio::runtime::Runtime;
 use tauri::async_runtime;
+use tokio::sync::watch;
+
 
 
 struct DatabaseConnection {
@@ -59,19 +61,42 @@ impl AnalysisProgress {
 }
 
 #[derive(Clone)]
+pub struct CancellationToken {
+    sender: watch::Sender<bool>,
+    receiver: watch::Receiver<bool>,
+}
+
+impl CancellationToken {
+    pub fn new() -> Self {
+        let (sender, receiver) = watch::channel(false);
+        Self { sender, receiver }
+    }
+
+    pub fn cancel(&self) {
+        let _ = self.sender.send(true);
+    }
+
+    pub fn is_cancelled(&self) -> bool {
+        *self.receiver.borrow()
+    }
+}
+
+#[derive(Clone)]
 pub struct AppState {
     conn: Arc<Mutex<DatabaseConnection>>,
     analysis_progress: AnalysisProgress,
     runtime: Arc<Runtime>,
     pub app_handle: Arc<AppHandle>,
+    pub cancellation_token: Arc<CancellationToken>,    
 }
 impl AppState {
-    fn new(conn: DatabaseConnection, app: &tauri::App) -> Self {
+    fn new(conn: DatabaseConnection, app: &tauri::App, cancellation_token: Arc<CancellationToken>) -> Self {
         Self {
             conn: Arc::new(Mutex::new(conn)),
             analysis_progress: AnalysisProgress::new(),
             runtime: Arc::new(Runtime::new().expect("Failed to create Tokio runtime")),
-            app_handle: Arc::new(app.handle())
+            app_handle: Arc::new(app.handle()),
+            cancellation_token,
         }
     }
 }
@@ -130,10 +155,23 @@ async fn add_beat(state: State<'_, AppState>, file_path: String) -> Result<i32, 
 }
 
 #[tauri::command]
+async fn cancel_processing(
+    cancellation_token: State<'_, Arc<CancellationToken>>,
+) -> Result<(), String> {
+    cancellation_token.cancel();
+    Ok(())
+}
+
+#[tauri::command]
 async fn analyze_beat(state: State<'_, AppState>, beat_id: i32, file_path: String) -> Result<String, String> {
     let file_extension = file_path.split('.').last().unwrap_or("");
     if !["mp3", "flac", "wav"].contains(&file_extension) {
         return Ok(format!("Tempo analysis unavailable for this file type: {}", file_path));
+    }
+
+    if state.cancellation_token.is_cancelled() {
+        println!("Cancelled");
+        return Ok("Analysis cancelled".to_string());
     }
 
     // Increment total files counter
@@ -147,16 +185,25 @@ async fn analyze_beat(state: State<'_, AppState>, beat_id: i32, file_path: Strin
     let conn = state.conn.clone();
     let progress = state.analysis_progress.clone();
     let app_handle = state.app_handle.clone();
+    let cancellation_token = state.cancellation_token.clone();
     
     // Spawn the analysis task
     runtime.spawn(async move {
+        let cancel_token_inner = cancellation_token.clone();
         // Run the CPU-intensive analysis in a blocking task
         let analysis_result = tokio::task::spawn_blocking(move || {
-            analyze_audio(&file_path)
+            if cancel_token_inner.is_cancelled() {
+                return Err("Analysis cancelled".to_string());
+            }
+            analyze_audio(&file_path, &cancel_token_inner)
         }).await.map_err(|e| e.to_string());
 
         match analysis_result {
             Ok(Ok((bpm_string, bpm_float))) => {
+                if cancellation_token.is_cancelled() {
+                    return;
+                }
+
                 println!("Analysis complete for beat {}. BPM: {}", beat_id, bpm_string);
                 
                 // Update the database with the results
@@ -195,65 +242,6 @@ async fn analyze_beat(state: State<'_, AppState>, beat_id: i32, file_path: Strin
     Ok(format!("Analysis started for beat: {}", beat_id))
 }
 use crate::audio_analysis::analyze_audio;
-fn analyze_and_update_beat(
-    beat_id: i32,
-    beat_path: String,
-    conn: &mut diesel::SqliteConnection
-) -> Result<(), String> {
-    // Check if the connection works before running analysis
-    if diesel::select(diesel::dsl::sql::<diesel::sql_types::Integer>("1"))
-        .load::<i32>(conn)
-        .is_err()
-    {
-        println!("Database connection test failed");
-        return Err("Connection check failed".into());
-    }
-    println!("Connection check passed");
-
-    // Convert the file path to a strin
-
-    // Run the audio analysis
-    let analysis_result = analyze_audio(&beat_path)?;
-    let (bpm_string, bpm_float) = analysis_result;
-    
-    println!("Analysis complete. BPM: {}", bpm_string);
-    use crate::schema::beats::dsl::*; 
-    // Update the beat in the database with the detected BPM
-    diesel::update(beats.find(beat_id))
-        .set(bpm.eq(bpm_float as f64))  // Assuming your bpm column is f64
-        .execute(conn)
-        .map_err(|e| format!("Failed to update beat: {}", e))?;
-
-    println!("Successfully updated beat {} with BPM {}", beat_id, bpm_string);
-    
-    Ok(())
-}
-
-async fn analyze_beat_async(
-    beat_id: i32,
-    beat_path: String,
-    app_state: &AppState,
-) -> Result<(), String> {
-    // Run the CPU-intensive analysis in a blocking task
-    let analysis_result = app_state.runtime.spawn_blocking(move || {
-        analyze_audio(&beat_path)
-    }).await.map_err(|e| e.to_string())??;
-
-    let (bpm_string, bpm_float) = analysis_result;
-    println!("Analysis complete for beat {}. BPM: {}", beat_id, bpm_string);
-
-    // Update the database with the results
-    let mut conn_guard = app_state.conn.lock().map_err(|e| e.to_string())?;
-    let conn = &mut conn_guard.conn;
-
-    use crate::schema::beats::dsl::*;
-    diesel::update(beats.find(beat_id))
-        .set(bpm.eq(bpm_float as f64))
-        .execute(conn)
-        .map_err(|e| format!("Failed to update beat: {}", e))?;
-
-    Ok(())
-}
 
 #[tauri::command]
 fn delete_beat(id: i32, state: State<'_, AppState>) -> Result<(), String> {
@@ -484,6 +472,7 @@ fn main() {
             fetch_beats,
             add_beat,
             analyze_beat,
+            cancel_processing,
             delete_beat,
             delete_beats,
             update_beat,
@@ -499,6 +488,8 @@ fn main() {
             save_row_order,
             save_collection_order,
             open_file_location,
+            cancel_processing,
+            get_analysis_progress,
             store::load_settings,
             store::save_settings,
             store::get_settings_path,
@@ -520,10 +511,12 @@ fn main() {
                     panic!("Database connection failed: {}", e)
                 }),
             };
+            
+            let cancellation_token = Arc::new(CancellationToken::new());
 
-            let app_state = AppState::new(conn, app);
-
+            let app_state = AppState::new(conn, app, cancellation_token.clone()); // Fix the clone here
             app.manage(app_state);
+            app.manage(cancellation_token);
 
             info!("Database connection established successfully");
 
