@@ -2,11 +2,13 @@ import React, { useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import BeatTable from './BeatTable';
 import { useBeats } from '../hooks/useBeats';
-import { Beat } from '../bindings';
+import { Beat, BeatCollection } from '../bindings';
 import { DragEndEvent } from '@dnd-kit/core';
 import { invoke } from "@tauri-apps/api/tauri";
 
 interface BeatCollProps {
+  beats: Beat[];
+  currentCollection?: BeatCollection | null;
   onDragEnd: (event: DragEndEvent) => void;
   onBeatPlay: (beat: Beat) => void;
   isEditing: boolean;
@@ -16,15 +18,16 @@ interface BeatCollProps {
   saveRowOrder: (beatsToSave: Beat[]) => Promise<void>;
   saveCollectionOrder: (collectionId: number, beatsToSave: Beat[]) => Promise<void>;
   fetchData: () => void;
+  fetchSetData: (setId: number) => Promise<void>;
   showEditColumnsDialog: boolean;
   setShowEditColumnsDialog: (show: boolean) => void;
-  beats: Beat[];
   handleRefresh: () => void;
 
 }
 
 const BeatCollectionComponent: React.FC<BeatCollProps> = ({
   beats,
+  currentCollection,
   onDragEnd,
   onBeatPlay,
   isEditing,
@@ -36,15 +39,14 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
   showEditColumnsDialog,
   setShowEditColumnsDialog,
   fetchData,
+  fetchSetData,
   handleRefresh,
 }) => {
   const { id } = useParams<{ id: string }>();
   const {
     setCollectionBeats,
-    currentCollection,
     loading,
     error,
-    fetchSetData,
     columnVisibility,
     setColumnVisibility,
   } = useBeats();

@@ -59,6 +59,7 @@ function AppContainer() {
   const {
     beats,
     beatCollections,
+    currentCollection,
     fetchData,
     columnVisibility,
     error,
@@ -569,6 +570,8 @@ function AppContainer() {
                     path="/collection/:id"
                     element={
                       <BeatCollectionComponent
+                        beats={collectionBeats}
+                        currentCollection={currentCollection}
                         onDragEnd={handleDragEnd}
                         onBeatPlay={playBeat}
                         isEditing={isEditing}
@@ -578,9 +581,9 @@ function AppContainer() {
                         saveRowOrder={saveRowOrder}
                         saveCollectionOrder={saveCollectionOrder}
                         fetchData={fetchData}
+                        fetchSetData={fetchSetData}
                         showEditColumnsDialog={showEditColumnsDialog}
                         setShowEditColumnsDialog={setShowEditColumnsDialog}
-                        beats={collectionBeats}
                         handleRefresh={handleRefresh}
                       />}
                   />
