@@ -6,7 +6,19 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[],
-    hiddenimports=["librosa", "numpy", "wave"],
+    hiddenimports=[
+    'numpy',
+    'librosa.core',
+    'librosa.feature.rhythm',
+    'librosa.onset',
+    'librosa.feature',
+    'librosa.util',
+    'resampy',
+    'scipy.signal',
+    'llvmlite',
+    'numba'
+    'librosa_compiled'
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

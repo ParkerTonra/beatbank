@@ -11,14 +11,16 @@ use serde::Deserialize;
 use serde_json;
 use std::{
     env,
-    path::Path,
+    //path::Path,
     sync::{Arc, Mutex},
 };
-use log::{error, info, warn};
+use log::{error, info};
 use crate::models::BeatChangeset;
 use crate::models::{Beat, BeatCollection};
 use tauri::{ Manager, State, AppHandle};
-use crate::audio_analysis::initialize_python_service;
+//use crate::audio_analysis::initialize_python_service;
+use crate::audio_analysis::{AudioAnalysisState, analyze_audio};
+
 
 
 struct DatabaseConnection {
@@ -44,6 +46,7 @@ impl Drop for DatabaseConnection {
 
 struct AppState {
     conn: Arc<Mutex<DatabaseConnection>>,
+    audio_analysis: Arc<AudioAnalysisState>,
 }
 
 #[tauri::command]
@@ -71,40 +74,59 @@ fn fetch_column_vis() -> String {
 }
 
 #[tauri::command]
-fn add_beat(state: State<AppState>, app_handle: AppHandle, file_path: String) -> Result<String, String> {
-    let file_name = Path::new(&file_path)
+async fn add_beat(
+    state: State<'_, AppState>,
+    app_handle: AppHandle,
+    file_path: String
+) -> Result<String, String> {
+    let file_name = std::path::Path::new(&file_path)
         .file_name()
         .and_then(|name| name.to_str())
         .and_then(|name| name.rsplitn(2, '.').nth(1))
         .unwrap_or("Unknown")
         .to_string();
 
-    let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
-    let conn = &mut conn_guard.conn;
-
-    let inserted_beat =
-        db::add_beat(&mut *conn, &file_name, &file_path).map_err(|e| e.to_string())?;
+    // Add beat to database first
+    let inserted_beat = {
+        let conn = &mut state.conn.lock().map_err(|e| e.to_string())?.conn;
+        db::add_beat(conn, &file_name, &file_path)
+            .map_err(|e| e.to_string())?
+    };
 
     println!("New beat added with id: {}", inserted_beat.id);
 
-    // Pass app_handle for release builds
-    #[cfg(debug_assertions)]
-    analyze_and_update_beat(inserted_beat.id, file_path.clone(), conn, None)?;
-    
-    #[cfg(not(debug_assertions))]
-    analyze_and_update_beat(inserted_beat.id, file_path.clone(), conn, Some(&app_handle))?;
+    // Analyze audio
+    let (key, tempo) = analyze_audio(
+        state.audio_analysis.clone(),
+        file_path,
+        Some(&app_handle)
+    ).await?;
+
+    // Update beat with analysis results
+    {
+        let conn = &mut state.conn.lock().map_err(|e| e.to_string())?.conn;
+        diesel::update(crate::schema::beats::dsl::beats.find(inserted_beat.id))
+            .set((
+                crate::schema::beats::dsl::musical_key.eq(Some(key)),
+                crate::schema::beats::dsl::bpm.eq(Some(tempo)),
+            ))
+            .execute(conn)
+            .map_err(|e| {
+                println!("Error updating beat: {:?}", e);
+                e.to_string()
+            })?;
+    }
 
     Ok(format!("New beat added with id: {}", inserted_beat.id))
 }
 
-fn analyze_and_update_beat(
+async fn analyze_and_update_beat(
     beat_id: i32, 
     file_path: String,
     conn: &mut diesel::SqliteConnection,
+    audio_state: Arc<AudioAnalysisState>,
     app_handle: Option<&AppHandle>,
 ) -> Result<(), String> {
-    use crate::audio_analysis::analyze_audio;
-
     println!("Starting analysis for file: {}", file_path);
 
     if diesel::select(diesel::dsl::sql::<diesel::sql_types::Integer>("1"))
@@ -116,10 +138,14 @@ fn analyze_and_update_beat(
     }
     println!("Connection check passed");
 
-    match analyze_audio(&file_path, app_handle) {
+    match crate::audio_analysis::analyze_audio(
+        audio_state,
+        file_path,
+        app_handle
+    ).await {
         Ok((key, tempo)) => {
             println!("Analysis Result: Key: {}, Tempo: {}", key, tempo);
-            let musical_key_str = key.to_string();
+            let musical_key_str = key;  // No need to call to_string() as it's already a String
 
             diesel::update(crate::schema::beats::dsl::beats.find(beat_id))
                 .set((
@@ -131,14 +157,14 @@ fn analyze_and_update_beat(
                     println!("Error updating beat: {:?}", e);
                     e.to_string()
                 })?;
+
+            Ok(())
         }
         Err(e) => {
             println!("Failed to analyze audio. Error: {}", e);
-            return Err(e.to_string());
+            Err(e)
         }
     }
-
-    Ok(())
 }
 
 #[tauri::command]
@@ -355,15 +381,11 @@ fn main() {
 
     let app_state = AppState {
         conn: Arc::new(Mutex::new(conn)),
+        audio_analysis: AudioAnalysisState::new(),
     };
 
     tauri::Builder::default()
         .manage(app_state)
-        .setup(|app| {
-            // Initialize Python process during app startup
-            audio_analysis::initialize_python_service(Some(&app.handle()))?;
-            Ok(())
-        })
         .invoke_handler(tauri::generate_handler![
             greet,
             fetch_beats,
@@ -389,13 +411,13 @@ fn main() {
         ])
         .setup(|app| {
             info!("Starting application setup...");
-
-            #[cfg(debug_assertions)] // only include this code on debug builds
+        
+            #[cfg(debug_assertions)]
             {
                 let window = app.get_window("main").unwrap();
-                window.open_devtools(); // Open devtools on debug builds
+                window.open_devtools();
             }
-
+        
             let state: State<AppState> = app.state();
             let mut conn_guard = state.conn.lock().map_err(|e| {
                 error!("Failed to acquire database lock: {:?}", e);
@@ -407,13 +429,19 @@ fn main() {
                 .execute(&mut conn_guard.conn)
                 .map_err(|e| format!("Failed to enable foreign keys: {:?}", e))?;
             
-            // Initialize Python service
-            info!("Initializing Python service...");
-            if let Err(e) = initialize_python_service(Some(&app.app_handle())) {
-                error!("Failed to initialize Python service: {}", e);
-                return Err(e.into());
-            }
-            info!("Python service initialized successfully");
+            drop(conn_guard);
+            
+            // Initialize Python service asynchronously
+            let app_handle = app.app_handle();
+            let audio_state = state.audio_analysis.clone();
+            
+            info!("Starting Python service initialization...");
+            tauri::async_runtime::spawn(async move {
+                match crate::audio_analysis::initialize_python_service(audio_state, Some(&app_handle)).await {
+                    Ok(()) => info!("Python service initialized successfully"),
+                    Err(e) => error!("Failed to initialize Python service: {}", e),
+                }
+            });
             
             info!("Setup completed successfully");
             Ok(())
@@ -429,7 +457,6 @@ fn main() {
                     info!("Cleaning up before exit...");
                     std::thread::sleep(std::time::Duration::from_millis(100));
                     info!("Cleanup complete, exiting application");
-                    info!("Cleanup complete, exiting application");
                     app_handle.exit(0);
                 });
             }
@@ -441,27 +468,23 @@ fn main() {
         })
         .expect("error while running tauri application")
         .run(|_app_handle, event| match event {
-            tauri::RunEvent::ExitRequested {  .. } => {
+            tauri::RunEvent::ExitRequested { .. } => {
                 info!("Application exit requested");
             }
             tauri::RunEvent::Ready => {
                 info!("Application ready");
             }
             tauri::RunEvent::WindowEvent { label, event, .. } => {
-                // Only log specific window events we care about
                 match event {
-                    // Ignore these common window events
                     tauri::WindowEvent::Focused(_) => {},
                     tauri::WindowEvent::Moved(_) => {},
                     tauri::WindowEvent::ScaleFactorChanged { .. } => {},
-                    // Log only important window events
                     tauri::WindowEvent::CloseRequested { .. } => {
                         info!("Window '{}' close requested", label);
                     }
                     tauri::WindowEvent::Destroyed => {
                         info!("Window '{}' destroyed", label);
                     }
-                    // Log unexpected window events as errors
                     _ => error!("Window '{}' unexpected event: {:?}", label, event),
                 }
             }

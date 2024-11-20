@@ -154,8 +154,16 @@ imports:
  &#8226;   <a href="#io">io</a>
  &#8226;   <a href="#json">json</a>
  &#8226;   <a href="#keyword">keyword</a>
- &#8226;   <a href="#librosa">librosa</a>
+ &#8226;   <a href="#librosa.core">librosa.core</a>
+ &#8226;   <a href="#librosa.core.load">librosa.core.load</a>
+ &#8226;   <a href="#librosa.feature">librosa.feature</a>
+ &#8226;   <a href="#librosa.feature.chroma_cqt">librosa.feature.chroma_cqt</a>
+ &#8226;   <a href="#librosa.feature.rhythm">librosa.feature.rhythm</a>
+ &#8226;   <a href="#librosa.onset">librosa.onset</a>
+ &#8226;   <a href="#librosa.util">librosa.util</a>
+ &#8226;   <a href="#librosa_compiled">librosa_compiled</a>
  &#8226;   <a href="#linecache">linecache</a>
+ &#8226;   <a href="#llvmlite">llvmlite</a>
  &#8226;   <a href="#locale">locale</a>
  &#8226;   <a href="#ntpath">ntpath</a>
  &#8226;   <a href="#numpy">numpy</a>
@@ -173,16 +181,18 @@ imports:
  &#8226;   <a href="#re._constants">re._constants</a>
  &#8226;   <a href="#re._parser">re._parser</a>
  &#8226;   <a href="#reprlib">reprlib</a>
+ &#8226;   <a href="#resampy">resampy</a>
+ &#8226;   <a href="#scipy.signal">scipy.signal</a>
  &#8226;   <a href="#sre_compile">sre_compile</a>
  &#8226;   <a href="#sre_constants">sre_constants</a>
  &#8226;   <a href="#sre_parse">sre_parse</a>
  &#8226;   <a href="#stat">stat</a>
  &#8226;   <a href="#sys">sys</a>
- &#8226;   <a href="#tempfile">tempfile</a>
+ &#8226;   <a href="#time">time</a>
  &#8226;   <a href="#traceback">traceback</a>
  &#8226;   <a href="#types">types</a>
+ &#8226;   <a href="#typing">typing</a>
  &#8226;   <a href="#warnings">warnings</a>
- &#8226;   <a href="#wave">wave</a>
  &#8226;   <a href="#weakref">weakref</a>
 
   </div>
@@ -10375,6 +10385,7 @@ imports:
  &#8226;   <a href="#importlib">importlib</a>
  &#8226;   <a href="#importlib._bootstrap">importlib._bootstrap</a>
  &#8226;   <a href="#importlib._bootstrap_external">importlib._bootstrap_external</a>
+ &#8226;   <a href="#importlib.machinery">importlib.machinery</a>
  &#8226;   <a href="#sys">sys</a>
  &#8226;   <a href="#warnings">warnings</a>
 
@@ -10412,6 +10423,7 @@ imported by:
  &#8226;   <a href="#pkg_resources">pkg_resources</a>
  &#8226;   <a href="#pkgutil">pkgutil</a>
  &#8226;   <a href="#requests.compat">requests.compat</a>
+ &#8226;   <a href="#resampy.filters">resampy.filters</a>
  &#8226;   <a href="#scipy">scipy</a>
  &#8226;   <a href="#scipy._lib._uarray._backend">scipy._lib._uarray._backend</a>
  &#8226;   <a href="#scipy._lib.deprecation">scipy._lib.deprecation</a>
@@ -10544,6 +10556,7 @@ imported by:
  &#8226;   <a href="#cffi._imp_emulation">cffi._imp_emulation</a>
  &#8226;   <a href="#cffi.verifier">cffi.verifier</a>
  &#8226;   <a href="#ctypes.util">ctypes.util</a>
+ &#8226;   <a href="#importlib">importlib</a>
  &#8226;   <a href="#importlib.abc">importlib.abc</a>
  &#8226;   <a href="#inspect">inspect</a>
  &#8226;   <a href="#packaging.tags">packaging.tags</a>
@@ -10770,6 +10783,7 @@ imported by:
  &#8226;   <a href="#librosa.core.intervals">librosa.core.intervals</a>
  &#8226;   <a href="#librosa.util.files">librosa.util.files</a>
  &#8226;   <a href="#llvmlite.binding.ffi">llvmlite.binding.ffi</a>
+ &#8226;   <a href="#resampy.filters">resampy.filters</a>
  &#8226;   <a href="#setuptools._importlib">setuptools._importlib</a>
  &#8226;   <a href="#setuptools._vendor.jaraco.text">setuptools._vendor.jaraco.text</a>
  &#8226;   <a href="#urllib3.contrib.emscripten.fetch">urllib3.contrib.emscripten.fetch</a>
@@ -10972,7 +10986,8 @@ imported by:
   <a target="code" href="" type="text/plain"><tt>importlib_resources</tt></a>
 <span class="moduletype">MissingModule</span>  <div class="import">
 imported by:
-    <a href="#setuptools._vendor.jaraco.text">setuptools._vendor.jaraco.text</a>
+    <a href="#resampy.filters">resampy.filters</a>
+ &#8226;   <a href="#setuptools._vendor.jaraco.text">setuptools._vendor.jaraco.text</a>
 
   </div>
 
@@ -12967,8 +12982,7 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#audio_analyzer.py">audio_analyzer.py</a>
- &#8226;   <a href="#librosa">librosa</a>
+    <a href="#librosa">librosa</a>
  &#8226;   <a href="#librosa._cache">librosa._cache</a>
  &#8226;   <a href="#librosa._typing">librosa._typing</a>
  &#8226;   <a href="#librosa.beat">librosa.beat</a>
@@ -13109,12 +13123,14 @@ imports:
     <a href="#lazy_loader">lazy_loader</a>
  &#8226;   <a href="#librosa">librosa</a>
  &#8226;   <a href="#librosa.core">librosa.core</a>
+ &#8226;   <a href="#librosa.core.load">librosa.core.load</a>
  &#8226;   <a href="#librosa.core.notation">librosa.core.notation</a>
 
   </div>
   <div class="import">
 imported by:
-    <a href="#librosa">librosa</a>
+    <a href="#audio_analyzer.py">audio_analyzer.py</a>
+ &#8226;   <a href="#librosa">librosa</a>
  &#8226;   <a href="#librosa.beat">librosa.beat</a>
  &#8226;   <a href="#librosa.core">librosa.core</a>
  &#8226;   <a href="#librosa.core.audio">librosa.core.audio</a>
@@ -13320,6 +13336,18 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="librosa.core.load"></a>
+  <a target="code" href="" type="text/plain"><tt>librosa.core.load</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#audio_analyzer.py">audio_analyzer.py</a>
+ &#8226;   <a href="#librosa.core">librosa.core</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="librosa.core.notation"></a>
   <a target="code" href="///C:/SeniorProj/beatbank-senior-project/src-tauri/.venv/Lib/site-packages/librosa/core/notation.py" type="text/plain"><tt>librosa.core.notation</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -13517,6 +13545,7 @@ imported by:
 imports:
     <a href="#lazy_loader">lazy_loader</a>
  &#8226;   <a href="#librosa">librosa</a>
+ &#8226;   <a href="#librosa.feature.chroma_cqt">librosa.feature.chroma_cqt</a>
  &#8226;   <a href="#librosa.feature.fourier_tempogram">librosa.feature.fourier_tempogram</a>
  &#8226;   <a href="#librosa.feature.tempo">librosa.feature.tempo</a>
  &#8226;   <a href="#librosa.feature.tempogram">librosa.feature.tempogram</a>
@@ -13524,13 +13553,26 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#librosa">librosa</a>
+    <a href="#audio_analyzer.py">audio_analyzer.py</a>
+ &#8226;   <a href="#librosa">librosa</a>
  &#8226;   <a href="#librosa.beat">librosa.beat</a>
  &#8226;   <a href="#librosa.effects">librosa.effects</a>
  &#8226;   <a href="#librosa.feature.inverse">librosa.feature.inverse</a>
  &#8226;   <a href="#librosa.feature.rhythm">librosa.feature.rhythm</a>
  &#8226;   <a href="#librosa.feature.spectral">librosa.feature.spectral</a>
  &#8226;   <a href="#librosa.feature.utils">librosa.feature.utils</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="librosa.feature.chroma_cqt"></a>
+  <a target="code" href="" type="text/plain"><tt>librosa.feature.chroma_cqt</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#audio_analyzer.py">audio_analyzer.py</a>
+ &#8226;   <a href="#librosa.feature">librosa.feature</a>
 
   </div>
 
@@ -13602,7 +13644,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#librosa">librosa</a>
+    <a href="#audio_analyzer.py">audio_analyzer.py</a>
+ &#8226;   <a href="#librosa">librosa</a>
 
   </div>
 
@@ -13743,7 +13786,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#librosa">librosa</a>
+    <a href="#audio_analyzer.py">audio_analyzer.py</a>
+ &#8226;   <a href="#librosa">librosa</a>
  &#8226;   <a href="#librosa.beat">librosa.beat</a>
  &#8226;   <a href="#librosa.feature.rhythm">librosa.feature.rhythm</a>
 
@@ -13834,7 +13878,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#librosa">librosa</a>
+    <a href="#audio_analyzer.py">audio_analyzer.py</a>
+ &#8226;   <a href="#librosa">librosa</a>
  &#8226;   <a href="#librosa.beat">librosa.beat</a>
  &#8226;   <a href="#librosa.core.audio">librosa.core.audio</a>
  &#8226;   <a href="#librosa.core.constantq">librosa.core.constantq</a>
@@ -14173,6 +14218,16 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="librosa_compiled"></a>
+  <tt>librosa_compiled</tt> <span class="moduletype"><tt>C:\SeniorProj\beatbank-senior-project\src-tauri\src\librosa_compiled.cp312-win_amd64.pyd</tt></span>  <div class="import">
+imported by:
+    <a href="#audio_analyzer.py">audio_analyzer.py</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="linecache"></a>
   <a target="code" href="///C:/Python312/Lib/linecache.py" type="text/plain"><tt>linecache</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -14214,7 +14269,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#llvmlite._version">llvmlite._version</a>
+    <a href="#audio_analyzer.py">audio_analyzer.py</a>
+ &#8226;   <a href="#llvmlite._version">llvmlite._version</a>
  &#8226;   <a href="#llvmlite.binding">llvmlite.binding</a>
  &#8226;   <a href="#llvmlite.binding.analysis">llvmlite.binding.analysis</a>
  &#8226;   <a href="#llvmlite.ir">llvmlite.ir</a>
@@ -16685,6 +16741,8 @@ imported by:
  &#8226;   <a href="#numba.typed.typeddict">numba.typed.typeddict</a>
  &#8226;   <a href="#numba.typed.typedlist">numba.typed.typedlist</a>
  &#8226;   <a href="#numba.types">numba.types</a>
+ &#8226;   <a href="#resampy.core">resampy.core</a>
+ &#8226;   <a href="#resampy.interpn">resampy.interpn</a>
 
   </div>
 
@@ -27724,6 +27782,8 @@ imported by:
  &#8226;   <a href="#numpy.testing.overrides">numpy.testing.overrides</a>
  &#8226;   <a href="#numpy.typing">numpy.typing</a>
  &#8226;   <a href="#numpy.version">numpy.version</a>
+ &#8226;   <a href="#resampy.core">resampy.core</a>
+ &#8226;   <a href="#resampy.filters">resampy.filters</a>
  &#8226;   <a href="#scipy">scipy</a>
  &#8226;   <a href="#scipy._lib._array_api">scipy._lib._array_api</a>
  &#8226;   <a href="#scipy._lib._finite_differences">scipy._lib._finite_differences</a>
@@ -37650,6 +37710,106 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="resampy"></a>
+  <a target="code" href="///C:/SeniorProj/beatbank-senior-project/src-tauri/.venv/Lib/site-packages/resampy/__init__.py" type="text/plain"><tt>resampy</tt></a>
+<span class="moduletype">Package</span>  <div class="import">
+imports:
+    <a href="#resampy">resampy</a>
+ &#8226;   <a href="#resampy.core">resampy.core</a>
+ &#8226;   <a href="#resampy.filters">resampy.filters</a>
+ &#8226;   <a href="#resampy.version">resampy.version</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#audio_analyzer.py">audio_analyzer.py</a>
+ &#8226;   <a href="#resampy">resampy</a>
+ &#8226;   <a href="#resampy.core">resampy.core</a>
+ &#8226;   <a href="#resampy.filters">resampy.filters</a>
+ &#8226;   <a href="#resampy.interpn">resampy.interpn</a>
+ &#8226;   <a href="#resampy.version">resampy.version</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="resampy.core"></a>
+  <a target="code" href="///C:/SeniorProj/beatbank-senior-project/src-tauri/.venv/Lib/site-packages/resampy/core.py" type="text/plain"><tt>resampy.core</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#numba">numba</a>
+ &#8226;   <a href="#numpy">numpy</a>
+ &#8226;   <a href="#resampy">resampy</a>
+ &#8226;   <a href="#resampy.filters">resampy.filters</a>
+ &#8226;   <a href="#resampy.interpn">resampy.interpn</a>
+ &#8226;   <a href="#warnings">warnings</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#resampy">resampy</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="resampy.filters"></a>
+  <a target="code" href="///C:/SeniorProj/beatbank-senior-project/src-tauri/.venv/Lib/site-packages/resampy/filters.py" type="text/plain"><tt>resampy.filters</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#importlib">importlib</a>
+ &#8226;   <a href="#importlib.resources">importlib.resources</a>
+ &#8226;   <a href="#importlib_resources">importlib_resources</a>
+ &#8226;   <a href="#numpy">numpy</a>
+ &#8226;   <a href="#resampy">resampy</a>
+ &#8226;   <a href="#sys">sys</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#resampy">resampy</a>
+ &#8226;   <a href="#resampy.core">resampy.core</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="resampy.interpn"></a>
+  <a target="code" href="///C:/SeniorProj/beatbank-senior-project/src-tauri/.venv/Lib/site-packages/resampy/interpn.py" type="text/plain"><tt>resampy.interpn</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#numba">numba</a>
+ &#8226;   <a href="#resampy">resampy</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#resampy.core">resampy.core</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="resampy.version"></a>
+  <a target="code" href="///C:/SeniorProj/beatbank-senior-project/src-tauri/.venv/Lib/site-packages/resampy/version.py" type="text/plain"><tt>resampy.version</tt></a>
+<span class="moduletype">SourceModule</span>  <div class="import">
+imports:
+    <a href="#resampy">resampy</a>
+
+  </div>
+  <div class="import">
+imported by:
+    <a href="#resampy">resampy</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="resource"></a>
   <a target="code" href="" type="text/plain"><tt>resource</tt></a>
 <span class="moduletype">MissingModule</span>  <div class="import">
@@ -37760,7 +37920,8 @@ imports:
  &#8226;   <a href="#scipy._lib._testutils">scipy._lib._testutils</a>
  &#8226;   <a href="#scipy._lib.messagestream">scipy._lib.messagestream</a>
  &#8226;   <a href="#scipy.integrate">scipy.integrate</a>
- &#8226;   <a href="#scipy.sparse">scipy.sparse</a>
+ &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.stats">scipy.stats</a>
  &#8226;   <a href="#scipy.version">scipy.version</a>
  &#8226;   <a href="#warnings">warnings</a>
 
@@ -39875,6 +40036,8 @@ imports:
  &#8226;   <a href="#scipy.integrate._ivp.base">scipy.integrate._ivp.base</a>
  &#8226;   <a href="#scipy.integrate._ivp.common">scipy.integrate._ivp.common</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.lu_factor">scipy.linalg.lu_factor</a>
+ &#8226;   <a href="#scipy.linalg.lu_solve">scipy.linalg.lu_solve</a>
  &#8226;   <a href="#scipy.optimize._numdiff">scipy.optimize._numdiff</a>
  &#8226;   <a href="#scipy.sparse">scipy.sparse</a>
  &#8226;   <a href="#scipy.sparse.csc_matrix">scipy.sparse.csc_matrix</a>
@@ -39991,6 +40154,8 @@ imports:
  &#8226;   <a href="#scipy.integrate._ivp.base">scipy.integrate._ivp.base</a>
  &#8226;   <a href="#scipy.integrate._ivp.common">scipy.integrate._ivp.common</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.lu_factor">scipy.linalg.lu_factor</a>
+ &#8226;   <a href="#scipy.linalg.lu_solve">scipy.linalg.lu_solve</a>
  &#8226;   <a href="#scipy.optimize._numdiff">scipy.optimize._numdiff</a>
  &#8226;   <a href="#scipy.sparse">scipy.sparse</a>
  &#8226;   <a href="#scipy.sparse.csc_matrix">scipy.sparse.csc_matrix</a>
@@ -40302,6 +40467,7 @@ imports:
  &#8226;   <a href="#scipy._lib._testutils">scipy._lib._testutils</a>
  &#8226;   <a href="#scipy.interpolate">scipy.interpolate</a>
  &#8226;   <a href="#scipy.interpolate.PPoly">scipy.interpolate.PPoly</a>
+ &#8226;   <a href="#scipy.interpolate.RectBivariateSpline">scipy.interpolate.RectBivariateSpline</a>
  &#8226;   <a href="#scipy.interpolate._bspl">scipy.interpolate._bspl</a>
  &#8226;   <a href="#scipy.interpolate._bsplines">scipy.interpolate._bsplines</a>
  &#8226;   <a href="#scipy.interpolate._cubic">scipy.interpolate._cubic</a>
@@ -40320,6 +40486,7 @@ imports:
  &#8226;   <a href="#scipy.interpolate.dfitpack">scipy.interpolate.dfitpack</a>
  &#8226;   <a href="#scipy.interpolate.fitpack">scipy.interpolate.fitpack</a>
  &#8226;   <a href="#scipy.interpolate.fitpack2">scipy.interpolate.fitpack2</a>
+ &#8226;   <a href="#scipy.interpolate.interp1d">scipy.interpolate.interp1d</a>
  &#8226;   <a href="#scipy.interpolate.interpolate">scipy.interpolate.interpolate</a>
  &#8226;   <a href="#scipy.interpolate.ndgriddata">scipy.interpolate.ndgriddata</a>
  &#8226;   <a href="#scipy.interpolate.polyint">scipy.interpolate.polyint</a>
@@ -40388,6 +40555,18 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="scipy.interpolate.RectBivariateSpline"></a>
+  <a target="code" href="" type="text/plain"><tt>scipy.interpolate.RectBivariateSpline</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#scipy.interpolate">scipy.interpolate</a>
+ &#8226;   <a href="#scipy.stats._levy_stable">scipy.stats._levy_stable</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="scipy.interpolate._bspl"></a>
   <tt>scipy.interpolate._bspl</tt> <span class="moduletype"><tt>C:\SeniorProj\beatbank-senior-project\src-tauri\.venv\Lib\site-packages\scipy\interpolate\_bspl.cp312-win_amd64.pyd</tt></span>  <div class="import">
 imports:
@@ -40419,6 +40598,7 @@ imports:
  &#8226;   <a href="#scipy.interpolate._cubic">scipy.interpolate._cubic</a>
  &#8226;   <a href="#scipy.interpolate._fitpack_impl">scipy.interpolate._fitpack_impl</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.solve">scipy.linalg.solve</a>
  &#8226;   <a href="#scipy.optimize">scipy.optimize</a>
  &#8226;   <a href="#scipy.sparse">scipy.sparse</a>
  &#8226;   <a href="#scipy.special">scipy.special</a>
@@ -40447,6 +40627,7 @@ imports:
  &#8226;   <a href="#scipy.interpolate.PPoly">scipy.interpolate.PPoly</a>
  &#8226;   <a href="#scipy.interpolate._polyint">scipy.interpolate._polyint</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.solve">scipy.linalg.solve</a>
  &#8226;   <a href="#typing">typing</a>
  &#8226;   <a href="#warnings">warnings</a>
 
@@ -40826,6 +41007,18 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="scipy.interpolate.interp1d"></a>
+  <a target="code" href="" type="text/plain"><tt>scipy.interpolate.interp1d</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#scipy.interpolate">scipy.interpolate</a>
+ &#8226;   <a href="#scipy.stats._discrete_distns">scipy.stats._discrete_distns</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="scipy.interpolate.interpnd"></a>
   <tt>scipy.interpolate.interpnd</tt> <span class="moduletype"><tt>C:\SeniorProj\beatbank-senior-project\src-tauri\.venv\Lib\site-packages\scipy\interpolate\interpnd.cp312-win_amd64.pyd</tt></span>  <div class="import">
 imports:
@@ -40946,6 +41139,9 @@ imports:
  &#8226;   <a href="#scipy.linalg.bandwidth">scipy.linalg.bandwidth</a>
  &#8226;   <a href="#scipy.linalg.basic">scipy.linalg.basic</a>
  &#8226;   <a href="#scipy.linalg.blas">scipy.linalg.blas</a>
+ &#8226;   <a href="#scipy.linalg.cho_factor">scipy.linalg.cho_factor</a>
+ &#8226;   <a href="#scipy.linalg.cho_solve">scipy.linalg.cho_solve</a>
+ &#8226;   <a href="#scipy.linalg.cholesky">scipy.linalg.cholesky</a>
  &#8226;   <a href="#scipy.linalg.cython_blas">scipy.linalg.cython_blas</a>
  &#8226;   <a href="#scipy.linalg.cython_lapack">scipy.linalg.cython_lapack</a>
  &#8226;   <a href="#scipy.linalg.decomp">scipy.linalg.decomp</a>
@@ -40954,17 +41150,27 @@ imports:
  &#8226;   <a href="#scipy.linalg.decomp_qr">scipy.linalg.decomp_qr</a>
  &#8226;   <a href="#scipy.linalg.decomp_schur">scipy.linalg.decomp_schur</a>
  &#8226;   <a href="#scipy.linalg.decomp_svd">scipy.linalg.decomp_svd</a>
+ &#8226;   <a href="#scipy.linalg.eig">scipy.linalg.eig</a>
+ &#8226;   <a href="#scipy.linalg.eigh">scipy.linalg.eigh</a>
+ &#8226;   <a href="#scipy.linalg.inv">scipy.linalg.inv</a>
  &#8226;   <a href="#scipy.linalg.issymmetric">scipy.linalg.issymmetric</a>
  &#8226;   <a href="#scipy.linalg.lapack">scipy.linalg.lapack</a>
+ &#8226;   <a href="#scipy.linalg.lstsq">scipy.linalg.lstsq</a>
+ &#8226;   <a href="#scipy.linalg.lu_factor">scipy.linalg.lu_factor</a>
+ &#8226;   <a href="#scipy.linalg.lu_solve">scipy.linalg.lu_solve</a>
  &#8226;   <a href="#scipy.linalg.matfuncs">scipy.linalg.matfuncs</a>
  &#8226;   <a href="#scipy.linalg.misc">scipy.linalg.misc</a>
+ &#8226;   <a href="#scipy.linalg.qr">scipy.linalg.qr</a>
  &#8226;   <a href="#scipy.linalg.qr_insert">scipy.linalg.qr_insert</a>
+ &#8226;   <a href="#scipy.linalg.solve">scipy.linalg.solve</a>
  &#8226;   <a href="#scipy.linalg.special_matrices">scipy.linalg.special_matrices</a>
+ &#8226;   <a href="#scipy.linalg.svd">scipy.linalg.svd</a>
 
   </div>
   <div class="import">
 imported by:
-    <a href="#scipy._lib._finite_differences">scipy._lib._finite_differences</a>
+    <a href="#scipy">scipy</a>
+ &#8226;   <a href="#scipy._lib._finite_differences">scipy._lib._finite_differences</a>
  &#8226;   <a href="#scipy.integrate._ivp.bdf">scipy.integrate._ivp.bdf</a>
  &#8226;   <a href="#scipy.integrate._ivp.radau">scipy.integrate._ivp.radau</a>
  &#8226;   <a href="#scipy.interpolate._bsplines">scipy.interpolate._bsplines</a>
@@ -41291,6 +41497,7 @@ imported by:
 imports:
     <a href="#numpy">numpy</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.svd">scipy.linalg.svd</a>
 
   </div>
   <div class="import">
@@ -41567,7 +41774,6 @@ imports:
  &#8226;   <a href="#scipy.linalg._matfuncs_sqrtm">scipy.linalg._matfuncs_sqrtm</a>
  &#8226;   <a href="#scipy.sparse.linalg">scipy.sparse.linalg</a>
  &#8226;   <a href="#scipy.sparse.linalg._interface">scipy.sparse.linalg._interface</a>
- &#8226;   <a href="#scipy.sparse.linalg.onenormest">scipy.sparse.linalg.onenormest</a>
  &#8226;   <a href="#scipy.special">scipy.special</a>
  &#8226;   <a href="#warnings">warnings</a>
 
@@ -41804,6 +42010,51 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="scipy.linalg.cho_factor"></a>
+  <a target="code" href="" type="text/plain"><tt>scipy.linalg.cho_factor</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.optimize._lsq.common">scipy.optimize._lsq.common</a>
+ &#8226;   <a href="#scipy.sparse.linalg._eigen.lobpcg.lobpcg">scipy.sparse.linalg._eigen.lobpcg.lobpcg</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="scipy.linalg.cho_solve"></a>
+  <a target="code" href="" type="text/plain"><tt>scipy.linalg.cho_solve</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.optimize._lsq.common">scipy.optimize._lsq.common</a>
+ &#8226;   <a href="#scipy.optimize._trustregion_exact">scipy.optimize._trustregion_exact</a>
+ &#8226;   <a href="#scipy.sparse.linalg._eigen.lobpcg.lobpcg">scipy.sparse.linalg._eigen.lobpcg.lobpcg</a>
+ &#8226;   <a href="#sklearn.gaussian_process._gpc">sklearn.gaussian_process._gpc</a>
+ &#8226;   <a href="#sklearn.gaussian_process._gpr">sklearn.gaussian_process._gpr</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="scipy.linalg.cholesky"></a>
+  <a target="code" href="" type="text/plain"><tt>scipy.linalg.cholesky</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.optimize._minpack_py">scipy.optimize._minpack_py</a>
+ &#8226;   <a href="#scipy.optimize._optimize">scipy.optimize._optimize</a>
+ &#8226;   <a href="#scipy.sparse.linalg._eigen.lobpcg.lobpcg">scipy.sparse.linalg._eigen.lobpcg.lobpcg</a>
+ &#8226;   <a href="#sklearn.gaussian_process._gpc">sklearn.gaussian_process._gpc</a>
+ &#8226;   <a href="#sklearn.gaussian_process._gpr">sklearn.gaussian_process._gpr</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="scipy.linalg.cython_blas"></a>
   <tt>scipy.linalg.cython_blas</tt> <span class="moduletype"><tt>C:\SeniorProj\beatbank-senior-project\src-tauri\.venv\Lib\site-packages\scipy\linalg\cython_blas.cp312-win_amd64.pyd</tt></span>  <div class="import">
 imports:
@@ -41936,6 +42187,35 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="scipy.linalg.eig"></a>
+  <a target="code" href="" type="text/plain"><tt>scipy.linalg.eig</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.signal._wavelets">scipy.signal._wavelets</a>
+ &#8226;   <a href="#scipy.sparse.linalg._eigen.arpack.arpack">scipy.sparse.linalg._eigen.arpack.arpack</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="scipy.linalg.eigh"></a>
+  <a target="code" href="" type="text/plain"><tt>scipy.linalg.eigh</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.sparse.linalg._eigen.arpack.arpack">scipy.sparse.linalg._eigen.arpack.arpack</a>
+ &#8226;   <a href="#scipy.sparse.linalg._eigen.lobpcg.lobpcg">scipy.sparse.linalg._eigen.lobpcg.lobpcg</a>
+ &#8226;   <a href="#sklearn.decomposition._kernel_pca">sklearn.decomposition._kernel_pca</a>
+ &#8226;   <a href="#sklearn.manifold._locally_linear">sklearn.manifold._locally_linear</a>
+ &#8226;   <a href="#sklearn.manifold._spectral_embedding">sklearn.manifold._spectral_embedding</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="scipy.linalg.interpolative"></a>
   <a target="code" href="///C:/SeniorProj/beatbank-senior-project/src-tauri/.venv/Lib/site-packages/scipy/linalg/interpolative.py" type="text/plain"><tt>scipy.linalg.interpolative</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -41950,6 +42230,19 @@ imports:
   <div class="import">
 imported by:
     <a href="#scipy.optimize._remove_redundancy">scipy.optimize._remove_redundancy</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="scipy.linalg.inv"></a>
+  <a target="code" href="" type="text/plain"><tt>scipy.linalg.inv</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.optimize._nonlin">scipy.optimize._nonlin</a>
+ &#8226;   <a href="#scipy.sparse.linalg._eigen.lobpcg.lobpcg">scipy.sparse.linalg._eigen.lobpcg.lobpcg</a>
 
   </div>
 
@@ -42007,6 +42300,48 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="scipy.linalg.lstsq"></a>
+  <a target="code" href="" type="text/plain"><tt>scipy.linalg.lstsq</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.signal._fir_filter_design">scipy.signal._fir_filter_design</a>
+ &#8226;   <a href="#scipy.signal._savitzky_golay">scipy.signal._savitzky_golay</a>
+ &#8226;   <a href="#scipy.sparse.linalg._isolve._gcrotmk">scipy.sparse.linalg._isolve._gcrotmk</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="scipy.linalg.lu_factor"></a>
+  <a target="code" href="" type="text/plain"><tt>scipy.linalg.lu_factor</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#scipy.integrate._ivp.bdf">scipy.integrate._ivp.bdf</a>
+ &#8226;   <a href="#scipy.integrate._ivp.radau">scipy.integrate._ivp.radau</a>
+ &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.sparse.linalg._eigen.arpack.arpack">scipy.sparse.linalg._eigen.arpack.arpack</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="scipy.linalg.lu_solve"></a>
+  <a target="code" href="" type="text/plain"><tt>scipy.linalg.lu_solve</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#scipy.integrate._ivp.bdf">scipy.integrate._ivp.bdf</a>
+ &#8226;   <a href="#scipy.integrate._ivp.radau">scipy.integrate._ivp.radau</a>
+ &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.sparse.linalg._eigen.arpack.arpack">scipy.sparse.linalg._eigen.arpack.arpack</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="scipy.linalg.matfuncs"></a>
   <a target="code" href="///C:/SeniorProj/beatbank-senior-project/src-tauri/.venv/Lib/site-packages/scipy/linalg/matfuncs.py" type="text/plain"><tt>scipy.linalg.matfuncs</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
@@ -42041,12 +42376,50 @@ imported by:
 </div>
 
 <div class="node">
+  <a name="scipy.linalg.qr"></a>
+  <a target="code" href="" type="text/plain"><tt>scipy.linalg.qr</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.optimize._lsq.trf">scipy.optimize._lsq.trf</a>
+ &#8226;   <a href="#scipy.optimize._lsq.trf_linear">scipy.optimize._lsq.trf_linear</a>
+ &#8226;   <a href="#scipy.optimize._nonlin">scipy.optimize._nonlin</a>
+ &#8226;   <a href="#scipy.signal._ltisys">scipy.signal._ltisys</a>
+ &#8226;   <a href="#scipy.sparse.linalg._isolve._gcrotmk">scipy.sparse.linalg._isolve._gcrotmk</a>
+ &#8226;   <a href="#sklearn.cluster._spectral">sklearn.cluster._spectral</a>
+ &#8226;   <a href="#sklearn.manifold._locally_linear">sklearn.manifold._locally_linear</a>
+
+  </div>
+
+</div>
+
+<div class="node">
   <a name="scipy.linalg.qr_insert"></a>
   <a target="code" href="" type="text/plain"><tt>scipy.linalg.qr_insert</tt></a>
 <span class="moduletype">MissingModule</span>  <div class="import">
 imported by:
     <a href="#scipy.linalg">scipy.linalg</a>
  &#8226;   <a href="#scipy.sparse.linalg._isolve._gcrotmk">scipy.sparse.linalg._isolve._gcrotmk</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="scipy.linalg.solve"></a>
+  <a target="code" href="" type="text/plain"><tt>scipy.linalg.solve</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#scipy.interpolate._bsplines">scipy.interpolate._bsplines</a>
+ &#8226;   <a href="#scipy.interpolate._cubic">scipy.interpolate._cubic</a>
+ &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.optimize._linprog_rs">scipy.optimize._linprog_rs</a>
+ &#8226;   <a href="#scipy.optimize._nnls">scipy.optimize._nnls</a>
+ &#8226;   <a href="#scipy.optimize._nonlin">scipy.optimize._nonlin</a>
+ &#8226;   <a href="#scipy.signal._fir_filter_design">scipy.signal._fir_filter_design</a>
+ &#8226;   <a href="#scipy.sparse.linalg._isolve._gcrotmk">scipy.sparse.linalg._isolve._gcrotmk</a>
+ &#8226;   <a href="#sklearn.gaussian_process._gpc">sklearn.gaussian_process._gpc</a>
+ &#8226;   <a href="#sklearn.manifold._locally_linear">sklearn.manifold._locally_linear</a>
 
   </div>
 
@@ -42064,6 +42437,26 @@ imports:
   <div class="import">
 imported by:
     <a href="#scipy.linalg">scipy.linalg</a>
+
+  </div>
+
+</div>
+
+<div class="node">
+  <a name="scipy.linalg.svd"></a>
+  <a target="code" href="" type="text/plain"><tt>scipy.linalg.svd</tt></a>
+<span class="moduletype">MissingModule</span>  <div class="import">
+imported by:
+    <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg._decomp_polar">scipy.linalg._decomp_polar</a>
+ &#8226;   <a href="#scipy.optimize._lsq.trf">scipy.optimize._lsq.trf</a>
+ &#8226;   <a href="#scipy.optimize._minpack_py">scipy.optimize._minpack_py</a>
+ &#8226;   <a href="#scipy.optimize._nonlin">scipy.optimize._nonlin</a>
+ &#8226;   <a href="#scipy.optimize._remove_redundancy">scipy.optimize._remove_redundancy</a>
+ &#8226;   <a href="#scipy.sparse.linalg._eigen._svds">scipy.sparse.linalg._eigen._svds</a>
+ &#8226;   <a href="#scipy.sparse.linalg._isolve._gcrotmk">scipy.sparse.linalg._isolve._gcrotmk</a>
+ &#8226;   <a href="#sklearn.cluster._spectral">sklearn.cluster._spectral</a>
+ &#8226;   <a href="#sklearn.manifold._locally_linear">sklearn.manifold._locally_linear</a>
 
   </div>
 
@@ -43075,6 +43468,7 @@ imports:
     <a href="#numpy">numpy</a>
  &#8226;   <a href="#numpy.linalg">numpy.linalg</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.solve">scipy.linalg.solve</a>
  &#8226;   <a href="#scipy.optimize">scipy.optimize</a>
  &#8226;   <a href="#scipy.optimize._bglu_dense">scipy.optimize._bglu_dense</a>
  &#8226;   <a href="#scipy.optimize._linprog_util">scipy.optimize._linprog_util</a>
@@ -43205,6 +43599,8 @@ imports:
  &#8226;   <a href="#numpy">numpy</a>
  &#8226;   <a href="#numpy.linalg">numpy.linalg</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.cho_factor">scipy.linalg.cho_factor</a>
+ &#8226;   <a href="#scipy.linalg.cho_solve">scipy.linalg.cho_solve</a>
  &#8226;   <a href="#scipy.optimize._lsq">scipy.optimize._lsq</a>
  &#8226;   <a href="#scipy.sparse">scipy.sparse</a>
  &#8226;   <a href="#scipy.sparse.issparse">scipy.sparse.issparse</a>
@@ -43327,6 +43723,8 @@ imports:
     <a href="#numpy">numpy</a>
  &#8226;   <a href="#numpy.linalg">numpy.linalg</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.qr">scipy.linalg.qr</a>
+ &#8226;   <a href="#scipy.linalg.svd">scipy.linalg.svd</a>
  &#8226;   <a href="#scipy.optimize">scipy.optimize</a>
  &#8226;   <a href="#scipy.optimize._lsq">scipy.optimize._lsq</a>
  &#8226;   <a href="#scipy.optimize._lsq.common">scipy.optimize._lsq.common</a>
@@ -43349,6 +43747,7 @@ imports:
     <a href="#numpy">numpy</a>
  &#8226;   <a href="#numpy.linalg">numpy.linalg</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.qr">scipy.linalg.qr</a>
  &#8226;   <a href="#scipy.optimize">scipy.optimize</a>
  &#8226;   <a href="#scipy.optimize._lsq">scipy.optimize._lsq</a>
  &#8226;   <a href="#scipy.optimize._lsq.common">scipy.optimize._lsq.common</a>
@@ -43466,6 +43865,8 @@ imports:
  &#8226;   <a href="#scipy">scipy</a>
  &#8226;   <a href="#scipy._lib._util">scipy._lib._util</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.cholesky">scipy.linalg.cholesky</a>
+ &#8226;   <a href="#scipy.linalg.svd">scipy.linalg.svd</a>
  &#8226;   <a href="#scipy.optimize">scipy.optimize</a>
  &#8226;   <a href="#scipy.optimize._lsq">scipy.optimize._lsq</a>
  &#8226;   <a href="#scipy.optimize._lsq.least_squares">scipy.optimize._lsq.least_squares</a>
@@ -43507,6 +43908,7 @@ imported by:
 imports:
     <a href="#numpy">numpy</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.solve">scipy.linalg.solve</a>
  &#8226;   <a href="#scipy.optimize">scipy.optimize</a>
  &#8226;   <a href="#warnings">warnings</a>
 
@@ -43528,6 +43930,10 @@ imports:
  &#8226;   <a href="#numpy">numpy</a>
  &#8226;   <a href="#scipy._lib._util">scipy._lib._util</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.inv">scipy.linalg.inv</a>
+ &#8226;   <a href="#scipy.linalg.qr">scipy.linalg.qr</a>
+ &#8226;   <a href="#scipy.linalg.solve">scipy.linalg.solve</a>
+ &#8226;   <a href="#scipy.linalg.svd">scipy.linalg.svd</a>
  &#8226;   <a href="#scipy.optimize">scipy.optimize</a>
  &#8226;   <a href="#scipy.optimize._linesearch">scipy.optimize._linesearch</a>
  &#8226;   <a href="#scipy.sparse">scipy.sparse</a>
@@ -43587,6 +43993,7 @@ imports:
  &#8226;   <a href="#numpy">numpy</a>
  &#8226;   <a href="#scipy._lib._util">scipy._lib._util</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.cholesky">scipy.linalg.cholesky</a>
  &#8226;   <a href="#scipy.linalg.issymmetric">scipy.linalg.issymmetric</a>
  &#8226;   <a href="#scipy.optimize">scipy.optimize</a>
  &#8226;   <a href="#scipy.optimize._differentiable_functions">scipy.optimize._differentiable_functions</a>
@@ -43675,6 +44082,7 @@ imports:
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
  &#8226;   <a href="#scipy.linalg.blas">scipy.linalg.blas</a>
  &#8226;   <a href="#scipy.linalg.interpolative">scipy.linalg.interpolative</a>
+ &#8226;   <a href="#scipy.linalg.svd">scipy.linalg.svd</a>
  &#8226;   <a href="#scipy.optimize">scipy.optimize</a>
 
   </div>
@@ -44160,6 +44568,7 @@ imported by:
 imports:
     <a href="#numpy">numpy</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.cho_solve">scipy.linalg.cho_solve</a>
  &#8226;   <a href="#scipy.optimize">scipy.optimize</a>
  &#8226;   <a href="#scipy.optimize._trustregion">scipy.optimize._trustregion</a>
 
@@ -44477,7 +44886,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#librosa.core.audio">librosa.core.audio</a>
+    <a href="#audio_analyzer.py">audio_analyzer.py</a>
+ &#8226;   <a href="#librosa.core.audio">librosa.core.audio</a>
  &#8226;   <a href="#librosa.core.harmonic">librosa.core.harmonic</a>
  &#8226;   <a href="#librosa.core.spectrum">librosa.core.spectrum</a>
  &#8226;   <a href="#librosa.effects">librosa.effects</a>
@@ -44627,6 +45037,8 @@ imports:
  &#8226;   <a href="#operator">operator</a>
  &#8226;   <a href="#scipy._lib.deprecation">scipy._lib.deprecation</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.lstsq">scipy.linalg.lstsq</a>
+ &#8226;   <a href="#scipy.linalg.solve">scipy.linalg.solve</a>
  &#8226;   <a href="#scipy.signal">scipy.signal</a>
  &#8226;   <a href="#scipy.signal._arraytools">scipy.signal._arraytools</a>
  &#8226;   <a href="#scipy.signal._sigtools">scipy.signal._sigtools</a>
@@ -44675,6 +45087,7 @@ imports:
  &#8226;   <a href="#scipy">scipy</a>
  &#8226;   <a href="#scipy.interpolate">scipy.interpolate</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.qr">scipy.linalg.qr</a>
  &#8226;   <a href="#scipy.signal">scipy.signal</a>
  &#8226;   <a href="#scipy.signal._filter_design">scipy.signal._filter_design</a>
  &#8226;   <a href="#scipy.signal._lti_conversion">scipy.signal._lti_conversion</a>
@@ -44767,6 +45180,7 @@ imports:
     <a href="#numpy">numpy</a>
  &#8226;   <a href="#scipy._lib._util">scipy._lib._util</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.lstsq">scipy.linalg.lstsq</a>
  &#8226;   <a href="#scipy.ndimage">scipy.ndimage</a>
  &#8226;   <a href="#scipy.signal">scipy.signal</a>
  &#8226;   <a href="#scipy.signal._arraytools">scipy.signal._arraytools</a>
@@ -44987,6 +45401,7 @@ imported by:
 imports:
     <a href="#numpy">numpy</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.eig">scipy.linalg.eig</a>
  &#8226;   <a href="#scipy.signal">scipy.signal</a>
  &#8226;   <a href="#scipy.special">scipy.special</a>
  &#8226;   <a href="#warnings">warnings</a>
@@ -45292,7 +45707,6 @@ imports:
 imported by:
     <a href="#librosa.decompose">librosa.decompose</a>
  &#8226;   <a href="#librosa.util.utils">librosa.util.utils</a>
- &#8226;   <a href="#scipy">scipy</a>
  &#8226;   <a href="#scipy._lib._util">scipy._lib._util</a>
  &#8226;   <a href="#scipy.integrate._bvp">scipy.integrate._bvp</a>
  &#8226;   <a href="#scipy.integrate._ivp.bdf">scipy.integrate._ivp.bdf</a>
@@ -46500,7 +46914,6 @@ imports:
  &#8226;   <a href="#scipy.sparse.linalg.interface">scipy.sparse.linalg.interface</a>
  &#8226;   <a href="#scipy.sparse.linalg.isolve">scipy.sparse.linalg.isolve</a>
  &#8226;   <a href="#scipy.sparse.linalg.matfuncs">scipy.sparse.linalg.matfuncs</a>
- &#8226;   <a href="#scipy.sparse.linalg.onenormest">scipy.sparse.linalg.onenormest</a>
 
   </div>
   <div class="import">
@@ -46683,6 +47096,7 @@ imports:
     <a href="#numpy">numpy</a>
  &#8226;   <a href="#scipy._lib._util">scipy._lib._util</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.svd">scipy.linalg.svd</a>
  &#8226;   <a href="#scipy.sparse.linalg._eigen">scipy.sparse.linalg._eigen</a>
  &#8226;   <a href="#scipy.sparse.linalg._eigen.arpack">scipy.sparse.linalg._eigen.arpack</a>
  &#8226;   <a href="#scipy.sparse.linalg._eigen.arpack._arpack">scipy.sparse.linalg._eigen.arpack._arpack</a>
@@ -46749,6 +47163,10 @@ imports:
  &#8226;   <a href="#scipy._lib._threadsafety">scipy._lib._threadsafety</a>
  &#8226;   <a href="#scipy._lib._util">scipy._lib._util</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.eig">scipy.linalg.eig</a>
+ &#8226;   <a href="#scipy.linalg.eigh">scipy.linalg.eigh</a>
+ &#8226;   <a href="#scipy.linalg.lu_factor">scipy.linalg.lu_factor</a>
+ &#8226;   <a href="#scipy.linalg.lu_solve">scipy.linalg.lu_solve</a>
  &#8226;   <a href="#scipy.sparse">scipy.sparse</a>
  &#8226;   <a href="#scipy.sparse._sputils">scipy.sparse._sputils</a>
  &#8226;   <a href="#scipy.sparse.eye">scipy.sparse.eye</a>
@@ -46795,6 +47213,11 @@ imported by:
 imports:
     <a href="#numpy">numpy</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.cho_factor">scipy.linalg.cho_factor</a>
+ &#8226;   <a href="#scipy.linalg.cho_solve">scipy.linalg.cho_solve</a>
+ &#8226;   <a href="#scipy.linalg.cholesky">scipy.linalg.cholesky</a>
+ &#8226;   <a href="#scipy.linalg.eigh">scipy.linalg.eigh</a>
+ &#8226;   <a href="#scipy.linalg.inv">scipy.linalg.inv</a>
  &#8226;   <a href="#scipy.sparse">scipy.sparse</a>
  &#8226;   <a href="#scipy.sparse.issparse">scipy.sparse.issparse</a>
  &#8226;   <a href="#scipy.sparse.linalg">scipy.sparse.linalg</a>
@@ -46907,7 +47330,11 @@ imports:
  &#8226;   <a href="#numpy.linalg">numpy.linalg</a>
  &#8226;   <a href="#scipy._lib.deprecation">scipy._lib.deprecation</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.lstsq">scipy.linalg.lstsq</a>
+ &#8226;   <a href="#scipy.linalg.qr">scipy.linalg.qr</a>
  &#8226;   <a href="#scipy.linalg.qr_insert">scipy.linalg.qr_insert</a>
+ &#8226;   <a href="#scipy.linalg.solve">scipy.linalg.solve</a>
+ &#8226;   <a href="#scipy.linalg.svd">scipy.linalg.svd</a>
  &#8226;   <a href="#scipy.sparse.linalg._isolve">scipy.sparse.linalg._isolve</a>
  &#8226;   <a href="#scipy.sparse.linalg._isolve.iterative">scipy.sparse.linalg._isolve.iterative</a>
  &#8226;   <a href="#scipy.sparse.linalg._isolve.utils">scipy.sparse.linalg._isolve.utils</a>
@@ -47352,18 +47779,6 @@ imports:
   <div class="import">
 imported by:
     <a href="#scipy.sparse.linalg">scipy.sparse.linalg</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="scipy.sparse.linalg.onenormest"></a>
-  <a target="code" href="" type="text/plain"><tt>scipy.sparse.linalg.onenormest</tt></a>
-<span class="moduletype">MissingModule</span>  <div class="import">
-imported by:
-    <a href="#scipy.linalg._matfuncs_inv_ssq">scipy.linalg._matfuncs_inv_ssq</a>
- &#8226;   <a href="#scipy.sparse.linalg">scipy.sparse.linalg</a>
 
   </div>
 
@@ -48582,6 +48997,7 @@ imports:
   <div class="import">
 imported by:
     <a href="#librosa.beat">librosa.beat</a>
+ &#8226;   <a href="#scipy">scipy</a>
  &#8226;   <a href="#scipy.integrate._quadrature">scipy.integrate._quadrature</a>
  &#8226;   <a href="#scipy.optimize._differentialevolution">scipy.optimize._differentialevolution</a>
  &#8226;   <a href="#scipy.optimize._shgo">scipy.optimize._shgo</a>
@@ -49110,6 +49526,7 @@ imports:
  &#8226;   <a href="#scipy">scipy</a>
  &#8226;   <a href="#scipy._lib._util">scipy._lib._util</a>
  &#8226;   <a href="#scipy.interpolate">scipy.interpolate</a>
+ &#8226;   <a href="#scipy.interpolate.interp1d">scipy.interpolate.interp1d</a>
  &#8226;   <a href="#scipy.special">scipy.special</a>
  &#8226;   <a href="#scipy.special.betaln">scipy.special.betaln</a>
  &#8226;   <a href="#scipy.special.entr">scipy.special.entr</a>
@@ -49328,6 +49745,7 @@ imports:
  &#8226;   <a href="#scipy.integrate">scipy.integrate</a>
  &#8226;   <a href="#scipy.integrate._quadrature">scipy.integrate._quadrature</a>
  &#8226;   <a href="#scipy.interpolate">scipy.interpolate</a>
+ &#8226;   <a href="#scipy.interpolate.RectBivariateSpline">scipy.interpolate.RectBivariateSpline</a>
  &#8226;   <a href="#scipy.optimize">scipy.optimize</a>
  &#8226;   <a href="#scipy.special">scipy.special</a>
  &#8226;   <a href="#scipy.stats">scipy.stats</a>
@@ -55556,6 +55974,8 @@ imports:
     <a href="#numbers">numbers</a>
  &#8226;   <a href="#numpy">numpy</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.qr">scipy.linalg.qr</a>
+ &#8226;   <a href="#scipy.linalg.svd">scipy.linalg.svd</a>
  &#8226;   <a href="#scipy.sparse">scipy.sparse</a>
  &#8226;   <a href="#scipy.sparse.csc_matrix">scipy.sparse.csc_matrix</a>
  &#8226;   <a href="#sklearn.base">sklearn.base</a>
@@ -55943,6 +56363,7 @@ imports:
  &#8226;   <a href="#numpy">numpy</a>
  &#8226;   <a href="#scipy">scipy</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.eigh">scipy.linalg.eigh</a>
  &#8226;   <a href="#scipy.sparse.linalg">scipy.sparse.linalg</a>
  &#8226;   <a href="#sklearn.base">sklearn.base</a>
  &#8226;   <a href="#sklearn.decomposition">sklearn.decomposition</a>
@@ -56549,6 +56970,9 @@ imports:
  &#8226;   <a href="#numpy">numpy</a>
  &#8226;   <a href="#operator">operator</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.cho_solve">scipy.linalg.cho_solve</a>
+ &#8226;   <a href="#scipy.linalg.cholesky">scipy.linalg.cholesky</a>
+ &#8226;   <a href="#scipy.linalg.solve">scipy.linalg.solve</a>
  &#8226;   <a href="#scipy.optimize">scipy.optimize</a>
  &#8226;   <a href="#scipy.special">scipy.special</a>
  &#8226;   <a href="#sklearn.base">sklearn.base</a>
@@ -56579,6 +57003,8 @@ imports:
  &#8226;   <a href="#numpy">numpy</a>
  &#8226;   <a href="#operator">operator</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.cho_solve">scipy.linalg.cho_solve</a>
+ &#8226;   <a href="#scipy.linalg.cholesky">scipy.linalg.cholesky</a>
  &#8226;   <a href="#scipy.optimize">scipy.optimize</a>
  &#8226;   <a href="#sklearn.base">sklearn.base</a>
  &#8226;   <a href="#sklearn.gaussian_process">sklearn.gaussian_process</a>
@@ -57412,6 +57838,10 @@ imports:
     <a href="#numbers">numbers</a>
  &#8226;   <a href="#numpy">numpy</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.eigh">scipy.linalg.eigh</a>
+ &#8226;   <a href="#scipy.linalg.qr">scipy.linalg.qr</a>
+ &#8226;   <a href="#scipy.linalg.solve">scipy.linalg.solve</a>
+ &#8226;   <a href="#scipy.linalg.svd">scipy.linalg.svd</a>
  &#8226;   <a href="#scipy.sparse">scipy.sparse</a>
  &#8226;   <a href="#scipy.sparse.csr_matrix">scipy.sparse.csr_matrix</a>
  &#8226;   <a href="#scipy.sparse.eye">scipy.sparse.eye</a>
@@ -57470,6 +57900,7 @@ imports:
  &#8226;   <a href="#pyamg">pyamg</a>
  &#8226;   <a href="#scipy">scipy</a>
  &#8226;   <a href="#scipy.linalg">scipy.linalg</a>
+ &#8226;   <a href="#scipy.linalg.eigh">scipy.linalg.eigh</a>
  &#8226;   <a href="#scipy.sparse">scipy.sparse</a>
  &#8226;   <a href="#scipy.sparse.csgraph">scipy.sparse.csgraph</a>
  &#8226;   <a href="#scipy.sparse.linalg">scipy.sparse.linalg</a>
@@ -61904,6 +62335,7 @@ imported by:
  &#8226;   <a href="#requests.packages">requests.packages</a>
  &#8226;   <a href="#requests.sessions">requests.sessions</a>
  &#8226;   <a href="#requests.utils">requests.utils</a>
+ &#8226;   <a href="#resampy.filters">resampy.filters</a>
  &#8226;   <a href="#runpy">runpy</a>
  &#8226;   <a href="#scipy._lib._bunch">scipy._lib._bunch</a>
  &#8226;   <a href="#scipy._lib._docscrape">scipy._lib._docscrape</a>
@@ -62140,7 +62572,6 @@ imports:
   <div class="import">
 imported by:
     <a href="#asyncio.windows_utils">asyncio.windows_utils</a>
- &#8226;   <a href="#audio_analyzer.py">audio_analyzer.py</a>
  &#8226;   <a href="#ctypes.util">ctypes.util</a>
  &#8226;   <a href="#importlib.resources._common">importlib.resources._common</a>
  &#8226;   <a href="#joblib._memmapping_reducer">joblib._memmapping_reducer</a>
@@ -62398,6 +62829,7 @@ imported by:
  &#8226;   <a href="#_strptime">_strptime</a>
  &#8226;   <a href="#asyncio.base_events">asyncio.base_events</a>
  &#8226;   <a href="#asyncio.windows_events">asyncio.windows_events</a>
+ &#8226;   <a href="#audio_analyzer.py">audio_analyzer.py</a>
  &#8226;   <a href="#audioread.ffdec">audioread.ffdec</a>
  &#8226;   <a href="#concurrent.futures._base">concurrent.futures._base</a>
  &#8226;   <a href="#datetime">datetime</a>
@@ -62948,6 +63380,7 @@ imports:
 imported by:
     <a href="#asyncio.staggered">asyncio.staggered</a>
  &#8226;   <a href="#asyncio.timeouts">asyncio.timeouts</a>
+ &#8226;   <a href="#audio_analyzer.py">audio_analyzer.py</a>
  &#8226;   <a href="#certifi.core">certifi.core</a>
  &#8226;   <a href="#charset_normalizer.api">charset_normalizer.api</a>
  &#8226;   <a href="#charset_normalizer.cd">charset_normalizer.cd</a>
@@ -65072,6 +65505,7 @@ imported by:
  &#8226;   <a href="#requests.adapters">requests.adapters</a>
  &#8226;   <a href="#requests.auth">requests.auth</a>
  &#8226;   <a href="#requests.utils">requests.utils</a>
+ &#8226;   <a href="#resampy.core">resampy.core</a>
  &#8226;   <a href="#runpy">runpy</a>
  &#8226;   <a href="#scipy">scipy</a>
  &#8226;   <a href="#scipy.__config__">scipy.__config__</a>
@@ -65319,8 +65753,7 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#audio_analyzer.py">audio_analyzer.py</a>
- &#8226;   <a href="#audioread.rawread">audioread.rawread</a>
+    <a href="#audioread.rawread">audioread.rawread</a>
 
   </div>
 
@@ -65623,6 +66056,7 @@ imported by:
 <span class="moduletype">Package</span>  <div class="import">
 imports:
     <a href="#xml">xml</a>
+ &#8226;   <a href="#xml.parsers.expat">xml.parsers.expat</a>
 
   </div>
   <div class="import">
@@ -65650,6 +66084,7 @@ imports:
 imported by:
     <a href="#plistlib">plistlib</a>
  &#8226;   <a href="#xml.etree.ElementTree">xml.etree.ElementTree</a>
+ &#8226;   <a href="#xml.parsers">xml.parsers</a>
  &#8226;   <a href="#xml.sax.expatreader">xml.sax.expatreader</a>
  &#8226;   <a href="#xmlrpc.client">xmlrpc.client</a>
 
