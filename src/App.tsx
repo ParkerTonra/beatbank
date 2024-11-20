@@ -703,11 +703,11 @@ function AppContainer() {
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
       <div className="flex bg-slate-900 justify-center h-screen overflow-x-hidden">
-        <Sidebar collections={beatCollections} />
+        <Sidebar collections={beatCollections} setSelectedBeats={setSelectedBeats} />
         <div className="flex-1 flex flex-col overflow-x-auto">
           <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
             <span className="fixed right-4 top-2">
-              <img src={BeatbankLogo} width={60} height={100} />
+              <img src={BeatbankLogo} width={60} height={100} draggable={false} />
             </span>
             <TableContext.Provider value={{ tableInstance, setTableInstance }}>
               <div className="flex flex-col flex-1 h-full">
