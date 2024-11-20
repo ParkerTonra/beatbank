@@ -5,6 +5,7 @@ mod models;
 mod schema;
 mod store;
 mod audio_analysis;
+use audio_analysis::AnalysisError;
 use diesel::prelude::*;
 use models::CollOrder;
 use serde::Deserialize;
@@ -192,21 +193,12 @@ async fn analyze_beat(state: State<'_, AppState>, beat_id: i32, file_path: Strin
         let cancel_token_inner = cancellation_token.clone();
         // Run the CPU-intensive analysis in a blocking task
         let analysis_result = tokio::task::spawn_blocking(move || {
-            if cancel_token_inner.is_cancelled() {
-                return Err("Analysis cancelled".to_string());
-            }
             analyze_audio(&file_path, &cancel_token_inner)
         }).await.map_err(|e| e.to_string());
 
         match analysis_result {
             Ok(Ok((bpm_string, bpm_float))) => {
-                if cancellation_token.is_cancelled() {
-                    return;
-                }
-
-                println!("Analysis complete for beat {}. BPM: {}", beat_id, bpm_string);
-                
-                // Update the database with the results
+                // Success case - update database and emit event
                 if let Ok(mut conn_guard) = conn.lock() {
                     use crate::schema::beats::dsl::*;
                     if let Err(e) = diesel::update(beats.find(beat_id))
@@ -221,20 +213,47 @@ async fn analyze_beat(state: State<'_, AppState>, beat_id: i32, file_path: Strin
                     *completed += 1;
                 }
 
-                // Emit event for frontend
+                // Emit success event
                 let _ = app_handle.emit_all(
                     "beat-analyzed",
                     json!({
                         "beatId": beat_id,
-                        "bpm": bpm_float
+                        "bpm": bpm_float,
+                        "status": "success"
+                    })
+                );
+            }
+            Ok(Err(AnalysisError::Cancelled)) => {
+                // Emit cancelled event
+                let _ = app_handle.emit_all(
+                    "beat-analyzed",
+                    json!({
+                        "beatId": beat_id,
+                        "status": "cancelled"
+                    })
+                );
+            }
+            Ok(Err(error)) => {
+                // Emit failure event with error info
+                let _ = app_handle.emit_all(
+                    "beat-analyzed",
+                    json!({
+                        "beatId": beat_id,
+                        "status": "error",
+                        "error": error.to_string()
                     })
                 );
             }
             Err(e) => {
-                eprintln!("Error analyzing beat {}: {}", beat_id, e);
-            }
-            Ok(Err(e)) => {
-                eprintln!("Error in audio analysis for beat {}: {}", beat_id, e);
+                // Emit error event
+                let _ = app_handle.emit_all(
+                    "beat-analyzed",
+                    json!({
+                        "beatId": beat_id,
+                        "status": "error",
+                        "error": e
+                    })
+                );
             }
         }
     });

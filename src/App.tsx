@@ -31,6 +31,7 @@ import { TableContext } from "./contexts/TableContext";
 import BeatCollectionComponent from "./components/BeatCollection";
 import BeatbankLogo from './assets/BeatbankLogo.png';
 import { dialog } from "@tauri-apps/api";
+import { Tooltip } from "primereact/tooltip";
 
 function AppContainer() {
   // state
@@ -79,7 +80,8 @@ function AppContainer() {
     setColumnVisibility,
     fetchSetData,
     collectionBeats,
-    setCollectionBeats
+    setCollectionBeats,
+    fetchColumnVisibility
   } = useBeats();
 
   const sensors = useSensors(
@@ -121,6 +123,10 @@ function AppContainer() {
 
     initializeApp();
   }, []);
+
+  useEffect(() => {
+    fetchColumnVisibility();
+  }, [setColumnVisibility]);
 
   //TODO: consolidate
   const folderDialogOptions: OpenDialogOptions = {
@@ -284,6 +290,11 @@ function AppContainer() {
       setUploadStatus("No beat selected");
       return;
     }
+    // confirm dialog
+    const confirmed = await confirm('Are you sure you want to delete the selected beats?');
+    if (!confirmed) {
+      return;
+    }
     try {
       const result = await invoke('delete_beats', {
         ids: selectedBeats.map(beat => beat.id)
@@ -293,6 +304,7 @@ function AppContainer() {
       if (collectionId) {
         await fetchSetData(collectionId);
       } else {
+        setSelectedBeats([]);
         await fetchData();
       }
 
@@ -370,6 +382,11 @@ function AppContainer() {
       return isTempoDetectionSupported(extension);
     });
 
+    if (isProcessing) {
+      await message('Please wait for the current task to finish before starting a new one.', { title: 'Tauri', type: 'error' });
+      return;
+    }
+
     setIsProcessing(true);
     setProcessingProgress({
       filesProcessed: 0,
@@ -429,23 +446,45 @@ function AppContainer() {
           }
           console.log("Starting analysis for beat:", beatId);
           console.log("File path:", filePath);
-          // Start analysis and get a promise
-          await invoke('analyze_beat', { beatId, filePath });
 
-          // Set up listener for analysis completion
-          return new Promise<void>(async (resolve) => {
+          // Create the promise before invoking to avoid race conditions
+          const analysisPromise = new Promise<void>(async (resolve) => {
             const unsubscribe = await listen('beat-analyzed', async (event: any) => {
               if (event.payload.beatId === beatId) {
-                setProcessingProgress(prev => ({
-                  ...prev,
-                  beatsAnalyzed: prev.beatsAnalyzed + 1
-                }));
-                fetchData();
+                switch (event.payload.status) {
+                  case 'success':
+                    setProcessingProgress(prev => ({
+                      ...prev,
+                      beatsAnalyzed: prev.beatsAnalyzed + 1
+                    }));
+                    await fetchData();
+                    break;
+                  case 'cancelled':
+                    console.log(`Analysis cancelled for beat ${beatId}`);
+                    break;
+                  case 'error':
+                    console.error(`Analysis failed for beat ${beatId}: ${event.payload.error}`);
+                    setProcessingProgress(prev => ({
+                      ...prev,
+                      beatsAnalyzed: prev.beatsAnalyzed + 1
+                    }));
+                    setUploadStatus(prev =>
+                      `${prev}\nError analyzing ${filePath.split('/').pop()}: ${event.payload.error}`
+                    );
+                    break;
+                }
                 await unsubscribe();
                 resolve();
               }
             });
           });
+
+          // Start the analysis after setting up the listener
+          await invoke('analyze_beat', { beatId, filePath });
+
+          // Wait for the analysis to complete
+          return analysisPromise;
+
         } catch (error) {
           console.error(`Error analyzing beat ${filePath}:`, error);
           setUploadStatus(prev =>
@@ -751,7 +790,6 @@ function AppContainer() {
                 </SortableContext>
               </div>
             </TableContext.Provider>
-
             {/* Overlay when dragging files */}
             {isFileDragging && (
               <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50 flex-col">
@@ -768,6 +806,7 @@ function AppContainer() {
                 </button>
               </div>
             )}
+            
             {/* Processing overlay */}
             {isProcessing && (
               <div className="fixed bottom-4 left-4 flex items-center bg-gray-900 bg-opacity-95 rounded-lg p-4 shadow-lg z-40 max-w-md">
@@ -818,14 +857,27 @@ function AppContainer() {
                     </span>
                   </div>
                 </div>
-
+                <div className="flex flex-col flex-grow mx-8 space-y-3">
                 <button
                   onClick={() => handleCancel()}
-                  className="ml-4 p-2 text-white hover:bg-red-500 bg-red-400 rounded-md"
+                  className="p-2 text-white hover:bg-red-500 bg-red-400 rounded-md w-16"
                   title="Cancel"
+                  data-pr-tooltip="Cancel adding beats"
+                  data-pr-position="right"
                 >
                   <span>Cancel</span>
                 </button>
+                <button
+                  onClick={() => setShowStatusDialog(!showStatusDialog)}
+                  className="p-2 text-white hover:bg-blue-500 bg-blue-400 rounded-md w-16"
+                  type="button"
+                  data-pr-tooltip="Upload Status"
+                  data-pr-position="right"
+                >
+                  <span>Status</span>
+                </button>
+                <Tooltip target = "button"/>
+                </div>
               </div>
             )}
 

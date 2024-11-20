@@ -11,16 +11,44 @@ use symphonia::core::probe::Hint;
 
 use crate::CancellationToken;
 
-pub fn analyze_audio(file_path: &str, cancellation_token: &Arc<CancellationToken>) -> Result<(String, f32), String> {
+#[derive(Debug)]
+pub enum AnalysisError {
+    Cancelled,
+    TooLong,
+    UnsupportedFormat,
+    Other(String)
+}
+
+impl ToString for AnalysisError {
+    fn to_string(&self) -> String {
+        match self {
+            AnalysisError::Cancelled => "Analysis cancelled".to_string(),
+            AnalysisError::TooLong => "Audio file too long".to_string(),
+            AnalysisError::UnsupportedFormat => "Unsupported audio format".to_string(),
+            AnalysisError::Other(s) => s.clone(),
+        }
+    }
+}
+
+pub fn analyze_audio(file_path: &str, cancellation_token: &Arc<CancellationToken>) -> Result<(String, f32), AnalysisError> {
     println!("Starting analysis for file: {}", file_path);
 
     if cancellation_token.is_cancelled() {
-        return Err("Analysis cancelled".to_string());
+        return Err(AnalysisError::Cancelled);
     }
 
-    let (audio_data, sample_rate) = load_audio(file_path, cancellation_token)?;
-    let bpm = detect_bpm(audio_data, sample_rate, cancellation_token)?;
-    Ok((format!("{}", bpm), bpm))
+
+    match load_audio(file_path, cancellation_token) {
+        Ok((audio_data, sample_rate)) => {
+            match detect_bpm(audio_data, sample_rate, cancellation_token) {
+                Ok(bpm) => Ok((format!("{}", bpm), bpm)),
+                Err(e) => Err(AnalysisError::Other(e)),
+            }
+        },
+        Err(e) if e.contains("too long") => Err(AnalysisError::TooLong),
+        Err(e) if e.contains("Unsupported audio format") => Err(AnalysisError::UnsupportedFormat),
+        Err(e) => Err(AnalysisError::Other(e)),
+    }
 }
 
 fn detect_bpm(audio_data: Vec<Smpl>, sample_rate: u32, cancellation_token: &Arc<CancellationToken>) -> Result<f32, String> {

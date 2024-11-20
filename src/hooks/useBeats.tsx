@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { Beat, BeatCollection } from "./../bindings";
 import { VisibilityState } from "@tanstack/react-table";
@@ -33,24 +33,39 @@ export const useBeats = () => {
   const [error, setError] = useState<Error | null>(null);
   const [currentCollection, setCurrentCollection] = useState<BeatCollection | null>(null);
 
+  const fetchColumnVisibility = useCallback(async () => {
+    try {
+      const columnVisResult = await invoke<string>("fetch_column_vis");
+      let columnVis = JSON.parse(columnVisResult);
+      if (columnVis && typeof columnVis === "object" && "0" in columnVis) {
+        columnVis = columnVis[0];
+      }
+      setColumnVisibility({ ...defaultColumnVisibility, ...columnVis });
+    } catch (error) {
+      console.error("Error fetching column visibility:", error);
+      // Fallback to default visibility on error
+      setColumnVisibility(defaultColumnVisibility);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchColumnVisibility();
+  }, []);
+
   // fetch sets, data, and column visibility for initialization
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     console.log("Fetching data...");
     try {
-      const [beatsResult, columnVisResult, collectionsResult] = await Promise.all([
+      const [beatsResult, collectionsResult] = await Promise.all([
         invoke<string>("fetch_beats"),
-        invoke<string>("fetch_column_vis"),
+        //invoke<string>("fetch_column_vis"),
         invoke<string>("fetch_collections"),
       ]);
       const myBeats = JSON.parse(beatsResult);
       setBeats(myBeats);
-      let columnVis = JSON.parse(columnVisResult);
-      if (columnVis && typeof columnVis === "object" && "0" in columnVis) {
-        columnVis = columnVis[0];
-      }
-      setColumnVisibility({ ...defaultColumnVisibility, ...columnVis });
+      
       let myBeatCollections = JSON.parse(collectionsResult);
       setBeatCollections(myBeatCollections);
     } catch (error) {
@@ -105,5 +120,6 @@ export const useBeats = () => {
     setColumnVisibility,
     fetchData,
     fetchSetData,
+    fetchColumnVisibility,
   };
 };
