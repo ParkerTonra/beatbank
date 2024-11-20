@@ -122,6 +122,8 @@ function AppContainer() {
   };
 
 
+  
+
   useEffect(() => {
     const unlistenDrop = listen('tauri://file-drop', async (event) => {
       console.log('File dropped:', event.payload); // Logs the file paths or dropped items
@@ -197,6 +199,22 @@ function AppContainer() {
       await fetchData();
     }
   };
+
+  // Add near your other useEffect with event listeners
+  useEffect(() => {
+    // Listen for beat analysis completion
+    const unlistenAnalysis = listen<{ id: number; key: string; bpm: number }>(
+      'beat-analyzed',
+      (event) => {
+        console.log('Beat analyzed:', event.payload);
+        handleRefresh(); // This will refresh the table data
+      }
+    );
+
+    return () => {
+      unlistenAnalysis.then(unlisten => unlisten());
+    };
+  }, [handleRefresh]); // Add handleRefresh to dependencies
 
   const handleEditBeat = async () => {
     if (selectedBeats.length !== 1) {

@@ -9,6 +9,7 @@ use diesel::prelude::*;
 use models::CollOrder;
 use serde::Deserialize;
 use serde_json;
+use serde_json::json; 
 use std::{
     env,
     //path::Path,
@@ -19,8 +20,7 @@ use crate::models::BeatChangeset;
 use crate::models::{Beat, BeatCollection};
 use tauri::{ Manager, State, AppHandle};
 //use crate::audio_analysis::initialize_python_service;
-use crate::audio_analysis::{AudioAnalysisState, analyze_audio};
-
+use crate::audio_analysis::AudioAnalysisState;
 
 
 struct DatabaseConnection {
@@ -95,27 +95,46 @@ async fn add_beat(
 
     println!("New beat added with id: {}", inserted_beat.id);
 
-    // Analyze audio
-    let (key, tempo) = analyze_audio(
-        state.audio_analysis.clone(),
-        file_path,
-        Some(&app_handle)
-    ).await?;
-
-    // Update beat with analysis results
-    {
-        let conn = &mut state.conn.lock().map_err(|e| e.to_string())?.conn;
-        diesel::update(crate::schema::beats::dsl::beats.find(inserted_beat.id))
-            .set((
-                crate::schema::beats::dsl::musical_key.eq(Some(key)),
-                crate::schema::beats::dsl::bpm.eq(Some(tempo)),
-            ))
-            .execute(conn)
-            .map_err(|e| {
-                println!("Error updating beat: {:?}", e);
-                e.to_string()
-            })?;
-    }
+    // Spawn analysis as background task
+    let state_clone = state.audio_analysis.clone();
+    let conn_clone = state.conn.clone();
+    let file_path_clone = file_path.clone();
+    let app_handle_clone = app_handle.clone();
+    
+    tauri::async_runtime::spawn(async move {
+        match crate::audio_analysis::analyze_audio(
+            state_clone,
+            file_path_clone,
+            Some(&app_handle_clone)
+        ).await {
+            Ok((key, tempo)) => {
+                // Clone key before using it in the update
+                let key_clone = key.clone();
+                
+                // Update beat with analysis results
+                let conn = &mut conn_clone.lock().unwrap().conn;
+                match diesel::update(crate::schema::beats::dsl::beats.find(inserted_beat.id))
+                    .set((
+                        crate::schema::beats::dsl::musical_key.eq(Some(key_clone)),
+                        crate::schema::beats::dsl::bpm.eq(Some(tempo)),
+                    ))
+                    .execute(conn)
+                {
+                    Ok(_) => {
+                        println!("Successfully updated beat {} with analysis results", inserted_beat.id);
+                        // Now use the original key in the event emission
+                        let _ = app_handle_clone.emit_all("beat-analyzed", json!({
+                            "id": inserted_beat.id,
+                            "key": key,
+                            "bpm": tempo
+                        }));
+                    },
+                    Err(e) => println!("Error updating beat: {:?}", e),
+                }
+            },
+            Err(e) => println!("Failed to analyze audio. Error: {}", e),
+        }
+    });
 
     Ok(format!("New beat added with id: {}", inserted_beat.id))
 }
