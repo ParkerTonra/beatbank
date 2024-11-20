@@ -359,6 +359,11 @@ fn main() {
 
     tauri::Builder::default()
         .manage(app_state)
+        .setup(|app| {
+            // Initialize Python process during app startup
+            audio_analysis::initialize_python_service(Some(&app.handle()))?;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             greet,
             fetch_beats,

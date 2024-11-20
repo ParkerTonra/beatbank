@@ -1,4 +1,3 @@
-
 import os
 import librosa
 import sys
@@ -8,30 +7,47 @@ import wave
 import traceback
 import tempfile
 
+# Pre-calculate these constants once
+MAJOR_PROFILE = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
+MINOR_PROFILE = np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17])
+KEY_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+
+# Normalize profiles once
+MAJOR_PROFILE_NORM = MAJOR_PROFILE / np.linalg.norm(MAJOR_PROFILE)
+MINOR_PROFILE_NORM = MINOR_PROFILE / np.linalg.norm(MINOR_PROFILE)
+
+# Pre-calculate rotated profiles
+MAJOR_PROFILES_ROTATED = [np.roll(MAJOR_PROFILE_NORM, i) for i in range(12)]
+MINOR_PROFILES_ROTATED = [np.roll(MINOR_PROFILE_NORM, i) for i in range(12)]
+
+def warmup_librosa():
+    """Perform intensive librosa operations once to trigger JIT compilation"""
+    try:
+        # Create a small synthetic audio signal
+        y = np.zeros(22050, dtype=np.float32)
+        sr = 22050
+        
+        # Warm up all the librosa functions we'll use
+        librosa.beat.beat_track(y=y, sr=sr)
+        librosa.feature.chroma_cqt(y=y, sr=sr)
+        
+        print("Librosa warmup completed", file=sys.stderr)
+        sys.stderr.flush()
+    except Exception as e:
+        print(f"Warmup error: {e}", file=sys.stderr)
+        sys.stderr.flush()
+
 def analyze(file_path):
     try:
         y, sr = librosa.load(file_path)
-        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)  # Add tempo calculation back
+        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
         chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
         chroma_mean = np.mean(chroma, axis=1)
         chroma_norm = chroma_mean / np.linalg.norm(chroma_mean)
 
-        major_profile = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
-        minor_profile = np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17])
-
-        major_profile = major_profile / np.linalg.norm(major_profile)
-        minor_profile = minor_profile / np.linalg.norm(minor_profile)
-
-        correlation_major = []
-        correlation_minor = []
-
-        for i in range(12):
-            major_profile_rotated = np.roll(major_profile, i)
-            minor_profile_rotated = np.roll(minor_profile, i)
-            corr_major = np.dot(chroma_norm, major_profile_rotated)
-            corr_minor = np.dot(chroma_norm, minor_profile_rotated)
-            correlation_major.append(corr_major)
-            correlation_minor.append(corr_minor)
+        # Use pre-calculated profiles
+        correlation_major = [np.dot(chroma_norm, profile) for profile in MAJOR_PROFILES_ROTATED]
+        correlation_minor = [np.dot(chroma_norm, profile) for profile in MINOR_PROFILES_ROTATED]
 
         max_major = np.argmax(correlation_major)
         max_minor = np.argmax(correlation_minor)
@@ -43,8 +59,7 @@ def analyze(file_path):
             key_index = max_minor
             mode = 'Minor'
 
-        key_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-        key = f"{key_names[key_index]} {mode}"
+        key = f"{KEY_NAMES[key_index]} {mode}"
         return key, tempo
 
     except Exception as e:
@@ -56,23 +71,9 @@ def main():
     print("Audio analyzer service started", file=sys.stderr)
     sys.stderr.flush()
 
-
-    # Warmup with a temporary file creation only (without analysis)
-    try:
-        with tempfile.NamedTemporaryFile(suffix='.wav', delete=True) as temp_file:
-            with wave.open(temp_file.name, 'wb') as wav_file:
-                wav_file.setnchannels(1)
-                wav_file.setsampwidth(2)
-                wav_file.setframerate(22050)
-                wav_file.writeframes(np.zeros(22050, dtype=np.int16).tobytes())
-            analyze(temp_file.name)
-        print("Temporary file created and closed", file=sys.stderr)
-        sys.stderr.flush()
-    except Exception as e:
-        print(f"Warmup error: {e}", file=sys.stderr)
-        sys.stderr.flush()
-
-        
+    # Perform warmup operations
+    warmup_librosa()
+    
     while True:
         try:
             file_path = input().strip()
@@ -83,10 +84,10 @@ def main():
             if key is not None and tempo is not None:
                 result = {
                     "key": key,
-                    "tempo": float(tempo)  # Ensure tempo is a number
+                    "tempo": float(tempo)
                 }
                 result_json = json.dumps(result)
-                print(f"{result_json}")  # Print exact JSON
+                print(f"{result_json}")
                 print(f"Sent result: {result_json}", file=sys.stderr)
             else:
                 error_msg = json.dumps({"error": "Error analyzing audio file"})
