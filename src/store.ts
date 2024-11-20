@@ -15,7 +15,9 @@
 import { invoke } from '@tauri-apps/api/tauri';
 
 interface Settings {
+  version: number;
   theme: string;
+  is_first_time: boolean;
 }
 
 export async function loadSettings(): Promise<Settings> {
@@ -28,5 +30,9 @@ export async function saveSettings(settings: Settings): Promise<void> {
 
 export async function getSettingsPath(): Promise<string> {
   return await invoke('get_settings_path');
+}
+
+export async function forceFirstTimeSetup(): Promise<void> {
+  await invoke('force_first_time_setup');
 }
 

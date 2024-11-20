@@ -1,11 +1,10 @@
-use diesel::result::Error as DieselError;
+use diesel::{result::Error as DieselError, select};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use log::info;
-use std::error::Error;
+use tauri::{api::path::app_data_dir, Config};
+use std::{error::Error, path::PathBuf};
 use chrono::Utc;
 use diesel::prelude::*;
-use dotenvy::dotenv;
-use std::env;
 
 use std::path::Path;
 use std::fs::File;
@@ -16,24 +15,68 @@ use symphonia::core::probe::Hint;
 
 use crate::models::{Beat, BeatChangeset, BeatCollection, NewBeat, NewBeatCollection};
 
-// At the top of your file with other constants
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
-pub fn establish_connection() -> Result<SqliteConnection, Box<dyn std::error::Error>> {
-    dotenv().ok();
-    
-    let database_url = env::var("SQLITE_DATABASE_URL")
-        .or_else(|_| env::var("DATABASE_URL"))
-        .map_err(|e| format!("DATABASE_URL not set: {}", e))?;
 
+pub fn establish_connection() -> Result<SqliteConnection, Box<dyn std::error::Error>> {
+    // Get app data directory using Tauri
+    let app_dir = app_data_dir(&Config::default())
+        .ok_or("Failed to get app data directory")?;
+    
+    // Create an application-specific directory
+    let app_specific_dir = app_dir.join("beatbank");
+    std::fs::create_dir_all(&app_specific_dir)?;
+    
+    // Create a data subdirectory for database and other files
+    let data_dir = app_specific_dir.join("data");
+    std::fs::create_dir_all(&data_dir)?;
+    
+    // Create database path in the data directory
+    let db_path = data_dir.join("database.sqlite");
+    let database_url = format!("sqlite://{}", db_path.to_str().unwrap());
+    
     let mut connection = SqliteConnection::establish(&database_url)
         .map_err(|e| format!("Error connecting to {}: {}", database_url, e))?;
+    
+    // Initialize database with migrations
+    initialize_database(&mut connection)?;
+    
+    Ok(connection)
+}
 
+fn initialize_database(connection: &mut SqliteConnection) -> Result<(), Box<dyn std::error::Error>> {
     // Run the migrations
     connection.run_pending_migrations(MIGRATIONS)
         .map_err(|e| format!("Error running migrations: {}", e))?;
-
     info!("Database migrations completed successfully");
-    Ok(connection)
+    Ok(())
+}
+
+pub fn get_app_data_dir() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let app_dir = app_data_dir(&Config::default())
+        .ok_or("Failed to get app data directory")?;
+    let app_specific_dir = app_dir.join("beatbank");
+    Ok(app_specific_dir)
+}
+
+pub fn get_data_dir() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    Ok(get_app_data_dir()?.join("data"))
+}
+
+pub fn clear_database(connection: &mut SqliteConnection) -> Result<(), Box<dyn std::error::Error>> {
+    use crate::schema::*;
+    
+    connection.transaction::<_, diesel::result::Error, _>(|conn| {
+        // Delete from all tables in reverse order of dependencies
+        diesel::delete(set_beat::table).execute(conn)?;
+        diesel::delete(beat_collection::table).execute(conn)?;
+        diesel::delete(beats::table).execute(conn)?;
+        Ok(())
+    })?;
+
+    // Re-run migrations to restore tables
+    initialize_database(connection)?;
+
+    Ok(())
 }
 
 pub fn add_beat(
@@ -63,6 +106,8 @@ pub fn add_beat(
         musical_key: None,
         date_created: Utc::now().naive_utc(),
     };
+
+    
 
     diesel::insert_into(beats::table)
         .values(&new_beat)
