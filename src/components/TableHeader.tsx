@@ -4,7 +4,7 @@ import { Beat } from "../bindings";
 import DropdownMenu from "./DropdownMenu";
 import { Dialog } from "primereact/dialog";
 import { MenuItem } from "primereact/menuitem";
-import { RefreshCcwDot } from  "lucide-react";
+import { Tooltip } from 'primereact/tooltip';
 
 import { useTableContext } from "../contexts/TableContext";
 import { useEffect, useState } from "react";
@@ -56,10 +56,10 @@ export const TableHeader = ({
 
   const handleToggleAll = () => {
     if (!tableInstance) return;
-    
+
     const newValue = !tableInstance.getIsAllColumnsVisible();
     tableInstance.toggleAllColumnsVisible();
-    
+
     const newVisibility = tableInstance.getAllLeafColumns()
       .reduce((acc, column) => ({
         ...acc,
@@ -83,6 +83,8 @@ export const TableHeader = ({
       >
         <span className="pi pi-pencil mr-2" /> Edit Columns
       </button>
+
+
       {tableInstance && (
         <Dialog
           header="Edit Columns"
@@ -137,19 +139,28 @@ export const TableHeader = ({
           items={beatActionItems}
         />
       )}
-      <button onClick={handleForceFirstTimeSetup} className="h-8 mt-1.5">
-        <RefreshCcwDot size={16} />
+      {/* Reset to default settings button.
+      TODO: This should be obfuscated final build */}
+      <button onClick={handleForceFirstTimeSetup}
+        className="h-8 w-8 mt-1.5 mx-4 flex items-center justify-center"
+        data-pr-tooltip="Reset to default settings"
+        data-pr-position="top"
+      >
+        <span className="pi pi-refresh" />
       </button>
 
       {uploadStatus && (
         <button
           onClick={() => setShowStatusDialog(true)}
-          className="ml-2 absolute right-4 top-2"
+          className="h-8 w-8 mt-1.5 mx-4 flex items-center justify-center"
+          data-pr-tooltip="Upload Status"
+          data-pr-position="top"
         >
           <span className="pi pi-info-circle" />
         </button>
       )}
-      
+
+
 
       <Dialog
         header="Upload Status"
@@ -180,6 +191,7 @@ export const TableHeader = ({
           </div>
         </div>
       </Dialog>
+      <Tooltip target="button"/>
     </div>
   );
 };

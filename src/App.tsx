@@ -9,6 +9,7 @@ import BeatTable from "./components/BeatTable";
 import 'primereact/resources/themes/lara-dark-indigo/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
+import { ProgressSpinner } from 'primereact/progressspinner';
 import { useBeats } from "./hooks/useBeats";
 import { loadSettings, getSettingsPath, forceFirstTimeSetup } from './store';
 import { DndContext, DragEndEvent, DragStartEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
@@ -30,6 +31,7 @@ import { TableContext } from "./contexts/TableContext";
 import BeatCollectionComponent from "./components/BeatCollection";
 import BeatbankLogo from './assets/BeatbankLogo.png';
 import { dialog, tauri } from "@tauri-apps/api";
+import { Dialog } from "primereact/dialog";
 
 
 function AppContainer() {
@@ -44,10 +46,13 @@ function AppContainer() {
   const [settingsPath, setSettingsPath] = useState<string>('');
   const [isFileDragging, setIsFileDragging] = useState(false);
   const [showEditColumnsDialog, setShowEditColumnsDialog] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<string>('');
   const [showStatusDialog, setShowStatusDialog] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [tableInstance, setTableInstance] = useState<Table<Beat> | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState({ current: 0, total: 0 });
+  const [uploadStatus, setUploadStatus] = useState('');
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+
 
   // react router hooks
   const location = useLocation();
@@ -55,7 +60,7 @@ function AppContainer() {
   const isInCollection = Boolean(collectionIdMatch);
   const collectionId = collectionIdMatch ? parseInt(collectionIdMatch[1], 10) : null;
   const { isPlaying, currentBeat, playBeat, stopBeat, togglePlayPause, audioRef } = useAudio();
-  
+
 
   const {
     beats,
@@ -82,36 +87,34 @@ function AppContainer() {
 
   useEffect(() => {
     const initializeApp = async () => {
-        try {
-            // First load settings
-            const settings = await loadSettings();
-            setTheme(settings.theme);
-            
-            // Check if it's first time
-            if (settings.is_first_time) {
-                // Show welcome message and complete setup
-                await message('Welcome to beatbank!');
-                await invoke('first_time_setup');
-            } else {
-                await message('Welcome back to beatbank!');
-            }
+      try {
+        // First load settings
+        const settings = await loadSettings();
+        setTheme(settings.theme);
 
-            // Get settings path (if needed)
-            const path = await getSettingsPath();
-            setSettingsPath(path);
-
-            // Then fetch data
-            await fetchData();
-
-            // Finally close splash screen
-            setShowSplashScreen(false);
-        } catch (error) {
-            console.error('Error initializing app:', error);
+        // Check if it's first time
+        if (settings.is_first_time) {
+          // Show welcome message and complete setup
+          await message('Welcome to beatbank!');
+          await invoke('first_time_setup');
         }
+
+        // Get settings path (if needed)
+        const path = await getSettingsPath();
+        setSettingsPath(path);
+
+        // Then fetch data
+        await fetchData();
+
+        // Finally close splash screen
+        setShowSplashScreen(false);
+      } catch (error) {
+        console.error('Error initializing app:', error);
+      }
     };
 
     initializeApp();
-}, []);
+  }, []);
 
   //TODO: consolidate
   const folderDialogOptions: OpenDialogOptions = {
@@ -154,28 +157,33 @@ function AppContainer() {
 
   useEffect(() => {
     let dragTimeoutId: number;
-    
+
+    document.body.classList.add('select-none');
+
     const unlistenDrop = listen('tauri://file-drop', async (event) => {
       clearTimeout(dragTimeoutId);
       setIsFileDragging(false);
-      
+
       if (!Array.isArray(event.payload) || event.payload.length === 0) return;
-      
-      // Ask for confirmation
+
       const fileCount = event.payload.length;
-      const confirmMessage = fileCount === 1 
+      const confirmMessage = fileCount === 1
         ? `Add "${event.payload[0].split('/').pop()}" to your library?`
         : `Add ${fileCount} files to your library?`;
-        
+
       const shouldAdd = await dialog.ask(confirmMessage, {
         title: 'Add Files'
       });
-  
+
       if (!shouldAdd) return;
-  
+
+      setIsProcessing(true);
+      setProcessingProgress({ current: 0, total: event.payload.length });
+
       // Process files
-      for (const filePath of event.payload) {
+      for (const [index, filePath] of event.payload.entries()) {
         try {
+          setProcessingProgress(prev => ({ ...prev, current: index + 1 }));
           await invoke('add_beat', { filePath });
         } catch (error) {
           console.error(`Error processing file ${filePath}:`, error);
@@ -185,25 +193,27 @@ function AppContainer() {
           });
         }
       }
-      
+
+      setIsProcessing(false);
+      setProcessingProgress({ current: 0, total: 0 });
       fetchData();
     });
-  
+
     const unlistenHover = listen('tauri://file-drop-hover', () => {
       clearTimeout(dragTimeoutId);
       setIsFileDragging(true);
-      
+
       // Auto-cancel after timeout
       dragTimeoutId = window.setTimeout(() => {
         setIsFileDragging(false);
       }, 5000); // 8 seconds
     });
-  
+
     const unlistenCancelled = listen('tauri://file-drop-cancelled', () => {
       clearTimeout(dragTimeoutId);
       setIsFileDragging(false);
     });
-  
+
     // Cleanup
     return () => {
       clearTimeout(dragTimeoutId);
@@ -265,7 +275,7 @@ function AppContainer() {
     }
     setIsEditing(true);
   };
-  
+
 
   const handleBeatDelete = async () => {
     if (!selectedBeats.length) {
@@ -292,67 +302,120 @@ function AppContainer() {
     }
   };
 
+  type AudioExtension = 'flac' | 'wav' | 'mp3' | 'ogg' | 'm4a' | 'aac' | 'aiff' | 'wma';
+  type TempoDetectionExtension = 'flac' | 'wav' | 'mp3';
+
+  const VALID_EXTENSIONS = {
+    all: ['flac', 'wav', 'mp3', 'ogg', 'm4a', 'aac', 'aiff', 'wma'] as AudioExtension[],
+    tempoDetection: ['mp3', 'flac', 'wav'] as TempoDetectionExtension[]
+  } as const;
+
+  const isTempoDetectionSupported = (extension: string): extension is TempoDetectionExtension => {
+    return VALID_EXTENSIONS.tempoDetection.includes(extension as TempoDetectionExtension);
+  };
+
   async function processEntries(entries: FileEntry[]) {
-    const promises = [];
-    const filePaths = [];
-    for (const filepath of entries) {
-      if (filepath.children) {
-        await processEntries(filepath.children);
-      } else {
-        filePaths.push(filepath.path)
-        const validExtensions = ['flac', 'wav', 'mp3', 'ogg', 'm4a', 'aac', 'aiff', 'wma'];
-        const extension = (filepath.name || "").split(".").pop() || "";
-        if (validExtensions.indexOf(extension) >= 0) {
-          setUploadedFiles(Array.isArray(filePaths) ? filePaths : [filePaths]);
-          promises.push(invoke('add_beat', {
-            filePath: filepath.path
-          }));
+    try {
+      setIsProcessing(true);
+      const filesToProcess: string[] = [];
+
+      // First, collect all valid file paths recursively
+      const collectPaths = (entry: FileEntry) => {
+        if (entry.children) {
+          entry.children.forEach(collectPaths);
+        } else {
+          const extension = entry.name?.split('.').pop()?.toLowerCase() || '';
+          if (VALID_EXTENSIONS.all.includes(extension as AudioExtension)) {
+            filesToProcess.push(entry.path);
+          }
+        }
+      };
+
+      entries.forEach(collectPaths);
+
+      // Update total files to process
+      setProcessingProgress({ current: 0, total: filesToProcess.length });
+      setUploadedFiles(filesToProcess);
+
+      // Process files in sequence to avoid overwhelming the system
+      for (const [index, filePath] of filesToProcess.entries()) {
+        try {
+          const extension = filePath.split('.').pop()?.toLowerCase() || '';
+          if (!VALID_EXTENSIONS.tempoDetection.includes(extension as TempoDetectionExtension)) {
+            setUploadStatus(prev =>
+              `${prev}\nTempo detection unavailable for: ${filePath.split('/').pop()}`
+            );
+          }
+
+          setProcessingProgress(prev => ({ ...prev, current: index + 1 }));
+          const result = await invoke('add_beat', { filePath });
+          setUploadStatus(prev => `${prev}\n${result}`);
+        } catch (error) {
+          console.error(`Error processing file ${filePath}:`, error);
+          setUploadStatus(prev =>
+            `${prev}\nError processing ${filePath.split('/').pop()}: ${error}`
+          );
         }
       }
+
+      await fetchData();
+    } catch (error) {
+      console.error('Error in processEntries:', error);
+      setUploadStatus(prev => `${prev}\nError processing files: ${error}`);
+    } finally {
+      setIsProcessing(false);
+      setProcessingProgress({ current: 0, total: 0 });
     }
-    Promise.all(promises).then((values) => {
-      fetchData();
-      setUploadStatus(values.join("\n"));
-    }, function (err) {
-      console.error(err)
-    });
   }
 
   const handleFileUpload = async () => {
     try {
-      const filePaths = await open({
+      const selectedFiles = await open({
         directory: false,
         multiple: true,
         filters: [{
           name: 'Audio Files',
-          extensions: ['flac', 'wav', 'mp3', 'ogg', 'm4a', 'aac', 'aiff', 'wma']
+          extensions: VALID_EXTENSIONS.all
         }]
       });
 
-      if (filePaths && filePaths.length > 0) {
-        setUploadedFiles(Array.isArray(filePaths) ? filePaths : [filePaths]);
+      if (!selectedFiles || selectedFiles.length === 0) {
+        return;
+      }
 
-        for (const filePath of (Array.isArray(filePaths) ? filePaths : [filePaths])) {
-          try {
-            // if file is not mp3, flac, or wav, say "tempo detection unavailable for this file type"
-            const fileExtension: string = filePath.split('.').pop() || '';
-            if (!['mp3', 'flac', 'wav'].includes(fileExtension)) {
-              setUploadStatus(prevStatus => prevStatus + `\nTempo detection unavailable for this file type: ${filePath}`);
-            }
-            const result = await invoke('add_beat', {
-              filePath: filePath,
-            });
-            fetchData();
-            setUploadStatus(prevStatus => prevStatus + `\n${result}`);
-          } catch (error) {
-            console.error("Error adding beat:", error);
-            setUploadStatus(prevStatus => prevStatus + `\nError uploading ${filePath}: ${error}`);
+      setIsProcessing(true);
+      const filePaths = Array.isArray(selectedFiles) ? selectedFiles : [selectedFiles];
+      setUploadedFiles(filePaths);
+      setProcessingProgress({ current: 0, total: filePaths.length });
+
+      for (const [index, filePath] of filePaths.entries()) {
+        try {
+          const extension = filePath.split('.').pop()?.toLowerCase() || '';
+
+          if (!isTempoDetectionSupported(extension)) {
+            setUploadStatus(prev =>
+              `${prev}\nTempo detection unavailable for: ${filePath.split('/').pop()}`
+            );
           }
+
+          setProcessingProgress(prev => ({ ...prev, current: index + 1 }));
+          const result = await invoke('add_beat', { filePath });
+          setUploadStatus(prev => `${prev}\n${result}`);
+        } catch (error) {
+          console.error(`Error processing file ${filePath}:`, error);
+          setUploadStatus(prev =>
+            `${prev}\nError processing ${filePath.split('/').pop()}: ${error}`
+          );
         }
       }
+
+      await fetchData();
     } catch (error) {
-      console.error("Error selecting file:", error);
-      setUploadStatus(`Error selecting file: ${error}`);
+      console.error('Error in handleFileUpload:', error);
+      setUploadStatus(`Error selecting files: ${error}`);
+    } finally {
+      setIsProcessing(false);
+      setProcessingProgress({ current: 0, total: 0 });
     }
   };
 
@@ -544,81 +607,81 @@ function AppContainer() {
       <div className="flex bg-slate-900 justify-center h-screen overflow-x-hidden">
         <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
         <div className="flex-1 flex flex-col overflow-x-auto">
-        <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
+          <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
             <span className="fixed right-4 top-2">
               <img src={BeatbankLogo} width={60} height={100} />
             </span>
             <TableContext.Provider value={{ tableInstance, setTableInstance }}>
-            <div className="flex flex-col flex-1 h-full">
-              <TableHeader
-                selectedBeats={selectedBeats}
-                setIsEditingBeat={setIsEditing}
-                beatActionItems={getBeatActionItems()}
-                addBeatItems={addBeatItems}
-                uploadStatus={uploadStatus}
-                showStatusDialog={showStatusDialog}
-                setShowStatusDialog={setShowStatusDialog}
-                uploadedFiles={uploadedFiles}
-                showEditColumnsDialog={showEditColumnsDialog}
-                setShowEditColumnsDialog={setShowEditColumnsDialog}
-                handleForceFirstTimeSetup={handleForceSetup}
-              />
-              <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
-                strategy={verticalListSortingStrategy}>
-                <Routes>
-                  <Route
-                    path="/"
-                    element={
-                    <>
-                      <div>
-                        <div className="mb-6">
-                          <h2 className="text-2xl font-bold mb-2 pl-0 pb-0">All Beats</h2>
-                        </div>
-                      </div>
-                      <BeatTable
-                        beats={beats}
-                        onBeatPlay={playBeat}
-                        selectedBeats={selectedBeats}
-                        setSelectedBeats={setSelectedBeats}
-                        isEditing={isEditing}
-                        setIsEditing={setIsEditing}
-                        fetchData={fetchData}
-                        columnVisibility={columnVisibility}
-                        setColumnVisibility={setColumnVisibility}
-                        onDragEnd={handleDragEnd}
-                        saveRowOrder={saveRowOrder}
-                        saveCollectionOrder={saveCollectionOrder}
-                        fetchSetData={fetchSetData}
-                        showEditColumnsDialog={showEditColumnsDialog}
-                        setShowEditColumnsDialog={setShowEditColumnsDialog}
-                        handleRefresh={handleRefresh}
-                      />
-                    </>
-                    }
-                  />
-                  <Route
-                    path="/collection/:id"
-                    element={
-                      <BeatCollectionComponent
-                        beats={collectionBeats}
-                        currentCollection={currentCollection}
-                        onDragEnd={handleDragEnd}
-                        onBeatPlay={playBeat}
-                        isEditing={isEditing}
-                        setIsEditing={setIsEditing}
-                        selectedBeats={selectedBeats}
-                        setSelectedBeats={setSelectedBeats}
-                        saveRowOrder={saveRowOrder}
-                        saveCollectionOrder={saveCollectionOrder}
-                        fetchData={fetchData}
-                        fetchSetData={fetchSetData}
-                        showEditColumnsDialog={showEditColumnsDialog}
-                        setShowEditColumnsDialog={setShowEditColumnsDialog}
-                        handleRefresh={handleRefresh}
-                      />}
-                  />
-                </Routes>
-              </SortableContext>
+              <div className="flex flex-col flex-1 h-full">
+                <TableHeader
+                  uploadStatus={uploadStatus}
+                  selectedBeats={selectedBeats}
+                  setIsEditingBeat={setIsEditing}
+                  beatActionItems={getBeatActionItems()}
+                  addBeatItems={addBeatItems}
+                  showStatusDialog={showStatusDialog}
+                  setShowStatusDialog={setShowStatusDialog}
+                  uploadedFiles={uploadedFiles}
+                  showEditColumnsDialog={showEditColumnsDialog}
+                  setShowEditColumnsDialog={setShowEditColumnsDialog}
+                  handleForceFirstTimeSetup={handleForceSetup}
+                />
+                <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
+                  strategy={verticalListSortingStrategy}>
+                  <Routes>
+                    <Route
+                      path="/"
+                      element={
+                        <>
+                          <div>
+                            <div className="mb-6">
+                              <h2 className="text-2xl font-bold mb-2 pl-0 pb-0">All Beats</h2>
+                            </div>
+                          </div>
+                          <BeatTable
+                            beats={beats}
+                            onBeatPlay={playBeat}
+                            selectedBeats={selectedBeats}
+                            setSelectedBeats={setSelectedBeats}
+                            isEditing={isEditing}
+                            setIsEditing={setIsEditing}
+                            fetchData={fetchData}
+                            columnVisibility={columnVisibility}
+                            setColumnVisibility={setColumnVisibility}
+                            onDragEnd={handleDragEnd}
+                            saveRowOrder={saveRowOrder}
+                            saveCollectionOrder={saveCollectionOrder}
+                            fetchSetData={fetchSetData}
+                            showEditColumnsDialog={showEditColumnsDialog}
+                            setShowEditColumnsDialog={setShowEditColumnsDialog}
+                            handleRefresh={handleRefresh}
+                          />
+                        </>
+                      }
+                    />
+                    <Route
+                      path="/collection/:id"
+                      element={
+                        <BeatCollectionComponent
+                          beats={collectionBeats}
+                          currentCollection={currentCollection}
+                          onDragEnd={handleDragEnd}
+                          onBeatPlay={playBeat}
+                          isEditing={isEditing}
+                          setIsEditing={setIsEditing}
+                          selectedBeats={selectedBeats}
+                          setSelectedBeats={setSelectedBeats}
+                          saveRowOrder={saveRowOrder}
+                          saveCollectionOrder={saveCollectionOrder}
+                          fetchData={fetchData}
+                          fetchSetData={fetchSetData}
+                          showEditColumnsDialog={showEditColumnsDialog}
+                          setShowEditColumnsDialog={setShowEditColumnsDialog}
+                          handleRefresh={handleRefresh}
+                        />}
+                    />
+                  </Routes>
+                </SortableContext>
               </div>
             </TableContext.Provider>
 
@@ -638,6 +701,57 @@ function AppContainer() {
                 </button>
               </div>
             )}
+            {/* Processing overlay */}
+            {isProcessing && (
+              <div className="fixed bottom-4 left-4 flex items-center bg-gray-900 bg-opacity-95 rounded-lg p-4 shadow-lg z-50 max-w-md pr-[56px] border-white border-2 border-opacity-25">
+                {/* Left side - Spinner */}
+                <div className="flex-shrink-0 mr-4 ml-3">
+                  <ProgressSpinner
+                    style={{ width: '20px', height: '20px' }}
+                    strokeWidth="3"
+                    fill="var(--surface-ground)"
+                    animationDuration=".5s"
+                    className="mr-4"
+                  />
+                </div>
+
+                {/* Right side - Text and Progress */}
+                <div className="flex flex-col flex-grow mx-2">
+                  <div className="text-white font-semibold mb-1">Processing Files</div>
+
+                  {/* Progress Bar */}
+                  <div className="w-full bg-gray-600 rounded-full h-2 mb-2">
+                    <div
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${(processingProgress.current / processingProgress.total) * 100}%`
+                      }}
+                    />
+                  </div>
+
+                  {/* Progress Text */}
+                  <div className="flex justify-between text-sm text-gray-300">
+                    <span>
+                      {processingProgress.current} of {processingProgress.total} files
+                    </span>
+                    <span>
+                      {Math.round((processingProgress.current / processingProgress.total) * 100)}%
+                    </span>
+                  </div>
+                </div>
+                <div className="fixed inset-0 flex items-center justify-center z-50 flex-col">
+                <div className="bg-slate-700 bg-opacity-75 p-8 rounded-lg flex flex-col items-center">
+                  <ProgressSpinner
+                    style={{ width: '50px', height: '50px' }}
+                    strokeWidth="4"
+                    fill="var(--surface-ground)"
+                    animationDuration=".5s"
+                  />
+                </div>
+              </div>
+              </div>
+            )}
+              
           </main>
         </div>
       </div>
