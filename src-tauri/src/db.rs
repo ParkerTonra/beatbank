@@ -2,7 +2,7 @@ use diesel::result::Error as DieselError;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use log::info;
 use tauri::{api::path::app_data_dir, Config};
-use std::error::Error;
+use std::{error::Error, path::PathBuf};
 use chrono::Utc;
 use diesel::prelude::*;
 
@@ -22,11 +22,16 @@ pub fn establish_connection() -> Result<SqliteConnection, Box<dyn std::error::Er
     let app_dir = app_data_dir(&Config::default())
         .ok_or("Failed to get app data directory")?;
     
-    // Create data directory if it doesn't exist
-    std::fs::create_dir_all(&app_dir)?;
+    // Create an application-specific directory
+    let app_specific_dir = app_dir.join("beatbank");
+    std::fs::create_dir_all(&app_specific_dir)?;
     
-    // Create database path
-    let db_path = app_dir.join("database.sqlite");
+    // Create a data subdirectory for database and other files
+    let data_dir = app_specific_dir.join("data");
+    std::fs::create_dir_all(&data_dir)?;
+    
+    // Create database path in the data directory
+    let db_path = data_dir.join("database.sqlite");
     let database_url = format!("sqlite://{}", db_path.to_str().unwrap());
     
     let mut connection = SqliteConnection::establish(&database_url)
@@ -44,6 +49,17 @@ fn initialize_database(connection: &mut SqliteConnection) -> Result<(), Box<dyn 
         .map_err(|e| format!("Error running migrations: {}", e))?;
     info!("Database migrations completed successfully");
     Ok(())
+}
+
+pub fn get_app_data_dir() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let app_dir = app_data_dir(&Config::default())
+        .ok_or("Failed to get app data directory")?;
+    let app_specific_dir = app_dir.join("beatbank");
+    Ok(app_specific_dir)
+}
+
+pub fn get_data_dir() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    Ok(get_app_data_dir()?.join("data"))
 }
 
 pub fn clear_database(connection: &mut SqliteConnection) -> Result<(), Box<dyn std::error::Error>> {

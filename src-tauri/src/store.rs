@@ -61,11 +61,11 @@ pub async fn force_first_time_setup() -> Result<(), String> {
     db::clear_database(&mut connection)
         .map_err(|e| format!("Failed to clear database: {}", e))?;
     
-    // Step 2: Reset settings to default with is_first_time = true
-    let settings_path = resolve_project_root_path("settings.json")
-        .map_err(|e| format!("Failed to resolve settings path: {}", e))?;
-    
-    let default_settings = Settings::default(); // This will have is_first_time = true
+    let settings_path = db::get_app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {}", e))?
+        .join("settings.json");
+
+    let default_settings = Settings::default(); // is_first_time = true
     let contents = serde_json::to_string(&default_settings)
         .map_err(|e| format!("Failed to serialize settings: {}", e))?;
     
