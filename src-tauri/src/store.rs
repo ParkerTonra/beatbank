@@ -43,11 +43,14 @@ pub fn resolve_project_root_path(file_name: &str) -> Result<PathBuf, String> {
     let app_dir = path::app_data_dir(&tauri::Config::default())
         .ok_or_else(|| "Failed to get app data directory".to_string())?;
     
-    // Create the app directory if it doesn't exist
-    fs::create_dir_all(&app_dir)
+    // Create the beatbank subdirectory in the app directory
+    let beatbank_dir = app_dir.join("beatbank");
+    
+    // Create the directory if it doesn't exist
+    fs::create_dir_all(&beatbank_dir)
         .map_err(|e| format!("Failed to create app directory: {}", e))?;
     
-    Ok(app_dir.join(file_name))
+    Ok(beatbank_dir.join(file_name))
 }
 
 #[tauri::command]
