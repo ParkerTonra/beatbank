@@ -29,6 +29,7 @@ import { MenuItem } from "primereact/menuitem";
 import { TableContext } from "./contexts/TableContext";
 import BeatCollectionComponent from "./components/BeatCollection";
 import BeatbankLogo from './assets/BeatbankLogo.png';
+import { dialog, tauri } from "@tauri-apps/api";
 
 
 function AppContainer() {
@@ -151,39 +152,67 @@ function AppContainer() {
     }
   };
 
-
   useEffect(() => {
+    let dragTimeoutId: number;
+    
     const unlistenDrop = listen('tauri://file-drop', async (event) => {
-      console.log('File dropped:', event.payload); // Logs the file paths or dropped items
-
-      if (Array.isArray(event.payload)) {
-        for (const filePath of event.payload) {
-          try {
-            await invoke('add_beat', { filePath }); // Process the file
-          } catch (error) {
-            console.error(`Error processing file ${filePath}:`, error);
-          }
+      clearTimeout(dragTimeoutId);
+      setIsFileDragging(false);
+      
+      if (!Array.isArray(event.payload) || event.payload.length === 0) return;
+      
+      // Ask for confirmation
+      const fileCount = event.payload.length;
+      const confirmMessage = fileCount === 1 
+        ? `Add "${event.payload[0].split('/').pop()}" to your library?`
+        : `Add ${fileCount} files to your library?`;
+        
+      const shouldAdd = await dialog.ask(confirmMessage, {
+        title: 'Add Files'
+      });
+  
+      if (!shouldAdd) return;
+  
+      // Process files
+      for (const filePath of event.payload) {
+        try {
+          await invoke('add_beat', { filePath });
+        } catch (error) {
+          console.error(`Error processing file ${filePath}:`, error);
+          await dialog.message(`Failed to add "${filePath.split('/').pop()}": ${error}`, {
+            title: 'Error',
+            type: 'error'
+          });
         }
-        fetchData(); // Refresh the data after file drop processing
       }
-      setIsFileDragging(false); // Reset dragging state
+      
+      fetchData();
     });
-
+  
     const unlistenHover = listen('tauri://file-drop-hover', () => {
-      setIsFileDragging(true); // Show file dragging UI
+      clearTimeout(dragTimeoutId);
+      setIsFileDragging(true);
+      
+      // Auto-cancel after timeout
+      dragTimeoutId = window.setTimeout(() => {
+        setIsFileDragging(false);
+      }, 5000); // 8 seconds
     });
-
+  
     const unlistenCancelled = listen('tauri://file-drop-cancelled', () => {
-      setIsFileDragging(false); // Hide file dragging UI when cancelled
+      clearTimeout(dragTimeoutId);
+      setIsFileDragging(false);
     });
-
+  
+    // Cleanup
     return () => {
-      unlistenDrop.then((dispose) => dispose());
-      unlistenHover.then((dispose) => dispose());
-      unlistenCancelled.then((dispose) => dispose());
+      clearTimeout(dragTimeoutId);
+      document.body.classList.remove('select-none');
+      unlistenDrop.then(dispose => dispose());
+      unlistenHover.then(dispose => dispose());
+      unlistenCancelled.then(dispose => dispose());
     };
   }, []);
-
 
   const addBeatsToSet = async (collectionId: number) => {
     if (!selectedBeats.length) {
@@ -508,7 +537,8 @@ function AppContainer() {
 
   if (error) return <div className="flex items-center justify-center h-screen">Error: {error.message}</div>;
 
-
+  // Add global CSS to prevent text selection/dragging
+  document.body.classList.add('select-none');
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
       <div className="flex bg-slate-900 justify-center h-screen overflow-x-hidden">
@@ -594,10 +624,18 @@ function AppContainer() {
 
             {/* Overlay when dragging files */}
             {isFileDragging && (
-              <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
+              <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50 flex-col">
                 <div className="text-2xl font-bold text-white text-center bg-black bg-opacity-75 p-6 rounded-lg">
                   Drop files here
                 </div>
+                {/* cancel button */}
+                <button
+                  className=" p-2 text-white bg-red-400 rounded-md w-16 h-12 my-4"
+                  onClick={() => setIsFileDragging(false)}
+                  aria-label="Cancel"
+                >
+                  <span className="">Cancel</span>
+                </button>
               </div>
             )}
           </main>
