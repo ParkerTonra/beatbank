@@ -30,9 +30,7 @@ import { MenuItem } from "primereact/menuitem";
 import { TableContext } from "./contexts/TableContext";
 import BeatCollectionComponent from "./components/BeatCollection";
 import BeatbankLogo from './assets/BeatbankLogo.png';
-import { dialog, tauri } from "@tauri-apps/api";
-import { Dialog } from "primereact/dialog";
-
+import { dialog } from "@tauri-apps/api";
 
 function AppContainer() {
   // state
