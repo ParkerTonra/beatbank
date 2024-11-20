@@ -37,6 +37,9 @@ function AppContainer() {
   const [showSplashScreen, setShowSplashScreen] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedBeats, setSelectedBeats] = useState<Beat[]>([]);
+
+  const [cancelUpload, setCancelUpload] = useState(false);
+
   // todo: theme
   //@ts-ignore
   const [theme, setTheme] = useState<string>('light');
@@ -47,7 +50,12 @@ function AppContainer() {
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [tableInstance, setTableInstance] = useState<Table<Beat> | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processingProgress, setProcessingProgress] = useState({ current: 0, total: 0 });
+  const [processingProgress, setProcessingProgress] = useState({
+    filesProcessed: 0,
+    totalFiles: 0,
+    beatsAnalyzed: 0,
+    totalAnalyzable: 0
+  });
   const [uploadStatus, setUploadStatus] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
 
@@ -155,7 +163,6 @@ function AppContainer() {
 
   useEffect(() => {
     let dragTimeoutId: number;
-
     document.body.classList.add('select-none');
 
     const unlistenDrop = listen('tauri://file-drop', async (event) => {
@@ -175,36 +182,17 @@ function AppContainer() {
 
       if (!shouldAdd) return;
 
-      setIsProcessing(true);
-      setProcessingProgress({ current: 0, total: event.payload.length });
-
-      // Process files
-      for (const [index, filePath] of event.payload.entries()) {
-        try {
-          setProcessingProgress(prev => ({ ...prev, current: index + 1 }));
-          await invoke('add_beat', { filePath });
-        } catch (error) {
-          console.error(`Error processing file ${filePath}:`, error);
-          await dialog.message(`Failed to add "${filePath.split('/').pop()}": ${error}`, {
-            title: 'Error',
-            type: 'error'
-          });
-        }
-      }
-
-      setIsProcessing(false);
-      setProcessingProgress({ current: 0, total: 0 });
-      fetchData();
+      // Use the existing processFiles function
+      await processFiles(event.payload);
     });
 
     const unlistenHover = listen('tauri://file-drop-hover', () => {
       clearTimeout(dragTimeoutId);
       setIsFileDragging(true);
 
-      // Auto-cancel after timeout
       dragTimeoutId = window.setTimeout(() => {
         setIsFileDragging(false);
-      }, 5000); // 8 seconds
+      }, 5000);
     });
 
     const unlistenCancelled = listen('tauri://file-drop-cancelled', () => {
@@ -212,7 +200,6 @@ function AppContainer() {
       setIsFileDragging(false);
     });
 
-    // Cleanup
     return () => {
       clearTimeout(dragTimeoutId);
       document.body.classList.remove('select-none');
@@ -310,58 +297,31 @@ function AppContainer() {
   };
 
   async function processEntries(entries: FileEntry[]) {
-    try {
-      setIsProcessing(true);
-      const filesToProcess: string[] = [];
+  try {
+    const filesToProcess: string[] = [];
 
-      // First, collect all valid file paths recursively
-      const collectPaths = (entry: FileEntry) => {
-        if (entry.children) {
-          entry.children.forEach(collectPaths);
-        } else {
-          const extension = entry.name?.split('.').pop()?.toLowerCase() || '';
-          if (VALID_EXTENSIONS.all.includes(extension as AudioExtension)) {
-            filesToProcess.push(entry.path);
-          }
-        }
-      };
-
-      entries.forEach(collectPaths);
-
-      // Update total files to process
-      setProcessingProgress({ current: 0, total: filesToProcess.length });
-      setUploadedFiles(filesToProcess);
-
-      // Process files in sequence to avoid overwhelming the system
-      for (const [index, filePath] of filesToProcess.entries()) {
-        try {
-          const extension = filePath.split('.').pop()?.toLowerCase() || '';
-          if (!VALID_EXTENSIONS.tempoDetection.includes(extension as TempoDetectionExtension)) {
-            setUploadStatus(prev =>
-              `${prev}\nTempo detection unavailable for: ${filePath.split('/').pop()}`
-            );
-          }
-
-          setProcessingProgress(prev => ({ ...prev, current: index + 1 }));
-          const result = await invoke('add_beat', { filePath });
-          setUploadStatus(prev => `${prev}\n${result}`);
-        } catch (error) {
-          console.error(`Error processing file ${filePath}:`, error);
-          setUploadStatus(prev =>
-            `${prev}\nError processing ${filePath.split('/').pop()}: ${error}`
-          );
+    // Collect valid file paths recursively
+    const collectPaths = (entry: FileEntry) => {
+      if (entry.children) {
+        entry.children.forEach(collectPaths);
+      } else {
+        const extension = entry.name?.split('.').pop()?.toLowerCase() || '';
+        if (VALID_EXTENSIONS.all.includes(extension as AudioExtension)) {
+          filesToProcess.push(entry.path);
         }
       }
+    };
 
-      await fetchData();
-    } catch (error) {
-      console.error('Error in processEntries:', error);
-      setUploadStatus(prev => `${prev}\nError processing files: ${error}`);
-    } finally {
-      setIsProcessing(false);
-      setProcessingProgress({ current: 0, total: 0 });
-    }
+    entries.forEach(collectPaths);
+    setUploadedFiles(filesToProcess);
+
+    // Process files with the improved implementation
+    await processFiles(filesToProcess);
+  } catch (error) {
+    console.error('Error in processEntries:', error);
+    setUploadStatus(prev => `${prev}\nError processing files: ${error}`);
   }
+}
 
   const handleFileUpload = async () => {
     try {
@@ -374,43 +334,116 @@ function AppContainer() {
         }]
       });
 
-      if (!selectedFiles || selectedFiles.length === 0) {
-        return;
-      }
+      if (!selectedFiles || selectedFiles.length === 0) return;
 
-      setIsProcessing(true);
       const filePaths = Array.isArray(selectedFiles) ? selectedFiles : [selectedFiles];
       setUploadedFiles(filePaths);
-      setProcessingProgress({ current: 0, total: filePaths.length });
 
-      for (const [index, filePath] of filePaths.entries()) {
-        try {
-          const extension = filePath.split('.').pop()?.toLowerCase() || '';
-
-          if (!isTempoDetectionSupported(extension)) {
-            setUploadStatus(prev =>
-              `${prev}\nTempo detection unavailable for: ${filePath.split('/').pop()}`
-            );
-          }
-
-          setProcessingProgress(prev => ({ ...prev, current: index + 1 }));
-          const result = await invoke('add_beat', { filePath });
-          setUploadStatus(prev => `${prev}\n${result}`);
-        } catch (error) {
-          console.error(`Error processing file ${filePath}:`, error);
-          setUploadStatus(prev =>
-            `${prev}\nError processing ${filePath.split('/').pop()}: ${error}`
-          );
-        }
-      }
-
-      await fetchData();
+      // Process files with the new implementation
+      await processFiles(filePaths);
     } catch (error) {
       console.error('Error in handleFileUpload:', error);
       setUploadStatus(`Error selecting files: ${error}`);
-    } finally {
+    }
+  };
+
+  // Process files with the new implementation
+  const processFiles = async (filePaths: string[]) => {
+    const analyzableFiles = filePaths.filter(path => {
+      const extension = path.split('.').pop()?.toLowerCase() || '';
+      return isTempoDetectionSupported(extension);
+    });
+  
+    setIsProcessing(true);
+    setProcessingProgress({
+      filesProcessed: 0,
+      totalFiles: filePaths.length,
+      beatsAnalyzed: 0,
+      totalAnalyzable: analyzableFiles.length
+    });
+  
+    try {
+      // Step 1: Add all files to database first
+      const BATCH_SIZE = 3;
+      const addedBeats: { beatId: number, filePath: string }[] = [];
+  
+      for (let i = 0; i < filePaths.length; i += BATCH_SIZE) {
+        const batch = filePaths.slice(i, i + BATCH_SIZE);
+        
+        const batchResults = await Promise.all(batch.map(async (filePath) => {
+          try {
+            // Just add to database, don't analyze yet
+            const beatId = await invoke('add_beat', { filePath }) as number;
+            
+            setProcessingProgress(prev => ({
+              ...prev,
+              filesProcessed: Math.min(prev.filesProcessed + 1, prev.totalFiles)
+            }));
+  
+            const extension = filePath.split('.').pop()?.toLowerCase() || '';
+            if (isTempoDetectionSupported(extension)) {
+              return { beatId, filePath };
+            }
+            return null;
+          } catch (error) {
+            console.error(`Error adding file ${filePath}:`, error);
+            setUploadStatus(prev =>
+              `${prev}\nError adding ${filePath.split('/').pop()}: ${error}`
+            );
+            return null;
+          }
+        }));
+  
+        addedBeats.push(...batchResults.filter((result): result is { beatId: number, filePath: string } => 
+          result !== null
+        ));
+  
+        await fetchData(); // Update UI with new files
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+  
+      // Step 2: Start BPM analysis for analyzable files
+      const analysisPromises = addedBeats.map(async ({ beatId, filePath }) => {
+        try {
+          console.log("Starting analysis for beat:", beatId);
+          console.log("File path:", filePath);
+          // Start analysis and get a promise
+          await invoke('analyze_beat', { beatId, filePath });
+          
+          // Set up listener for analysis completion
+          return new Promise<void>(async (resolve) => {
+            const unsubscribe = await listen('beat-analyzed', async (event: any) => {              
+              if (event.payload.beatId === beatId) {
+                setProcessingProgress(prev => ({
+                  ...prev,
+                  beatsAnalyzed: prev.beatsAnalyzed + 1
+                }));
+                fetchData();
+                await unsubscribe();
+                resolve();
+              }
+            });
+          });
+        } catch (error) {
+          console.error(`Error analyzing beat ${filePath}:`, error);
+          setUploadStatus(prev =>
+            `${prev}\nError analyzing ${filePath.split('/').pop()}: ${error}`
+          );
+        }
+      });
+  
+      // Wait for all analyses to complete or timeout
+      await Promise.race([
+        Promise.all(analysisPromises),
+        new Promise(resolve => setTimeout(resolve, 300000)) // 5 minute timeout
+      ]);
+  
+      await fetchData(); // Final UI update
       setIsProcessing(false);
-      setProcessingProgress({ current: 0, total: 0 });
+      
+    } catch (error) {
+      console.error('Error in processFiles:', error);
+      setIsProcessing(false);
     }
   };
 
@@ -698,68 +731,78 @@ function AppContainer() {
             )}
             {/* Processing overlay */}
             {isProcessing && (
-              <div className="fixed bottom-4 left-4 flex items-center bg-gray-900 bg-opacity-95 rounded-lg p-4 shadow-lg z-50 max-w-md pr-[56px] border-white border-2 border-opacity-25">
-                {/* Left side - Spinner */}
-                <div className="flex-shrink-0 mr-4 ml-3">
+              <div className="fixed bottom-4 left-4 flex items-center bg-gray-900 bg-opacity-95 rounded-lg p-4 shadow-lg z-40 max-w-md">
+                <div className="flex-shrink-0 mr-4">
                   <ProgressSpinner
                     style={{ width: '20px', height: '20px' }}
                     strokeWidth="3"
                     fill="var(--surface-ground)"
                     animationDuration=".5s"
-                    className="mr-4"
                   />
                 </div>
 
-                {/* Right side - Text and Progress */}
                 <div className="flex flex-col flex-grow mx-2">
                   <div className="text-white font-semibold mb-1">Processing Files</div>
 
-                  {/* Progress Bar */}
                   <div className="w-full bg-gray-600 rounded-full h-2 mb-2">
                     <div
                       className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                       style={{
-                        width: `${(processingProgress.current / processingProgress.total) * 100}%`
+                        width: `${(processingProgress.filesProcessed / processingProgress.totalFiles) * 100}%`
                       }}
                     />
                   </div>
-
-                  {/* Progress Text */}
-                  <div className="flex justify-between text-sm text-gray-300">
+                  <div className="flex justify-between text-sm text-gray-300 mb-2">
+                    <span>Files Processed:</span>
                     <span>
-                      {processingProgress.current} of {processingProgress.total} files
+                      {processingProgress.filesProcessed} of {processingProgress.totalFiles}
+                      {' '}({Math.round((processingProgress.filesProcessed / processingProgress.totalFiles) * 100)}%)
                     </span>
+                  </div>
+
+                  {/* Tempo Analysis Progress */}
+                  <div className="w-full bg-gray-600 rounded-full h-2 mb-2">
+                    <div
+                      className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${(processingProgress.beatsAnalyzed / processingProgress.totalAnalyzable) * 100}%`
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-300">
+                    <span>Tempo Analyzed:</span>
                     <span>
-                      {Math.round((processingProgress.current / processingProgress.total) * 100)}%
+                      {processingProgress.beatsAnalyzed} of {processingProgress.totalAnalyzable}
+                      {processingProgress.totalAnalyzable > 0 ?
+                        ` (${Math.round((processingProgress.beatsAnalyzed / processingProgress.totalAnalyzable) * 100)}%)` :
+                        ' (No eligible files)'}
                     </span>
                   </div>
                 </div>
-                <div className="fixed inset-0 flex items-center justify-center z-50 flex-col">
-                <div className="bg-slate-700 bg-opacity-75 p-8 rounded-lg flex flex-col items-center">
-                  <ProgressSpinner
-                    style={{ width: '50px', height: '50px' }}
-                    strokeWidth="4"
-                    fill="var(--surface-ground)"
-                    animationDuration=".5s"
-                  />
-                </div>
-              </div>
+
+                <button
+                  onClick={() => setCancelUpload(true)}
+                  className="ml-4 p-2 text-white hover:bg-red-500 bg-red-400 rounded-md"
+                  title="Cancel"
+                >
+                  <span>Cancel</span>
+                </button>
               </div>
             )}
-              
-          </main>
-        </div>
-      </div>
-      <div className="flex bg-slate-900 justify-center">
-        <BeatJockey
-          isPlaying={isPlaying}
-          currentBeat={currentBeat}
-          togglePlayPause={togglePlayPause}
-          stopBeat={stopBeat}
-          audioRef={audioRef}
-        />
-      </div>
-    </DndContext>
+
+    </main>
+        </div >
+      </div >
+    <div className="flex bg-slate-900 justify-center">
+      <BeatJockey
+        isPlaying={isPlaying}
+        currentBeat={currentBeat}
+        togglePlayPause={togglePlayPause}
+        stopBeat={stopBeat}
+        audioRef={audioRef}
+      />
+    </div>
+    </DndContext >
   );
 }
 

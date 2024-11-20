@@ -8,14 +8,19 @@ mod audio_analysis;
 use diesel::prelude::*;
 use models::CollOrder;
 use serde::Deserialize;
-use serde_json;
+use serde_json::{self, json};
 use std::{
     env, path::Path, sync::{Arc, Mutex}
 };
 use log::{error, info};
 use crate::models::BeatChangeset;
 use crate::models::{Beat, BeatCollection};
-use tauri::{ Manager, State};
+use tauri::{ AppHandle, Manager, State};
+
+use tokio::spawn;
+use tokio::runtime::Runtime;
+use tauri::async_runtime;
+
 
 struct DatabaseConnection {
     conn: SqliteConnection,
@@ -38,8 +43,45 @@ impl Drop for DatabaseConnection {
     }
 }
 
-struct AppState {
+#[derive(Clone)]
+struct AnalysisProgress {
+    total_files: Arc<Mutex<i32>>,
+    completed_files: Arc<Mutex<i32>>,
+}
+
+impl AnalysisProgress {
+    fn new() -> Self {
+        Self {
+            total_files: Arc::new(Mutex::new(0)),
+            completed_files: Arc::new(Mutex::new(0)),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct AppState {
     conn: Arc<Mutex<DatabaseConnection>>,
+    analysis_progress: AnalysisProgress,
+    runtime: Arc<Runtime>,
+    pub app_handle: Arc<AppHandle>,
+}
+impl AppState {
+    fn new(conn: DatabaseConnection, app: &tauri::App) -> Self {
+        Self {
+            conn: Arc::new(Mutex::new(conn)),
+            analysis_progress: AnalysisProgress::new(),
+            runtime: Arc::new(Runtime::new().expect("Failed to create Tokio runtime")),
+            app_handle: Arc::new(app.handle())
+        }
+    }
+}
+
+// Add the progress tracking command
+#[tauri::command]
+async fn get_analysis_progress(state: State<'_, AppState>) -> Result<(i32, i32), String> {
+    let total = *state.analysis_progress.total_files.lock().map_err(|e| e.to_string())?;
+    let completed = *state.analysis_progress.completed_files.lock().map_err(|e| e.to_string())?;
+    Ok((completed, total))
 }
 
 #[tauri::command]
@@ -48,7 +90,7 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
-fn fetch_beats(state: State<AppState>) -> Result<String, String> {
+fn fetch_beats(state: State<'_, AppState>) -> Result<String, String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
     use crate::schema::beats::dsl::*;
@@ -67,36 +109,91 @@ fn fetch_column_vis() -> String {
 }
 
 #[tauri::command]
-fn add_beat(state: State<AppState>, file_path: String) -> Result<String, String> {
+async fn add_beat(state: State<'_, AppState>, file_path: String) -> Result<i32, String> {
     let file_name = Path::new(&file_path)
         .file_name()
         .and_then(|name| name.to_str())
-        .and_then(|name| name.rsplitn(2, '.').nth(1)) // Split from the end, get the part before the last period
+        .and_then(|name| name.rsplitn(2, '.').nth(1))
         .unwrap_or("Unknown")
         .to_string();
 
-    let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
-    let conn = &mut conn_guard.conn;
+    // Lock connection only for the initial insert
+    let inserted_beat = {
+        let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
+        let conn = &mut conn_guard.conn;
+        db::add_beat(conn, &file_name, &file_path).map_err(|e| e.to_string())?
+    }; 
 
-    // Store the inserted beat result
-    let inserted_beat =
-        db::add_beat(&mut *conn, &file_name, &file_path).map_err(|e| e.to_string())?;
+    
 
-    println!("New beat added with id: {}", inserted_beat.id);
+    Ok(inserted_beat.id)
+}
 
+#[tauri::command]
+async fn analyze_beat(state: State<'_, AppState>, beat_id: i32, file_path: String) -> Result<String, String> {
     let file_extension = file_path.split('.').last().unwrap_or("");
-
-    // if the file extension is not mp3, flac, or wav, skip the tempo analysis
     if !["mp3", "flac", "wav"].contains(&file_extension) {
         return Ok(format!("Tempo analysis unavailable for this file type: {}", file_path));
     }
 
-    // Analyze and update the beat synchronously
-    analyze_and_update_beat(inserted_beat.id, file_path.clone(), conn)?;
+    // Increment total files counter
+    *state.analysis_progress.total_files.lock().map_err(|e| e.to_string())? += 1;
+    
+    // Create owned copies of the data we need to move into the async block
+    let file_path = file_path.clone();
+   
+    // Clone all the required state pieces
+    let runtime = state.runtime.clone();
+    let conn = state.conn.clone();
+    let progress = state.analysis_progress.clone();
+    let app_handle = state.app_handle.clone();
+    
+    // Spawn the analysis task
+    runtime.spawn(async move {
+        // Run the CPU-intensive analysis in a blocking task
+        let analysis_result = tokio::task::spawn_blocking(move || {
+            analyze_audio(&file_path)
+        }).await.map_err(|e| e.to_string());
 
-    Ok(format!("New beat added with id: {}", inserted_beat.id))
+        match analysis_result {
+            Ok(Ok((bpm_string, bpm_float))) => {
+                println!("Analysis complete for beat {}. BPM: {}", beat_id, bpm_string);
+                
+                // Update the database with the results
+                if let Ok(mut conn_guard) = conn.lock() {
+                    use crate::schema::beats::dsl::*;
+                    if let Err(e) = diesel::update(beats.find(beat_id))
+                        .set(bpm.eq(bpm_float as f64))
+                        .execute(&mut conn_guard.conn) {
+                        eprintln!("Failed to update beat {}: {}", beat_id, e);
+                    }
+                }
+                
+                // Update progress counter
+                if let Ok(mut completed) = progress.completed_files.lock() {
+                    *completed += 1;
+                }
+
+                // Emit event for frontend
+                let _ = app_handle.emit_all(
+                    "beat-analyzed",
+                    json!({
+                        "beatId": beat_id,
+                        "bpm": bpm_float
+                    })
+                );
+            }
+            Err(e) => {
+                eprintln!("Error analyzing beat {}: {}", beat_id, e);
+            }
+            Ok(Err(e)) => {
+                eprintln!("Error in audio analysis for beat {}: {}", beat_id, e);
+            }
+        }
+    });
+
+    Ok(format!("Analysis started for beat: {}", beat_id))
 }
-
 use crate::audio_analysis::analyze_audio;
 fn analyze_and_update_beat(
     beat_id: i32,
@@ -132,8 +229,34 @@ fn analyze_and_update_beat(
     Ok(())
 }
 
+async fn analyze_beat_async(
+    beat_id: i32,
+    beat_path: String,
+    app_state: &AppState,
+) -> Result<(), String> {
+    // Run the CPU-intensive analysis in a blocking task
+    let analysis_result = app_state.runtime.spawn_blocking(move || {
+        analyze_audio(&beat_path)
+    }).await.map_err(|e| e.to_string())??;
+
+    let (bpm_string, bpm_float) = analysis_result;
+    println!("Analysis complete for beat {}. BPM: {}", beat_id, bpm_string);
+
+    // Update the database with the results
+    let mut conn_guard = app_state.conn.lock().map_err(|e| e.to_string())?;
+    let conn = &mut conn_guard.conn;
+
+    use crate::schema::beats::dsl::*;
+    diesel::update(beats.find(beat_id))
+        .set(bpm.eq(bpm_float as f64))
+        .execute(conn)
+        .map_err(|e| format!("Failed to update beat: {}", e))?;
+
+    Ok(())
+}
+
 #[tauri::command]
-fn delete_beat(id: i32, state: State<AppState>) -> Result<(), String> {
+fn delete_beat(id: i32, state: State<'_, AppState>) -> Result<(), String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
     db::delete_beat(&mut *conn, id).map_err(|e| e.to_string())?;
@@ -142,7 +265,7 @@ fn delete_beat(id: i32, state: State<AppState>) -> Result<(), String> {
 
 
 #[tauri::command]
-fn delete_beats(ids: Vec<i32>, state: State<AppState>) -> Result<(), String> {
+fn delete_beats(ids: Vec<i32>, state: State<'_, AppState>) -> Result<(), String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
     db::delete_beats(&mut *conn, ids).map_err(|e| e.to_string())?;
@@ -151,7 +274,7 @@ fn delete_beats(ids: Vec<i32>, state: State<AppState>) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn update_beat(beat: BeatChangeset, state: State<AppState>) -> Result<(), String> {
+fn update_beat(beat: BeatChangeset, state: State<'_, AppState>) -> Result<(), String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
 
@@ -160,7 +283,7 @@ fn update_beat(beat: BeatChangeset, state: State<AppState>) -> Result<(), String
 }
 
 #[tauri::command]
-fn save_row_order(row_order: Vec<models::RowOrder>, state: State<AppState>) -> Result<(), String> {
+fn save_row_order(row_order: Vec<models::RowOrder>, state: State<'_, AppState>) -> Result<(), String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
     db::save_row_order(conn, row_order).map_err(|e| e.to_string())
@@ -186,7 +309,7 @@ fn save_collection_order(
 
 #[tauri::command]
 fn new_beat_collection(
-    state: State<AppState>,
+    state: State<'_, AppState>,
     set_name: String,
     venue: Option<String>,
     city: Option<String>,
@@ -210,14 +333,14 @@ fn new_beat_collection(
 }
 
 #[tauri::command]
-fn get_beat_collection(state: State<AppState>, id: i32) -> Result<BeatCollection, String> {
+fn get_beat_collection(state: State<'_, AppState>, id: i32) -> Result<BeatCollection, String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
     db::get_beat_collection(&mut *conn, id).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn get_beats_in_collection(state: State<AppState>, id: i32) -> Result<Vec<Beat>, String> {
+fn get_beats_in_collection(state: State<'_, AppState>, id: i32) -> Result<Vec<Beat>, String> {
     println!("getting beats in collection");
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
@@ -226,7 +349,7 @@ fn get_beats_in_collection(state: State<AppState>, id: i32) -> Result<Vec<Beat>,
 }
 
 #[tauri::command]
-fn delete_beat_collection(state: State<AppState>, id: i32) -> Result<(), String> {
+fn delete_beat_collection(state: State<'_, AppState>, id: i32) -> Result<(), String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
     db::delete_beat_collection(&mut *conn, id).map_err(|e| e.to_string())?;
@@ -234,7 +357,7 @@ fn delete_beat_collection(state: State<AppState>, id: i32) -> Result<(), String>
 }
 
 #[tauri::command]
-fn fetch_collections(state: State<AppState>) -> Result<String, String> {
+fn fetch_collections(state: State<'_, AppState>) -> Result<String, String> {
     println!("Fetching collections...");
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
@@ -249,7 +372,7 @@ fn fetch_collections(state: State<AppState>) -> Result<String, String> {
 
 #[tauri::command]
 fn add_beat_to_collection(
-    state: State<AppState>,
+    state: State<'_, AppState>,
     collection_id: i32,
     beat_id: i32,
 ) -> Result<(), String> {
@@ -261,7 +384,7 @@ fn add_beat_to_collection(
 
 #[tauri::command]
 fn add_beats_to_collection(
-    state: State<AppState>,
+    state: State<'_, AppState>,
     collection_id: i32,
     ids: Vec<i32>,
 ) -> Result<(), String> {
@@ -274,7 +397,7 @@ fn add_beats_to_collection(
 
 #[tauri::command]
 fn remove_beats_from_collection(
-    state: State<AppState>,
+    state: State<'_, AppState>,
     collection_id: i32,
     ids: Vec<i32>,
 ) -> Result<(), String> {
@@ -349,25 +472,18 @@ fn main() {
         info!("Release build: Forced first-time setup completed");
     }
     
-    let conn = DatabaseConnection {
-        conn: db::establish_connection().unwrap_or_else(|e| {
-            error!("Failed to establish database connection: {}", e);
-            panic!("Database connection failed: {}", e)
-        }),
-    };
+    
     
     info!("Database connection established successfully");
 
-    let app_state = AppState {
-        conn: Arc::new(Mutex::new(conn)),
-    };
+    
 
     tauri::Builder::default()
-        .manage(app_state)
         .invoke_handler(tauri::generate_handler![
             greet,
             fetch_beats,
             add_beat,
+            analyze_beat,
             delete_beat,
             delete_beats,
             update_beat,
@@ -392,15 +508,35 @@ fn main() {
             
         ])
         .setup(|app| {
+
+
             info!("Starting application setup...");
 
-            #[cfg(debug_assertions)] // only include this code on debug builds
+            
+
+            let conn = DatabaseConnection {
+                conn: db::establish_connection().unwrap_or_else(|e| {
+                    error!("Failed to establish database connection: {}", e);
+                    panic!("Database connection failed: {}", e)
+                }),
+            };
+
+            let app_state = AppState::new(conn, app);
+
+            app.manage(app_state);
+
+            info!("Database connection established successfully");
+
+            println!("cargo:rustc-cfg=feature=\"async-await\"");
+
+            #[cfg(debug_assertions)]
             {
-            let window = app.get_window("main").unwrap();
-            window.open_devtools(); // Open devtools on debug builds
+                let window = app.get_window("main").unwrap();
+                window.open_devtools();
             }
 
             let state: State<AppState> = app.state();
+
             let mut conn_guard = state.conn.lock().map_err(|e| {
                 error!("Failed to acquire database lock: {:?}", e);
                 e.to_string()

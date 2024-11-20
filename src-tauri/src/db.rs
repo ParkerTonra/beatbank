@@ -1,4 +1,4 @@
-use diesel::result::Error as DieselError;
+use diesel::{result::Error as DieselError, select};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use log::info;
 use tauri::{api::path::app_data_dir, Config};
@@ -85,6 +85,14 @@ pub fn add_beat(
     file_path: &str,
 ) -> Result<Beat, DieselError> {
     use crate::schema::beats;
+    use diesel::dsl::exists;
+    // check if the file path is already in the database with diesel
+    let beat_exists = select(exists(beats::table.filter(beats::file_path.eq(file_path)))).get_result::<bool>(conn)?;
+
+    if beat_exists {
+        println!("Beat already exists in database");
+        return Err(DieselError::RollbackTransaction);
+    }
 
     let calculated_duration: Option<i32> = get_duration_from_file_path(&file_path).ok();
 
@@ -106,6 +114,8 @@ pub fn add_beat(
         musical_key: None,
         date_created: Utc::now().naive_utc(),
     };
+
+    
 
     diesel::insert_into(beats::table)
         .values(&new_beat)
