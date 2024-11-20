@@ -1,17 +1,14 @@
-
 import os
 import librosa
 import sys
 import json
 import numpy as np
-import wave 
 import traceback
-import tempfile
 
 def analyze(file_path):
     try:
         y, sr = librosa.load(file_path)
-        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)  # Add tempo calculation back
+        tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
         chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
         chroma_mean = np.mean(chroma, axis=1)
         chroma_norm = chroma_mean / np.linalg.norm(chroma_mean)
@@ -39,9 +36,11 @@ def analyze(file_path):
         if correlation_major[max_major] > correlation_minor[max_minor]:
             key_index = max_major
             mode = 'Major'
+            confidence = correlation_major[max_major]
         else:
             key_index = max_minor
             mode = 'Minor'
+            confidence = correlation_minor[max_minor]
 
         key_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
         key = f"{key_names[key_index]} {mode}"
@@ -55,27 +54,13 @@ def analyze(file_path):
 def main():
     print("Audio analyzer service started", file=sys.stderr)
     sys.stderr.flush()
-
-
-    # Warmup with a temporary file creation only (without analysis)
-    try:
-        with tempfile.NamedTemporaryFile(suffix='.wav', delete=True) as temp_file:
-            with wave.open(temp_file.name, 'wb') as wav_file:
-                wav_file.setnchannels(1)
-                wav_file.setsampwidth(2)
-                wav_file.setframerate(22050)
-                wav_file.writeframes(np.zeros(22050, dtype=np.int16).tobytes())
-            analyze(temp_file.name)
-        print("Temporary file created and closed", file=sys.stderr)
-        sys.stderr.flush()
-    except Exception as e:
-        print(f"Warmup error: {e}", file=sys.stderr)
-        sys.stderr.flush()
-
-        
+    
     while True:
         try:
             file_path = input().strip()
+            print(f"Received file path: {file_path}", file=sys.stderr)
+            sys.stderr.flush()
+            
             if file_path == "EXIT":
                 break
                 
