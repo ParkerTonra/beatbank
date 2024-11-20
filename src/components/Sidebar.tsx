@@ -15,7 +15,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [beatCollections, setBeatCollections] = useState<BeatCollection[]>(collections);
 
   useEffect(() => {
-    console.log("Received collections:", collections);
     setBeatCollections(collections);
   }, [collections]);
 

@@ -16,6 +16,11 @@ const formatSecs = (secs?: number): string => {
   return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
 };
 
+const formatBpm = (bpm?: number): string => {
+  if (bpm === undefined || bpm === null) return "0";
+  return bpm.toFixed(2);
+};
+
 const formatDate = (datetime: string): string => {
   return format(new Date(datetime), "yyyy-MM-dd");
 };
@@ -53,6 +58,7 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
     header: "BPM",
     minSize: 80,
     size: 80,
+    cell: ({ cell }) => <div className="truncate">{formatBpm(cell.getValue() as number)}</div>,
   },
   {
     accessorKey: "musical_key",

@@ -16,11 +16,17 @@ const DropdownMenu = ({
   items,
   className,
 }: DropdownMenuProps) => {
-  const menuRef = useRef<TieredMenu | null>(null);
+  const menuRef = useRef<TieredMenu>(null);
+
+  const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (menuRef.current) {
+      menuRef.current.toggle(e);
+    }
+  };
 
   return (
     <div className="mr-2">
-      <Button icon={icon} onClick={(e) => menuRef.current && menuRef.current.toggle(e)}>
+      <Button icon={icon} onClick={handleButtonClick}>
         <span className="ml-2">{title}</span>
       </Button>
       <TieredMenu

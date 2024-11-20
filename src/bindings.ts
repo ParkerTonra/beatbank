@@ -92,3 +92,6 @@ export interface ColumnVisibilityState {
   file_path: boolean;
   id: boolean;
 }
+
+export type AudioExtension = 'flac' | 'wav' | 'mp3' | 'ogg' | 'm4a' | 'aac' | 'aiff' | 'wma';
+export type TempoDetectionExtension = 'flac' | 'wav' | 'mp3';

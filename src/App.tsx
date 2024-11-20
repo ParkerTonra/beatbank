@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Beat, CollOrder, RowOrder } from "./bindings";
+import { Beat, CollOrder, RowOrder, AudioExtension, TempoDetectionExtension } from "./bindings";
 import Sidebar from "./components/Sidebar";
 import "./App.css";
 import "./Main.css";
@@ -8,8 +8,9 @@ import BeatTable from "./components/BeatTable";
 import 'primereact/resources/themes/lara-dark-indigo/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
+import { ProgressSpinner } from 'primereact/progressspinner';
 import { useBeats } from "./hooks/useBeats";
-import { loadSettings, getSettingsPath } from './store';
+import { loadSettings, getSettingsPath, forceFirstTimeSetup } from './store';
 import { DndContext, DragEndEvent, DragStartEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { invoke } from "@tauri-apps/api/tauri";
 import { message } from "@tauri-apps/api/dialog";
@@ -27,32 +28,47 @@ import { open, OpenDialogOptions } from "@tauri-apps/api/dialog";
 import { MenuItem } from "primereact/menuitem";
 import { TableContext } from "./contexts/TableContext";
 import BeatCollectionComponent from "./components/BeatCollection";
+import BeatbankLogo from './assets/BeatbankLogo.png';
+import { dialog } from "@tauri-apps/api";
+import { Tooltip } from "primereact/tooltip";
 
 function AppContainer() {
   // state
   const [showSplashScreen, setShowSplashScreen] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedBeats, setSelectedBeats] = useState<Beat[]>([]);
+
+  const [cancelUpload, setCancelUpload] = useState(false);
+
   const [_, setTheme] = useState<string>('light');
+  //@ts-ignore
   const [settingsPath, setSettingsPath] = useState<string>('');
   const [isFileDragging, setIsFileDragging] = useState(false);
   const [showEditColumnsDialog, setShowEditColumnsDialog] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<string>('');
   const [showStatusDialog, setShowStatusDialog] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const [tableInstance, setTableInstance] = useState<Table<Beat> | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState({
+    filesProcessed: 0,
+    totalFiles: 0,
+    beatsAnalyzed: 0,
+    totalAnalyzable: 0
+  });
+  const [uploadStatus, setUploadStatus] = useState('');
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+
 
   // react router hooks
   const location = useLocation();
   const collectionIdMatch = location.pathname.match(/\/collection\/(\d+)/);
   const isInCollection = Boolean(collectionIdMatch);
   const collectionId = collectionIdMatch ? parseInt(collectionIdMatch[1], 10) : null;
-
   const { isPlaying, currentBeat, playBeat, stopBeat, togglePlayPause, audioRef } = useAudio();
 
   const {
     beats,
     beatCollections,
+    currentCollection,
     fetchData,
     columnVisibility,
     error,
@@ -60,7 +76,8 @@ function AppContainer() {
     setColumnVisibility,
     fetchSetData,
     collectionBeats,
-    setCollectionBeats
+    setCollectionBeats,
+    fetchColumnVisibility
   } = useBeats();
 
   const sensors = useSensors(
@@ -73,23 +90,39 @@ function AppContainer() {
   }, []);
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      console.log("loading settings, path:", settingsPath);
-      const settings = await loadSettings();
-      setTheme(settings.theme);
+    const initializeApp = async () => {
+      try {
+        // First load settings
+        const settings = await loadSettings();
+        setTheme(settings.theme);
 
-      const path = await getSettingsPath();
-      setSettingsPath(path);
+        // Check if it's first time
+        if (settings.is_first_time) {
+          // Show welcome message and complete setup
+          await message('Welcome to beatbank!');
+          await invoke('first_time_setup');
+        }
+
+        // Get settings path (if needed)
+        const path = await getSettingsPath();
+        setSettingsPath(path);
+
+        // Then fetch data
+        await fetchData();
+
+        // Finally close splash screen
+        setShowSplashScreen(false);
+      } catch (error) {
+        console.error('Error initializing app:', error);
+      }
     };
 
-    fetchSettings();
+    initializeApp();
   }, []);
 
   useEffect(() => {
-    if (collectionId) {
-      fetchSetData(collectionId);
-    }
-  }, [collectionId]);
+    fetchColumnVisibility();
+  }, [setColumnVisibility]);
 
   //TODO: consolidate
   const folderDialogOptions: OpenDialogOptions = {
@@ -97,6 +130,20 @@ function AppContainer() {
     directory: true,
   } as OpenDialogOptions;
 
+  const handleForceSetup = async () => {
+    try {
+      // ask user to confirm w/ tauri
+      const confirmed = await confirm('Are you sure you want to wipe your data? This will delete all your beats and collections.');
+      if (confirmed) {
+        await forceFirstTimeSetup();
+        // Reload the page or reinitialize the app
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Error forcing first time setup:', error);
+      await message('Error forcing first time setup', { type: 'error' });
+    }
+  };
 
   const handleFolderUpload = async () => {
     try {
@@ -116,39 +163,67 @@ function AppContainer() {
     }
   };
 
-
   useEffect(() => {
-    const unlistenDrop = listen('tauri://file-drop', async (event) => {
-      console.log('File dropped:', event.payload); // Logs the file paths or dropped items
+    let dragTimeoutId: number;
+    document.body.classList.add('select-none');
 
-      if (Array.isArray(event.payload)) {
-        for (const filePath of event.payload) {
-          try {
-            await invoke('add_beat', { filePath }); // Process the file
-          } catch (error) {
-            console.error(`Error processing file ${filePath}:`, error);
-          }
-        }
-        fetchData(); // Refresh the data after file drop processing
-      }
-      setIsFileDragging(false); // Reset dragging state
+    const unlistenDrop = listen('tauri://file-drop', async (event) => {
+      clearTimeout(dragTimeoutId);
+      setIsFileDragging(false);
+
+      if (!Array.isArray(event.payload) || event.payload.length === 0) return;
+
+      const fileCount = event.payload.length;
+      const confirmMessage = fileCount === 1
+        ? `Add "${event.payload[0].split('/').pop()}" to your library?`
+        : `Add ${fileCount} files to your library?`;
+
+      const shouldAdd = await dialog.ask(confirmMessage, {
+        title: 'Add Files'
+      });
+
+      if (!shouldAdd) return;
+
+      // Use the existing processFiles function
+      await processFiles(event.payload);
     });
 
     const unlistenHover = listen('tauri://file-drop-hover', () => {
-      setIsFileDragging(true); // Show file dragging UI
-    });
+      clearTimeout(dragTimeoutId);
+      setIsFileDragging(true);
 
+      dragTimeoutId = window.setTimeout(() => {
+        setIsFileDragging(false);
+      }, 5000);
+    });
+    
     const unlistenCancelled = listen('tauri://file-drop-cancelled', () => {
-      setIsFileDragging(false); // Hide file dragging UI when cancelled
+      clearTimeout(dragTimeoutId);
+      setIsFileDragging(false);
     });
 
     return () => {
-      unlistenDrop.then((dispose) => dispose());
-      unlistenHover.then((dispose) => dispose());
-      unlistenCancelled.then((dispose) => dispose());
+      clearTimeout(dragTimeoutId);
+      document.body.classList.remove('select-none');
+      unlistenDrop.then(dispose => dispose());
+      unlistenHover.then(dispose => dispose());
+      unlistenCancelled.then(dispose => dispose());
     };
   }, []);
 
+  useEffect(() => {
+    if (cancelUpload) {
+      setIsProcessing(false);
+      setProcessingProgress({
+        filesProcessed: 0,
+        totalFiles: 0,
+        beatsAnalyzed: 0,
+        totalAnalyzable: 0
+      });
+      setCancelUpload(false);
+      setUploadedFiles([]);
+    }
+  }, [cancelUpload]);
 
   const addBeatsToSet = async (collectionId: number) => {
     if (!selectedBeats.length) {
@@ -201,12 +276,17 @@ function AppContainer() {
     }
     setIsEditing(true);
   };
-  
+
 
   const handleBeatDelete = async () => {
     if (!selectedBeats.length) {
       console.warn("No beat selected");
       setUploadStatus("No beat selected");
+      return;
+    }
+    // confirm dialog
+    const confirmed = await confirm('Are you sure you want to delete the selected beats?');
+    if (!confirmed) {
       return;
     }
     try {
@@ -218,6 +298,7 @@ function AppContainer() {
       if (collectionId) {
         await fetchSetData(collectionId);
       } else {
+        setSelectedBeats([]);
         await fetchData();
       }
 
@@ -228,62 +309,196 @@ function AppContainer() {
     }
   };
 
+  const VALID_EXTENSIONS = {
+    all: ['flac', 'wav', 'mp3', 'ogg', 'm4a', 'aac', 'aiff', 'wma'] as AudioExtension[],
+    tempoDetection: ['mp3', 'flac', 'wav'] as TempoDetectionExtension[]
+  } as const;
+
+  const isTempoDetectionSupported = (extension: string): extension is TempoDetectionExtension => {
+    return VALID_EXTENSIONS.tempoDetection.includes(extension as TempoDetectionExtension);
+  };
+
   async function processEntries(entries: FileEntry[]) {
-    const promises = [];
-    const filePaths = [];
-    for (const filepath of entries) {
-      if (filepath.children) {
-        await processEntries(filepath.children);
-      } else {
-        filePaths.push(filepath.path)
-        const validExtensions = ['flac', 'wav', 'mp3', 'ogg', 'm4a', 'aac', 'aiff', 'wma'];
-        const extension = (filepath.name || "").split(".").pop() || "";
-        if (validExtensions.indexOf(extension) >= 0) {
-          setUploadedFiles(Array.isArray(filePaths) ? filePaths : [filePaths]);
-          promises.push(invoke('add_beat', {
-            filePath: filepath.path
-          }));
+    try {
+      const filesToProcess: string[] = [];
+
+      // Collect valid file paths recursively
+      const collectPaths = (entry: FileEntry) => {
+        if (entry.children) {
+          entry.children.forEach(collectPaths);
+        } else {
+          const extension = entry.name?.split('.').pop()?.toLowerCase() || '';
+          if (VALID_EXTENSIONS.all.includes(extension as AudioExtension)) {
+            filesToProcess.push(entry.path);
+          }
         }
-      }
+      };
+
+      entries.forEach(collectPaths);
+      setUploadedFiles(filesToProcess);
+
+      // Process files with the improved implementation
+      await processFiles(filesToProcess);
+    } catch (error) {
+      console.error('Error in processEntries:', error);
+      setUploadStatus(prev => `${prev}\nError processing files: ${error}`);
     }
-    Promise.all(promises).then((values) => {
-      fetchData();
-      setUploadStatus(values.join("\n"));
-    }, function (err) {
-      console.error(err)
-    });
   }
 
   const handleFileUpload = async () => {
     try {
-      const filePaths = await open({
+      const selectedFiles = await open({
         directory: false,
         multiple: true,
         filters: [{
           name: 'Audio Files',
-          extensions: ['flac', 'wav', 'mp3', 'ogg', 'm4a', 'aac', 'aiff', 'wma']
+          extensions: VALID_EXTENSIONS.all
         }]
       });
 
-      if (filePaths && filePaths.length > 0) {
-        setUploadedFiles(Array.isArray(filePaths) ? filePaths : [filePaths]);
+      if (!selectedFiles || selectedFiles.length === 0) return;
 
-        for (const filePath of (Array.isArray(filePaths) ? filePaths : [filePaths])) {
-          try {
-            const result = await invoke('add_beat', {
-              filePath: filePath,
-            });
-            fetchData();
-            setUploadStatus(prevStatus => prevStatus + `\n${result}`);
-          } catch (error) {
-            console.error("Error adding beat:", error);
-            setUploadStatus(prevStatus => prevStatus + `\nError uploading ${filePath}: ${error}`);
-          }
-        }
-      }
+      const filePaths = Array.isArray(selectedFiles) ? selectedFiles : [selectedFiles];
+      setUploadedFiles(filePaths);
+
+      // Process files with the new implementation
+      await processFiles(filePaths);
     } catch (error) {
-      console.error("Error selecting file:", error);
-      setUploadStatus(`Error selecting file: ${error}`);
+      console.error('Error in handleFileUpload:', error);
+      setUploadStatus(`Error selecting files: ${error}`);
+    }
+  };
+
+  // Process files with the new implementation
+  const processFiles = async (filePaths: string[]) => {
+    const analyzableFiles = filePaths.filter(path => {
+      const extension = path.split('.').pop()?.toLowerCase() || '';
+      return isTempoDetectionSupported(extension);
+    });
+
+    if (isProcessing) {
+      await message('Please wait for the current task to finish before starting a new one.', { title: 'Tauri', type: 'error' });
+      return;
+    }
+
+    setIsProcessing(true);
+    setProcessingProgress({
+      filesProcessed: 0,
+      totalFiles: filePaths.length,
+      beatsAnalyzed: 0,
+      totalAnalyzable: analyzableFiles.length
+    });
+
+    try {
+      // Step 1: Add all files to database first
+      const BATCH_SIZE = 3;
+      const addedBeats: { beatId: number, filePath: string }[] = [];
+
+      for (let i = 0; i < filePaths.length; i += BATCH_SIZE) {
+        if (cancelUpload) {
+          return;
+        }
+        const batch = filePaths.slice(i, i + BATCH_SIZE);
+
+        const batchResults = await Promise.all(batch.map(async (filePath) => {
+          try {
+            // Just add to database, don't analyze yet
+            const beatId = await invoke('add_beat', { filePath }) as number;
+
+            setProcessingProgress(prev => ({
+              ...prev,
+              filesProcessed: Math.min(prev.filesProcessed + 1, prev.totalFiles)
+            }));
+
+            const extension = filePath.split('.').pop()?.toLowerCase() || '';
+            if (isTempoDetectionSupported(extension)) {
+              return { beatId, filePath };
+            }
+            return null;
+          } catch (error) {
+            console.error(`Error adding file ${filePath}:`, error);
+            setUploadStatus(prev =>
+              `${prev}\nError adding ${filePath.split('/').pop()}: ${error}`
+            );
+            return null;
+          }
+        }));
+
+        addedBeats.push(...batchResults.filter((result): result is { beatId: number, filePath: string } =>
+          result !== null
+        ));
+
+        await fetchData(); // Update UI with new files
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      // Step 2: Start BPM analysis for analyzable files
+      const analysisPromises = addedBeats.map(async ({ beatId, filePath }) => {
+        try {
+          if (cancelUpload) {
+            return;
+          }
+          console.log("Starting analysis for beat:", beatId);
+          console.log("File path:", filePath);
+
+          // Create the promise before invoking to avoid race conditions
+          const analysisPromise = new Promise<void>(async (resolve) => {
+            const unsubscribe = await listen('beat-analyzed', async (event: any) => {
+              if (event.payload.beatId === beatId) {
+                switch (event.payload.status) {
+                  case 'success':
+                    setProcessingProgress(prev => ({
+                      ...prev,
+                      beatsAnalyzed: prev.beatsAnalyzed + 1
+                    }));
+                    await fetchData();
+                    break;
+                  case 'cancelled':
+                    console.log(`Analysis cancelled for beat ${beatId}`);
+                    break;
+                  case 'error':
+                    console.error(`Analysis failed for beat ${beatId}: ${event.payload.error}`);
+                    setProcessingProgress(prev => ({
+                      ...prev,
+                      beatsAnalyzed: prev.beatsAnalyzed + 1
+                    }));
+                    setUploadStatus(prev =>
+                      `${prev}\nError analyzing ${filePath.split('/').pop()}: ${event.payload.error}`
+                    );
+                    break;
+                }
+                await unsubscribe();
+                resolve();
+              }
+            });
+          });
+
+          // Start the analysis after setting up the listener
+          await invoke('analyze_beat', { beatId, filePath });
+
+          // Wait for the analysis to complete
+          return analysisPromise;
+
+        } catch (error) {
+          console.error(`Error analyzing beat ${filePath}:`, error);
+          setUploadStatus(prev =>
+            `${prev}\nError analyzing ${filePath.split('/').pop()}: ${error}`
+          );
+        }
+      });
+
+      // Wait for all analyses to complete or timeout
+      await Promise.race([
+        Promise.all(analysisPromises),
+        new Promise(resolve => setTimeout(resolve, 300000)) // 5 minute timeout
+      ]);
+
+      await fetchData(); // Final UI update
+      setIsProcessing(false);
+
+    } catch (error) {
+      console.error('Error in processFiles:', error);
+      setIsProcessing(false);
     }
   };
 
@@ -442,6 +657,23 @@ function AppContainer() {
     },
   ];
 
+  const handleCancel = async () => {
+    setCancelUpload(true);
+    try {
+      await invoke('cancel_processing');
+      setIsProcessing(false);
+      setProcessingProgress({
+        filesProcessed: 0,
+        totalFiles: 0,
+        beatsAnalyzed: 0,
+        totalAnalyzable: 0
+      });
+      setUploadedFiles([]);
+    } catch (error) {
+      console.error('Error cancelling processing:', error);
+    }
+  };
+
   const saveRowOrder = async (beatsToSave: Beat[]) => {
     // Don't try to save if we have no beats
     if (!beatsToSave.length) return;
@@ -466,6 +698,8 @@ function AppContainer() {
 
   if (error) return <div className="flex items-center justify-center h-screen">Error: {error.message}</div>;
 
+  // Add global CSS to prevent text selection/dragging
+  document.body.classList.add('select-none');
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
       <div className="flex bg-slate-900 justify-center h-screen overflow-x-hidden">
@@ -473,86 +707,172 @@ function AppContainer() {
         <div className="flex-1 flex flex-col overflow-x-auto">
           <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
             <span className="fixed right-4 top-2">
-              <img src="src/assets/BeatbankLogo2.png" width={60} height={100} />
+              <img src={BeatbankLogo} width={60} height={100} />
             </span>
-              <TableContext.Provider value={{ tableInstance, setTableInstance }}>
-                <div className="flex flex-col flex-1 h-full">
-                  <TableHeader
-                    selectedBeats={selectedBeats}
-                    setIsEditingBeat={setIsEditing}
-                    beatActionItems={getBeatActionItems()}
-                    addBeatItems={addBeatItems}
-                    uploadStatus={uploadStatus}
-                    showStatusDialog={showStatusDialog}
-                    setShowStatusDialog={setShowStatusDialog}
-                    uploadedFiles={uploadedFiles}
-                    showEditColumnsDialog={showEditColumnsDialog}
-                    setShowEditColumnsDialog={setShowEditColumnsDialog}
-                  />
-                    <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)} strategy={verticalListSortingStrategy}>
-                      <Routes>
-                        <Route
-                          path="/"
-                          element={
-                          <>
-                            <div>
-                              <div className="mb-6">
-                                <h2 className="text-2xl font-bold mb-2 pl-0 pb-0">All Beats</h2>
-                              </div>
+            <TableContext.Provider value={{ tableInstance, setTableInstance }}>
+              <div className="flex flex-col flex-1 h-full">
+                <TableHeader
+                  uploadStatus={uploadStatus}
+                  selectedBeats={selectedBeats}
+                  setIsEditingBeat={setIsEditing}
+                  beatActionItems={getBeatActionItems()}
+                  addBeatItems={addBeatItems}
+                  showStatusDialog={showStatusDialog}
+                  setShowStatusDialog={setShowStatusDialog}
+                  uploadedFiles={uploadedFiles}
+                  showEditColumnsDialog={showEditColumnsDialog}
+                  setShowEditColumnsDialog={setShowEditColumnsDialog}
+                  handleForceFirstTimeSetup={handleForceSetup}
+                />
+                <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
+                  strategy={verticalListSortingStrategy}>
+                  <Routes>
+                    <Route
+                      path="/"
+                      element={
+                        <>
+                          <div>
+                            <div className="mb-6">
+                              <h2 className="text-2xl font-bold mb-2 pl-0 pb-0">All Beats</h2>
                             </div>
-                            <BeatTable
-                              beats={beats}
-                              onBeatPlay={playBeat}
-                              selectedBeats={selectedBeats}
-                              setSelectedBeats={setSelectedBeats}
-                              isEditing={isEditing}
-                              setIsEditing={setIsEditing}
-                              fetchData={fetchData}
-                              columnVisibility={columnVisibility}
-                              setColumnVisibility={setColumnVisibility}
-                              onDragEnd={handleDragEnd}
-                              saveRowOrder={saveRowOrder}
-                              saveCollectionOrder={saveCollectionOrder}
-                              fetchSetData={fetchSetData}
-                              showEditColumnsDialog={showEditColumnsDialog}
-                              setShowEditColumnsDialog={setShowEditColumnsDialog}
-                              handleRefresh={handleRefresh}
-                            />
-                          </>
-                          }
-                        />
-                        <Route
-                          path="/collection/:id"
-                          element={
-                            <BeatCollectionComponent
-                              onDragEnd={handleDragEnd}
-                              onBeatPlay={playBeat}
-                              isEditing={isEditing}
-                              setIsEditing={setIsEditing}
-                              selectedBeats={selectedBeats}
-                              setSelectedBeats={setSelectedBeats}
-                              saveRowOrder={saveRowOrder}
-                              saveCollectionOrder={saveCollectionOrder}
-                              fetchData={fetchData}
-                              showEditColumnsDialog={showEditColumnsDialog}
-                              setShowEditColumnsDialog={setShowEditColumnsDialog}
-                              beats={collectionBeats}
-                              handleRefresh={handleRefresh}
-                            />}
-                        />
-                      </Routes>
-                    </SortableContext>
+                          </div>
+                          <BeatTable
+                            beats={beats}
+                            onBeatPlay={playBeat}
+                            selectedBeats={selectedBeats}
+                            setSelectedBeats={setSelectedBeats}
+                            isEditing={isEditing}
+                            setIsEditing={setIsEditing}
+                            fetchData={fetchData}
+                            columnVisibility={columnVisibility}
+                            setColumnVisibility={setColumnVisibility}
+                            onDragEnd={handleDragEnd}
+                            saveRowOrder={saveRowOrder}
+                            saveCollectionOrder={saveCollectionOrder}
+                            fetchSetData={fetchSetData}
+                            showEditColumnsDialog={showEditColumnsDialog}
+                            setShowEditColumnsDialog={setShowEditColumnsDialog}
+                            handleRefresh={handleRefresh}
+                          />
+                        </>
+                      }
+                    />
+                    <Route
+                      path="/collection/:id"
+                      element={
+                        <BeatCollectionComponent
+                          beats={collectionBeats}
+                          currentCollection={currentCollection}
+                          onDragEnd={handleDragEnd}
+                          onBeatPlay={playBeat}
+                          isEditing={isEditing}
+                          setIsEditing={setIsEditing}
+                          selectedBeats={selectedBeats}
+                          setSelectedBeats={setSelectedBeats}
+                          saveRowOrder={saveRowOrder}
+                          saveCollectionOrder={saveCollectionOrder}
+                          fetchData={fetchData}
+                          fetchSetData={fetchSetData}
+                          showEditColumnsDialog={showEditColumnsDialog}
+                          setShowEditColumnsDialog={setShowEditColumnsDialog}
+                          handleRefresh={handleRefresh}
+                        />}
+                    />
+                  </Routes>
+                </SortableContext>
+              </div>
+            </TableContext.Provider>
+            {/* Overlay when dragging files */}
+            {isFileDragging && (
+              <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50 flex-col">
+                <div className="text-2xl font-bold text-white text-center bg-black bg-opacity-75 p-6 rounded-lg">
+                  Drop files here
                 </div>
-              </TableContext.Provider>
+                {/* cancel button */}
+                <button
+                  className=" p-2 text-white bg-red-400 rounded-md w-16 h-12 my-4"
+                  onClick={() => setIsFileDragging(false)}
+                  aria-label="Cancel"
+                >
+                  <span className="">Cancel</span>
+                </button>
+              </div>
+            )}
+            
+            {/* Processing overlay */}
+            {isProcessing && (
+              <div className="fixed bottom-4 left-4 flex items-center bg-gray-900 bg-opacity-95 rounded-lg p-4 shadow-lg z-40 max-w-md">
+                <div className="flex-shrink-0 mr-4">
+                  <ProgressSpinner
+                    style={{ width: '20px', height: '20px' }}
+                    strokeWidth="3"
+                    fill="var(--surface-ground)"
+                    animationDuration=".5s"
+                  />
+                </div>
 
-              {/* Overlay when dragging files */}
-              {isFileDragging && (
-                <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="text-2xl font-bold text-white text-center bg-black bg-opacity-75 p-6 rounded-lg">
-                    Drop files here
+                <div className="flex flex-col flex-grow mx-2">
+                  <div className="text-white font-semibold mb-1">Processing Files</div>
+
+                  <div className="w-full bg-gray-600 rounded-full h-2 mb-2">
+                    <div
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${(processingProgress.filesProcessed / processingProgress.totalFiles) * 100}%`
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-300 mb-2">
+                    <span>Files Processed:</span>
+                    <span>
+                      {processingProgress.filesProcessed} of {processingProgress.totalFiles}
+                      {' '}({Math.round((processingProgress.filesProcessed / processingProgress.totalFiles) * 100)}%)
+                    </span>
+                  </div>
+
+                  {/* Tempo Analysis Progress */}
+                  <div className="w-full bg-gray-600 rounded-full h-2 mb-2">
+                    <div
+                      className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${(processingProgress.beatsAnalyzed / processingProgress.totalAnalyzable) * 100}%`
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-300">
+                    <span>Tempos Analyzed:</span>
+                    <span>
+                      {processingProgress.beatsAnalyzed} of {processingProgress.totalAnalyzable}
+                      {processingProgress.totalAnalyzable > 0 ?
+                        ` (${Math.round((processingProgress.beatsAnalyzed / processingProgress.totalAnalyzable) * 100)}%)` :
+                        ' (No eligible files)'}
+                    </span>
                   </div>
                 </div>
-              )}
+                <div className="flex flex-col flex-grow mx-8 space-y-3">
+                <button
+                  onClick={() => handleCancel()}
+                  className="p-2 text-white hover:bg-red-500 bg-red-400 rounded-md w-16"
+                  title="Cancel"
+                  data-pr-tooltip="Cancel adding beats"
+                  data-pr-position="right"
+                >
+                  <span>Cancel</span>
+                </button>
+                <button
+                  onClick={() => setShowStatusDialog(!showStatusDialog)}
+                  className="p-2 text-white hover:bg-blue-500 bg-blue-400 rounded-md w-16"
+                  type="button"
+                  data-pr-tooltip="Upload Status"
+                  data-pr-position="right"
+                >
+                  <span>Status</span>
+                </button>
+                <Tooltip target = "button"/>
+                </div>
+              </div>
+            )}
+
           </main>
         </div>
       </div>
@@ -565,7 +885,7 @@ function AppContainer() {
           audioRef={audioRef}
         />
       </div>
-    </DndContext>
+    </DndContext >
   );
 }
 

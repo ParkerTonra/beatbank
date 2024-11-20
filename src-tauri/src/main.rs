@@ -4,19 +4,26 @@ mod db;
 mod models;
 mod schema;
 mod store;
+mod audio_analysis;
+use audio_analysis::AnalysisError;
 use diesel::prelude::*;
 use models::CollOrder;
 use serde::Deserialize;
-use serde_json;
+use serde_json::{self, json};
 use std::{
-    env,
-    path::Path,
-    sync::{Arc, Mutex},
+    env, path::Path, sync::{Arc, Mutex}
 };
-use log::{error, info, warn};
+use log::{error, info};
 use crate::models::BeatChangeset;
 use crate::models::{Beat, BeatCollection};
-use tauri::{ Manager, State};
+use tauri::{ AppHandle, Manager, State};
+
+use tokio::spawn;
+use tokio::runtime::Runtime;
+use tauri::async_runtime;
+use tokio::sync::watch;
+
+
 
 struct DatabaseConnection {
     conn: SqliteConnection,
@@ -39,8 +46,68 @@ impl Drop for DatabaseConnection {
     }
 }
 
-struct AppState {
+#[derive(Clone)]
+struct AnalysisProgress {
+    total_files: Arc<Mutex<i32>>,
+    completed_files: Arc<Mutex<i32>>,
+}
+
+impl AnalysisProgress {
+    fn new() -> Self {
+        Self {
+            total_files: Arc::new(Mutex::new(0)),
+            completed_files: Arc::new(Mutex::new(0)),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct CancellationToken {
+    sender: watch::Sender<bool>,
+    receiver: watch::Receiver<bool>,
+}
+
+impl CancellationToken {
+    pub fn new() -> Self {
+        let (sender, receiver) = watch::channel(false);
+        Self { sender, receiver }
+    }
+
+    pub fn cancel(&self) {
+        let _ = self.sender.send(true);
+    }
+
+    pub fn is_cancelled(&self) -> bool {
+        *self.receiver.borrow()
+    }
+}
+
+#[derive(Clone)]
+pub struct AppState {
     conn: Arc<Mutex<DatabaseConnection>>,
+    analysis_progress: AnalysisProgress,
+    runtime: Arc<Runtime>,
+    pub app_handle: Arc<AppHandle>,
+    pub cancellation_token: Arc<CancellationToken>,    
+}
+impl AppState {
+    fn new(conn: DatabaseConnection, app: &tauri::App, cancellation_token: Arc<CancellationToken>) -> Self {
+        Self {
+            conn: Arc::new(Mutex::new(conn)),
+            analysis_progress: AnalysisProgress::new(),
+            runtime: Arc::new(Runtime::new().expect("Failed to create Tokio runtime")),
+            app_handle: Arc::new(app.handle()),
+            cancellation_token,
+        }
+    }
+}
+
+// Add the progress tracking command
+#[tauri::command]
+async fn get_analysis_progress(state: State<'_, AppState>) -> Result<(i32, i32), String> {
+    let total = *state.analysis_progress.total_files.lock().map_err(|e| e.to_string())?;
+    let completed = *state.analysis_progress.completed_files.lock().map_err(|e| e.to_string())?;
+    Ok((completed, total))
 }
 
 #[tauri::command]
@@ -49,7 +116,7 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
-fn fetch_beats(state: State<AppState>) -> Result<String, String> {
+fn fetch_beats(state: State<'_, AppState>) -> Result<String, String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
     use crate::schema::beats::dsl::*;
@@ -68,42 +135,135 @@ fn fetch_column_vis() -> String {
 }
 
 #[tauri::command]
-fn add_beat(state: State<AppState>, file_path: String) -> Result<String, String> {
+async fn add_beat(state: State<'_, AppState>, file_path: String) -> Result<i32, String> {
     let file_name = Path::new(&file_path)
         .file_name()
         .and_then(|name| name.to_str())
-        .and_then(|name| name.rsplitn(2, '.').nth(1)) // Split from the end, get the part before the last period
+        .and_then(|name| name.rsplitn(2, '.').nth(1))
         .unwrap_or("Unknown")
         .to_string();
 
-    let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
-    let conn = &mut conn_guard.conn;
+    // Lock connection only for the initial insert
+    let inserted_beat = {
+        let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
+        let conn = &mut conn_guard.conn;
+        db::add_beat(conn, &file_name, &file_path).map_err(|e| e.to_string())?
+    }; 
 
-    // Store the inserted beat result
-    let inserted_beat =
-        db::add_beat(&mut *conn, &file_name, &file_path).map_err(|e| e.to_string())?;
+    
 
-    println!("New beat added with id: {}", inserted_beat.id);
-
-    // Analyze and update the beat synchronously
-    //analyze_and_update_beat(inserted_beat.id, file_path.clone(), conn)?;
-
-    analyze_dummy(inserted_beat.id, file_path.clone(), conn)?;
-
-    Ok(format!("New beat added with id: {}", inserted_beat.id))
+    Ok(inserted_beat.id)
 }
-// dummy function to avoid using the audio_analyzer.py file. does nothing.
-fn analyze_dummy(
-    beat_id: i32, 
-    file_path: String, 
-    conn: &mut diesel::SqliteConnection // Pass connection as mutable reference
+
+#[tauri::command]
+async fn cancel_processing(
+    cancellation_token: State<'_, Arc<CancellationToken>>,
 ) -> Result<(), String> {
-    println!("Analysis currently disabled. Returning dummy values.");
+    cancellation_token.cancel();
     Ok(())
 }
 
 #[tauri::command]
-fn delete_beat(id: i32, state: State<AppState>) -> Result<(), String> {
+async fn analyze_beat(state: State<'_, AppState>, beat_id: i32, file_path: String) -> Result<String, String> {
+    let file_extension = file_path.split('.').last().unwrap_or("");
+    if !["mp3", "flac", "wav"].contains(&file_extension) {
+        return Ok(format!("Tempo analysis unavailable for this file type: {}", file_path));
+    }
+
+    if state.cancellation_token.is_cancelled() {
+        println!("Cancelled");
+        return Ok("Analysis cancelled".to_string());
+    }
+
+    // Increment total files counter
+    *state.analysis_progress.total_files.lock().map_err(|e| e.to_string())? += 1;
+    
+    // Create owned copies of the data we need to move into the async block
+    let file_path = file_path.clone();
+   
+    // Clone all the required state pieces
+    let runtime = state.runtime.clone();
+    let conn = state.conn.clone();
+    let progress = state.analysis_progress.clone();
+    let app_handle = state.app_handle.clone();
+    let cancellation_token = state.cancellation_token.clone();
+    
+    // Spawn the analysis task
+    runtime.spawn(async move {
+        let cancel_token_inner = cancellation_token.clone();
+        // Run the CPU-intensive analysis in a blocking task
+        let analysis_result = tokio::task::spawn_blocking(move || {
+            analyze_audio(&file_path, &cancel_token_inner)
+        }).await.map_err(|e| e.to_string());
+
+        match analysis_result {
+            Ok(Ok((bpm_string, bpm_float))) => {
+                // Success case - update database and emit event
+                if let Ok(mut conn_guard) = conn.lock() {
+                    use crate::schema::beats::dsl::*;
+                    if let Err(e) = diesel::update(beats.find(beat_id))
+                        .set(bpm.eq(bpm_float as f64))
+                        .execute(&mut conn_guard.conn) {
+                        eprintln!("Failed to update beat {}: {}", beat_id, e);
+                    }
+                }
+                
+                // Update progress counter
+                if let Ok(mut completed) = progress.completed_files.lock() {
+                    *completed += 1;
+                }
+
+                // Emit success event
+                let _ = app_handle.emit_all(
+                    "beat-analyzed",
+                    json!({
+                        "beatId": beat_id,
+                        "bpm": bpm_float,
+                        "status": "success"
+                    })
+                );
+            }
+            Ok(Err(AnalysisError::Cancelled)) => {
+                // Emit cancelled event
+                let _ = app_handle.emit_all(
+                    "beat-analyzed",
+                    json!({
+                        "beatId": beat_id,
+                        "status": "cancelled"
+                    })
+                );
+            }
+            Ok(Err(error)) => {
+                // Emit failure event with error info
+                let _ = app_handle.emit_all(
+                    "beat-analyzed",
+                    json!({
+                        "beatId": beat_id,
+                        "status": "error",
+                        "error": error.to_string()
+                    })
+                );
+            }
+            Err(e) => {
+                // Emit error event
+                let _ = app_handle.emit_all(
+                    "beat-analyzed",
+                    json!({
+                        "beatId": beat_id,
+                        "status": "error",
+                        "error": e
+                    })
+                );
+            }
+        }
+    });
+
+    Ok(format!("Analysis started for beat: {}", beat_id))
+}
+use crate::audio_analysis::analyze_audio;
+
+#[tauri::command]
+fn delete_beat(id: i32, state: State<'_, AppState>) -> Result<(), String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
     db::delete_beat(&mut *conn, id).map_err(|e| e.to_string())?;
@@ -112,7 +272,7 @@ fn delete_beat(id: i32, state: State<AppState>) -> Result<(), String> {
 
 
 #[tauri::command]
-fn delete_beats(ids: Vec<i32>, state: State<AppState>) -> Result<(), String> {
+fn delete_beats(ids: Vec<i32>, state: State<'_, AppState>) -> Result<(), String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
     db::delete_beats(&mut *conn, ids).map_err(|e| e.to_string())?;
@@ -121,7 +281,7 @@ fn delete_beats(ids: Vec<i32>, state: State<AppState>) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn update_beat(beat: BeatChangeset, state: State<AppState>) -> Result<(), String> {
+fn update_beat(beat: BeatChangeset, state: State<'_, AppState>) -> Result<(), String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
 
@@ -130,7 +290,7 @@ fn update_beat(beat: BeatChangeset, state: State<AppState>) -> Result<(), String
 }
 
 #[tauri::command]
-fn save_row_order(row_order: Vec<models::RowOrder>, state: State<AppState>) -> Result<(), String> {
+fn save_row_order(row_order: Vec<models::RowOrder>, state: State<'_, AppState>) -> Result<(), String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
     db::save_row_order(conn, row_order).map_err(|e| e.to_string())
@@ -156,7 +316,7 @@ fn save_collection_order(
 
 #[tauri::command]
 fn new_beat_collection(
-    state: State<AppState>,
+    state: State<'_, AppState>,
     set_name: String,
     venue: Option<String>,
     city: Option<String>,
@@ -180,14 +340,14 @@ fn new_beat_collection(
 }
 
 #[tauri::command]
-fn get_beat_collection(state: State<AppState>, id: i32) -> Result<BeatCollection, String> {
+fn get_beat_collection(state: State<'_, AppState>, id: i32) -> Result<BeatCollection, String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
     db::get_beat_collection(&mut *conn, id).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn get_beats_in_collection(state: State<AppState>, id: i32) -> Result<Vec<Beat>, String> {
+fn get_beats_in_collection(state: State<'_, AppState>, id: i32) -> Result<Vec<Beat>, String> {
     println!("getting beats in collection");
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
@@ -196,7 +356,7 @@ fn get_beats_in_collection(state: State<AppState>, id: i32) -> Result<Vec<Beat>,
 }
 
 #[tauri::command]
-fn delete_beat_collection(state: State<AppState>, id: i32) -> Result<(), String> {
+fn delete_beat_collection(state: State<'_, AppState>, id: i32) -> Result<(), String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
     db::delete_beat_collection(&mut *conn, id).map_err(|e| e.to_string())?;
@@ -204,7 +364,7 @@ fn delete_beat_collection(state: State<AppState>, id: i32) -> Result<(), String>
 }
 
 #[tauri::command]
-fn fetch_collections(state: State<AppState>) -> Result<String, String> {
+fn fetch_collections(state: State<'_, AppState>) -> Result<String, String> {
     println!("Fetching collections...");
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
@@ -219,7 +379,7 @@ fn fetch_collections(state: State<AppState>) -> Result<String, String> {
 
 #[tauri::command]
 fn add_beat_to_collection(
-    state: State<AppState>,
+    state: State<'_, AppState>,
     collection_id: i32,
     beat_id: i32,
 ) -> Result<(), String> {
@@ -231,7 +391,7 @@ fn add_beat_to_collection(
 
 #[tauri::command]
 fn add_beats_to_collection(
-    state: State<AppState>,
+    state: State<'_, AppState>,
     collection_id: i32,
     ids: Vec<i32>,
 ) -> Result<(), String> {
@@ -244,7 +404,7 @@ fn add_beats_to_collection(
 
 #[tauri::command]
 fn remove_beats_from_collection(
-    state: State<AppState>,
+    state: State<'_, AppState>,
     collection_id: i32,
     ids: Vec<i32>,
 ) -> Result<(), String> {
@@ -302,28 +462,36 @@ async fn open_file_location(path: String) -> Result<(), String> {
     Ok(())
 }
 
-
 fn main() {
     env_logger::init();
     println!("Starting beatbank...");
-    let conn = DatabaseConnection {
-        conn: db::establish_connection().unwrap_or_else(|e| {
-            error!("Failed to establish database connection: {}", e);
-            panic!("Database connection failed: {}", e)
-        }),
-    };
+
+     // Add build-specific initialization
+     #[cfg(not(debug_assertions))]
+    {
+        use tokio::runtime::Runtime;
+        // Create a runtime for the async force_first_time_setup
+        let rt = Runtime::new().expect("Failed to create Tokio runtime");
+        if let Err(e) = rt.block_on(store::force_first_time_setup()) {
+            error!("Failed to force first time setup: {}", e);
+            panic!("First time setup failed: {}", e);
+        }
+        info!("Release build: Forced first-time setup completed");
+    }
+    
+    
+    
     info!("Database connection established successfully");
 
-    let app_state = AppState {
-        conn: Arc::new(Mutex::new(conn)),
-    };
+    
 
     tauri::Builder::default()
-        .manage(app_state)
         .invoke_handler(tauri::generate_handler![
             greet,
             fetch_beats,
             add_beat,
+            analyze_beat,
+            cancel_processing,
             delete_beat,
             delete_beats,
             update_beat,
@@ -339,36 +507,48 @@ fn main() {
             save_row_order,
             save_collection_order,
             open_file_location,
+            cancel_processing,
+            get_analysis_progress,
             store::load_settings,
             store::save_settings,
-            store::get_settings_path
+            store::get_settings_path,
+            store::check_is_first_time,
+            store::first_time_setup,
+            store::force_first_time_setup,
+            
         ])
         .setup(|app| {
+
+
             info!("Starting application setup...");
 
-            #[cfg(debug_assertions)] // only include this code on debug builds
+            
+
+            let conn = DatabaseConnection {
+                conn: db::establish_connection().unwrap_or_else(|e| {
+                    error!("Failed to establish database connection: {}", e);
+                    panic!("Database connection failed: {}", e)
+                }),
+            };
+            
+            let cancellation_token = Arc::new(CancellationToken::new());
+
+            let app_state = AppState::new(conn, app, cancellation_token.clone()); // Fix the clone here
+            app.manage(app_state);
+            app.manage(cancellation_token);
+
+            info!("Database connection established successfully");
+
+            println!("cargo:rustc-cfg=feature=\"async-await\"");
+
+            #[cfg(debug_assertions)]
             {
-            let window = app.get_window("main").unwrap();
-            window.open_devtools(); // Open devtools on debug builds
-            }
-            
-            
-            
-            // Log the resource directory path
-            if let Some(resource_path) = app.path_resolver().resource_dir() {
-                info!("Resource directory: {:?}", resource_path);
-            } else {
-                error!("Could not determine resource directory path");
-            }
-            
-            // Log the app directory path
-            if let Some(app_path) = app.path_resolver().app_dir() {
-                info!("App directory: {:?}", app_path);
-            } else {
-                error!("Could not determine app directory path");
+                let window = app.get_window("main").unwrap();
+                window.open_devtools();
             }
 
             let state: State<AppState> = app.state();
+
             let mut conn_guard = state.conn.lock().map_err(|e| {
                 error!("Failed to acquire database lock: {:?}", e);
                 e.to_string()
@@ -393,6 +573,7 @@ fn main() {
                     info!("Cleaning up before exit...");
                     std::thread::sleep(std::time::Duration::from_millis(100));
                     info!("Cleanup complete, exiting application");
+                    info!("Cleanup complete, exiting application");
                     app_handle.exit(0);
                 });
             }
@@ -404,7 +585,7 @@ fn main() {
         })
         .expect("error while running tauri application")
         .run(|_app_handle, event| match event {
-            tauri::RunEvent::ExitRequested { api, .. } => {
+            tauri::RunEvent::ExitRequested {  .. } => {
                 info!("Application exit requested");
             }
             tauri::RunEvent::Ready => {
