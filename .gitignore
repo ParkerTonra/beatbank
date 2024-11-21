@@ -9,7 +9,7 @@ lerna-debug.log*
 
 node_modules
 src/node_modules
-dist
+dist/*
 dist-ssr
 *.local
 settings.json
@@ -41,5 +41,6 @@ src-tauri/src/__pycache__/audio_analyzer.cpython-312.pyc
 src-tauri/resources/audio_analyzer-x86_64-pc-windows-msvc.exe
 src-tauri/src/build/audio_analyzer/audio_analyzer.pkg
 src-tauri/src/build/audio_analyzer_win/audio_analyzer.pkg
+audio_analyzer-x86_64-pc-windows-msvc.exe
 
 librosa_compiled.cp312-win_amd64.pyd
