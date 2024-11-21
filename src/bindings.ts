@@ -23,8 +23,8 @@ export type BeatCollection = {
   venue?: string;
   city?: string;
   state_name?: string;
-  date_played?: string;
-  date_created?: string;
+  date_played?: Date;
+  date_created?: Date;
 };
 
 export type ColumnVis = {

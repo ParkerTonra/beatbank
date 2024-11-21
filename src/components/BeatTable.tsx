@@ -24,6 +24,8 @@ interface BeatTableProps {
   setSelectedBeats: Dispatch<SetStateAction<Beat[]>>;
   isEditing: boolean;
   setIsEditing: (isEditing: boolean) => void;
+  isEditingSet: boolean;
+  setIsEditingSet: (isEditingSet: boolean) => void;
   fetchData: () => void;
   columnVisibility: VisibilityState;
   setColumnVisibility: OnChangeFn<VisibilityState>;
@@ -44,6 +46,8 @@ function BeatTable({
   setSelectedBeats,
   isEditing,
   setIsEditing,
+  isEditingSet,
+  setIsEditingSet,
   fetchData,
   columnVisibility,
   setColumnVisibility,
@@ -245,37 +249,36 @@ function BeatTable({
         </div>
       </div>
 
-            {isEditing && selectedBeats.length === 1 && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                  <EditBeatCard
-                    beat={tableInstance.getSelectedRowModel().rows[0].original as Beat}
-                    onClose={() => {
-                      setIsEditing(false);
-                    }}
-                    onSave={(updatedBeat: EditThisBeat) => {
-                      console.log("Saving updated beat...");
-                      setIsEditing(false);
-                      setSelectedBeats([]);
+      {isEditing && selectedBeats.length === 1 && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <EditBeatCard
+              beat={tableInstance.getSelectedRowModel().rows[0].original as Beat}
+              onClose={() => {
+                setIsEditing(false);
+              }}
+              onSave={(updatedBeat: EditThisBeat) => {
+                console.log("Saving updated beat...");
+                setIsEditing(false);
+                setSelectedBeats([]);
 
-                      invoke("update_beat", {
-                        beat: updatedBeat
-                      })
-                        .then((response) => {
-                          console.log("Beat successfully updated:", response);
-                          handleRefresh();
-                        })
-                        .catch((error) => {
-                          console.error("Error updating beat:", error);
-                        });
-                    }}
-                    />
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          }
+                invoke("update_beat", {
+                  beat: updatedBeat
+                })
+                  .then((response) => {
+                    console.log("Beat successfully updated:", response);
+                    handleRefresh();
+                  })
+                  .catch((error) => {
+                    console.error("Error updating beat:", error);
+                  });
+              }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
-
-        export default BeatTable;
+export default BeatTable;

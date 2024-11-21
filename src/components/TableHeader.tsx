@@ -84,6 +84,8 @@ export const TableHeader = ({
         <span className="pi pi-pencil mr-2" /> Edit Columns
       </button>
 
+      {}
+
 
       {tableInstance && (
         <Dialog

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Beat, CollOrder, RowOrder, AudioExtension, TempoDetectionExtension } from "./bindings";
+import { Beat, CollOrder, RowOrder, AudioExtension, TempoDetectionExtension, BeatCollection } from "./bindings";
 import Sidebar from "./components/Sidebar";
 import "./App.css";
 import "./Main.css";
@@ -59,6 +59,8 @@ function AppContainer() {
   });
   const [uploadStatus, setUploadStatus] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+
+  const [isEditingSet, setIsEditingSet] = useState(false);
 
 
   // react router hooks
@@ -519,6 +521,25 @@ function AppContainer() {
     }
   };
 
+  const handleSetSave = async (setData: Partial<BeatCollection>) => {
+        try {
+            const newCollection: BeatCollection = await invoke("new_beat_collection", {
+                setName: setData.set_name,
+                venue: setData.venue,
+                city: setData.city,
+                stateName: setData.state_name,
+                datePlayed: setData.date_played,
+                dateCreated: setData.date_created
+            });
+            
+            console.log("New beat collection created:", newCollection);
+            setBeatCollections([...beatCollections, newCollection]);
+            setIsCreatingSet(false);
+        } catch (error) {
+            console.error("Error creating new beat collection:", error);
+        }
+    };
+
   const handleDragStart = (event: DragStartEvent) => {
     const activeId = event.active.id.toString();
     if (activeId.startsWith('sortable-') || activeId.startsWith('beat-')) {
@@ -711,7 +732,7 @@ function AppContainer() {
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
       <div className="flex bg-slate-900 justify-center h-screen overflow-x-hidden">
-        <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
+        <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} setIsEditingSet={setIsEditingSet} />
         <div className="flex-1 flex flex-col overflow-x-auto">
           <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
             <span className="fixed right-4 top-2">

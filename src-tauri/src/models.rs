@@ -11,12 +11,15 @@ Note: To create the database with current schema, models, and migrations,
 use the following command in terminal: diesel migration run
 -----------------------------------------------------*/
 
-use chrono::NaiveDateTime;
 use diesel::prelude::*;
+use serde::{Serialize, Deserialize};
+use chrono::{DateTime, Utc, NaiveDateTime};
+use diesel::sql_types::Timestamp;
+
 #[derive(Queryable, Selectable, Debug)]
 #[diesel(table_name = crate::schema::beats)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-#[derive(serde::Serialize)]
+#[derive( Serialize, Deserialize )]
 pub struct Beat {
     pub id: i32,
     pub title: String,
@@ -33,6 +36,7 @@ pub struct Beat {
     pub file_path: String,
     pub bpm: Option<f64>,
     pub musical_key: Option<String>,
+    //#[serde(serialize_with = "serialize_datetime")]    
     pub date_created: NaiveDateTime,
     pub row_order: i32,
 }
