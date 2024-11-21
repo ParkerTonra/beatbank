@@ -3,7 +3,6 @@ import { Beat, CollOrder, RowOrder, AudioExtension, TempoDetectionExtension } fr
 import Sidebar from "./components/Sidebar";
 import "./App.css";
 import "./Main.css";
-import 'primeicons/primeicons.css';
 import { SplashScreen } from "./components/SplashScreen";
 import BeatTable from "./components/BeatTable";
 import 'primereact/resources/themes/lara-dark-indigo/theme.css';
@@ -41,9 +40,7 @@ function AppContainer() {
 
   const [cancelUpload, setCancelUpload] = useState(false);
 
-  // todo: theme
-  //@ts-ignore
-  const [theme, setTheme] = useState<string>('light');
+  const [_, setTheme] = useState<string>('light');
   //@ts-ignore
   const [settingsPath, setSettingsPath] = useState<string>('');
   const [isFileDragging, setIsFileDragging] = useState(false);
@@ -67,7 +64,6 @@ function AppContainer() {
   const isInCollection = Boolean(collectionIdMatch);
   const collectionId = collectionIdMatch ? parseInt(collectionIdMatch[1], 10) : null;
   const { isPlaying, currentBeat, playBeat, stopBeat, togglePlayPause, audioRef } = useAudio();
-
 
   const {
     beats,
@@ -200,9 +196,7 @@ function AppContainer() {
         setIsFileDragging(false);
       }, 5000);
     });
-
-
-
+    
     const unlistenCancelled = listen('tauri://file-drop-cancelled', () => {
       clearTimeout(dragTimeoutId);
       setIsFileDragging(false);
@@ -508,8 +502,6 @@ function AppContainer() {
     }
   };
 
-
-
   const handleAddToCollection = async (collectionId: number, beatId: number) => {
     try {
       await invoke('add_beat_to_collection', { beatId, collectionId });
@@ -711,11 +703,11 @@ function AppContainer() {
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
       <div className="flex bg-slate-900 justify-center h-screen overflow-x-hidden">
-        <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} />
+        <Sidebar collections={beatCollections} setSelectedBeats={setSelectedBeats} />
         <div className="flex-1 flex flex-col overflow-x-auto">
           <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
             <span className="fixed right-4 top-2">
-              <img src={BeatbankLogo} width={60} height={100} />
+              <img src={BeatbankLogo} width={60} height={100} draggable={false} />
             </span>
             <TableContext.Provider value={{ tableInstance, setTableInstance }}>
               <div className="flex flex-col flex-1 h-full">
@@ -882,8 +874,8 @@ function AppContainer() {
             )}
 
           </main>
-        </div >
-      </div >
+        </div>
+      </div>
       <div className="flex bg-slate-900 justify-center">
         <BeatJockey
           isPlaying={isPlaying}

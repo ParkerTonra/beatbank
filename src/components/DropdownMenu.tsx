@@ -3,15 +3,12 @@ import { TieredMenu } from "primereact/tieredmenu";
 import { Button } from "primereact/button";
 
 
-
 interface DropdownMenuProps {
   title: string;
   icon?: string;
   items: any[];
   className?: string;
 }
-
-
 
 const DropdownMenu = ({
   title,
@@ -30,7 +27,7 @@ const DropdownMenu = ({
   return (
     <div className="mr-2">
       <Button icon={icon} onClick={handleButtonClick}>
-      <span className="ml-2">{title}</span>
+        <span className="ml-2">{title}</span>
       </Button>
       <TieredMenu
         className={`absolute left-full top-0 bg-slate-800 p-2 ${className}`}

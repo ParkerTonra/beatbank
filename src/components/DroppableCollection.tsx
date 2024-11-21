@@ -1,12 +1,16 @@
 import { useDroppable, useDndContext } from '@dnd-kit/core';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { BeatCollection } from '../bindings';
+import { Beat, BeatCollection } from '../bindings';
 
 interface DroppableCollectionProps {
   collection: BeatCollection;
+  setSelectedBeats: (beats: Beat[]) => void;
 }
 
-const DroppableCollection: React.FC<DroppableCollectionProps> = ({ collection }) => {
+const DroppableCollection: React.FC<DroppableCollectionProps> = ({
+  collection,
+  setSelectedBeats,
+}) => {
 
   const location = useLocation();
   const setId = location.pathname.split("/").pop();
@@ -21,6 +25,7 @@ const DroppableCollection: React.FC<DroppableCollectionProps> = ({ collection })
     if (active) {
       return;
     }
+    setSelectedBeats([]);
     navigate(`/collection/${collection.id}`);
   };
 
@@ -28,8 +33,12 @@ const DroppableCollection: React.FC<DroppableCollectionProps> = ({ collection })
     <li
       ref={setNodeRef}
       onClick={handleClick}
-      className={`${setId === collection.id.toString() ? "bg-gray-600" : "bg-gray-700"} p-2 rounded hover:bg-gray-600 transition duration-200 cursor-pointer ${        isOver ? 'border-2 border-green-500' : ''
-      }`}
+      className={`${setId === collection.id.toString() 
+          ? "bg-gray-600" 
+          : "bg-gray-700"
+        } p-2 rounded hover:bg-gray-600 transition duration-200 cursor-pointer 
+        ${isOver ? 'border-2 border-green-500' : ''}
+      `}
     >
       {collection.set_name}
     </li>

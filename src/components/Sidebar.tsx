@@ -1,19 +1,21 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
-import { BeatCollection } from "./../bindings";
-import { Link } from 'react-router-dom';
+import { Beat, BeatCollection } from "./../bindings";
 import DroppableCollection from "./DroppableCollection";
+import { useNavigate } from "react-router-dom";
 
 interface SidebarProps {
   collections: BeatCollection[];
-  onAddBeatToCollection: (collectionId: number, beatId: number) => void;
+  setSelectedBeats: (beats: Beat[]) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
   collections,
+  setSelectedBeats,
 }) => {
   const [title, setTitle] = useState("");
   const [beatCollections, setBeatCollections] = useState<BeatCollection[]>(collections);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setBeatCollections(collections);
@@ -37,6 +39,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   }
 
+  const returnToAllBeats = () => {
+    setSelectedBeats([]);
+    navigate("/");
+  }
+
   return (
     <div className="w-64 h-screen bg-gray-800 text-white p-4 flex flex-col">
       <h1 className="text-3xl font-bold font-guerilla py-0 mb-4">BEATBANK</h1>
@@ -56,17 +63,19 @@ const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </form>
       <div className="flex-1 overflow-y-auto">
-        <h3 className="text-lg font-semibold mb-2">My sets:</h3>
-        <ul className="space-y-2">
-          <Link to="/">
-            <li className="block w-full text-left p-2 bg-gray-500 py-4 hover:bg-gray-600 rounded h-12 items-center justify-start cursor-pointer">
-                All Beats
-            </li>
-          </Link>
+        <h3 className="text-lg font-semibold mb-2" id="set-list">My sets:</h3>
+        <ul className="space-y-2" aria-labelledby="set-list">
+          <li
+            className="block w-full text-left p-2 bg-gray-500 py-4 hover:bg-gray-600 rounded h-12 items-center justify-start cursor-pointer"
+            onClick={returnToAllBeats}
+          >
+              All Beats
+          </li>
           {beatCollections.map((collection) => (
             <DroppableCollection
               key={collection.id}
               collection={collection}
+              setSelectedBeats={setSelectedBeats}
             />
           ))}
         </ul>
