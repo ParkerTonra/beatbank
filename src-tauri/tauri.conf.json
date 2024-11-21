@@ -7,7 +7,7 @@
   },
   "package": {
     "productName": "beatbank",
-    "version": "0.5.3"
+    "version": "0.5.420"
   },
   "tauri": {
     "allowlist": {

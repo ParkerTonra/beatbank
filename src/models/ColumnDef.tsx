@@ -109,6 +109,6 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
 //   // Implement the function here
 //   // For example, you can set the audio source to the provided src
 //   const audioElement = document.getElementById("audio") as HTMLAudioElement;
-//   audioElement.src = src;
+//   audioElement.bsrc = src;
 // }
 

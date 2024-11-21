@@ -7,7 +7,7 @@ use crate::db::{self};
 
 #[derive(Serialize, Deserialize)]
 pub struct Settings {
-    version: u32,  // Add version field
+    version: u32,
     theme: String,
     is_first_time: bool,
 }
@@ -15,23 +15,17 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Settings {
-            version: 1,  // Current version
+            version: 1,
             theme: "light".to_string(),
-            is_first_time: true,
+            is_first_time: true,  // This is fine as the true default
         }
     }
 }
 
 impl Settings {
-    // Getter methods
-    
-    // get & set theme go here, if necessary
-
     pub fn is_first_time(&self) -> bool {
         self.is_first_time
     }
-
-    
 
     pub fn set_first_time(&mut self, is_first: bool) {
         self.is_first_time = is_first;
@@ -85,7 +79,7 @@ pub async fn load_settings() -> Result<Settings, String> {
         .map_err(|e| format!("Failed to resolve settings path: {}", e))?;
 
     if !settings_path.exists() {
-        // File doesn't exist, create with default settings
+        // First genuine launch - use default settings
         let default_settings = Settings::default();
         let contents = serde_json::to_string(&default_settings)
             .map_err(|e| format!("Failed to serialize settings: {}", e))?;
@@ -112,11 +106,12 @@ pub async fn load_settings() -> Result<Settings, String> {
             let old_settings: OldSettings = serde_json::from_str(&contents)
                 .map_err(|e| format!("Failed to parse old settings format: {}", e))?;
 
-            // Create new settings with old values plus defaults
+            // Create new settings with old values but preserve first_time as false
+            // since this is a migration, not a fresh install
             let new_settings = Settings {
                 version: 1,
                 theme: old_settings.theme,
-                is_first_time: true,
+                is_first_time: false,  // Changed: migration means it's not first time
             };
 
             // Save migrated settings
@@ -154,30 +149,14 @@ pub async fn first_time_setup() -> Result<(), String> {
     db::clear_database(&mut connection)
         .map_err(|e| format!("Failed to clear database: {}", e))?;
 
-    // Update settings
-    let settings_path = resolve_project_root_path("settings.json")
-        .map_err(|e| format!("Failed to resolve settings path: {}", e))?;
-
-    let mut settings = if settings_path.exists() {
-        read_to_string(&settings_path)
-            .map_err(|e| format!("Failed to read settings file: {}", e))
-            .and_then(|contents| {
-                match serde_json::from_str(&contents) {
-                    Ok(settings) => Ok(settings),
-                    Err(_) => migrate_old_settings(&contents)
-                }
-            })?
-    } else {
-        Settings::default()
-    };
-
+    // Update settings immediately after database initialization
+    let mut settings = load_settings().await?;
     settings.set_first_time(false);
     
-    let contents = serde_json::to_string(&settings)
-        .map_err(|e| format!("Failed to serialize settings: {}", e))?;
-    
-    write(settings_path, contents)
-        .map_err(|e| format!("Failed to save settings: {}", e))
+    save_settings(settings).await?;
+
+    println!("First time setup completed successfully");
+    Ok(())
 }
 
 fn migrate_old_settings(contents: &str) -> Result<Settings, String> {
@@ -192,7 +171,7 @@ fn migrate_old_settings(contents: &str) -> Result<Settings, String> {
     Ok(Settings {
         version: 1,
         theme: old_settings.theme,
-        is_first_time: true,
+        is_first_time: false,  // Changed: migration means it's not first time
     })
 }
 
