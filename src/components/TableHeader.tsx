@@ -168,7 +168,6 @@ export const TableHeader = ({
           className="bg-blue-900 w-3/4 h-1/2 p-4 rounded-md border-2 border-black"
           modal
           onHide={() => setShowEditColumnsDialog(false)}
-          closeIcon={<div tabIndex={-1}> <XIcon stroke="#00FFFF" /></div>}
         >
           <div className="px-4 shadow rounded mt-4 text-sm grid grid-cols-2 gap-4">
             {/* Toggle All columns */}
