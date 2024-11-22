@@ -1,11 +1,11 @@
-import { useMemo, useRef, useEffect, Dispatch, SetStateAction } from "react";
+import React, { useMemo, useRef, useEffect, Dispatch, SetStateAction, useState } from "react";
 import {
   useReactTable,
   flexRender,
   getCoreRowModel,
   ColumnResizeMode,
   OnChangeFn,
-  VisibilityState, Row, getSortedRowModel, Table,
+  VisibilityState, Row, getSortedRowModel, Table, getFilteredRowModel,
 } from "@tanstack/react-table";
 import { createColumnDef } from "./../models/ColumnDef.tsx";
 import { Beat, EditThisBeat } from "./../bindings.ts";
@@ -15,8 +15,8 @@ import {
 import DraggableRow from "./DraggableRow.tsx";
 import { invoke } from "@tauri-apps/api/tauri";
 import EditBeatCard from "./EditBeatCard.tsx";
-
 import { useTableContext } from "../contexts/TableContext.tsx";
+
 interface BeatTableProps {
   beats?: Beat[];
   onBeatPlay: (beat: Beat) => void;
@@ -56,10 +56,13 @@ function BeatTable({
   handleRefresh,
 }: BeatTableProps) {
 
-
   // row selection state
   const lastSelectedIndex = useRef('');
+  const searchRef = useRef<HTMLInputElement>(null);
+  const tBodyRef = useRef<HTMLTableSectionElement>(null);
   const { setTableInstance } = useTableContext();
+
+  const [searchValue, setSearchValue] = useState("");
 
   const finalColumnDef = useMemo(
     () => createColumnDef(onBeatPlay),
@@ -88,6 +91,7 @@ function BeatTable({
     onColumnVisibilityChange: setColumnVisibility,
     enableSorting: true,
     getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
   });
 
   useEffect(() => {
@@ -107,7 +111,7 @@ function BeatTable({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isEditing || isEditingSet || isCreatingSet) {
+      if (isEditing || isEditingSet || isCreatingSet || searchRef.current === document.activeElement) {
         return;
       }
       // Check for Ctrl+A or Cmd+A
@@ -118,6 +122,14 @@ function BeatTable({
           row.toggleSelected(true);
         });
         setSelectedBeats(beats || []);
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault(); // Prevent the default browser select-all behavior
+        // Select all rows
+        tableInstance.getRowModel().rows.forEach(row => {
+          row.toggleSelected(false);
+        });
+        setSelectedBeats([]);
       }
     };
     
@@ -179,29 +191,45 @@ function BeatTable({
     return <div></div>;
   }
 
+  const handleSearchChange = (value: string) => {
+    setSearchValue(value);
+    tableInstance.setGlobalFilter(value);
+  }
+
   return (
-    <div className="w-full h-full flex flex-col overflow-x-auto max-w-full">
+    <div className="w-full h-full flex flex-col overflow-x-auto max-w-full" id="beat-table">
+      <div className="fixed right-24 top-6 w-64" id="search-beats">
+        <input
+          value={searchValue}
+          onChange={e => handleSearchChange(String(e.target.value))}
+          placeholder="Search beats..."
+          ref={searchRef}
+        />
+      </div>
       {/* Main table container with fixed height and scroll */}
       <div className="flex-1 min-h-0"> {/* This ensures the container can shrink */}
         <div className="h-full relative">
           {/* Header wrapper - fixed position */}
-          <div className="sticky top-0 z-10 ">
+          <div className="sticky top-0 z-10">
             <table className="w-full min-h-full">
-              <thead className="bg-gray-600">
+              <thead className="bg-gray-600 pt-2">
                 {tableInstance.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
                       <th
                         key={header.id}
+                        id={`table-header-${header.id}`}
                         className="relative pr-4 text-left border-gray-800 border-b-4 cursor-pointer mr-2"
                         style={{
                           width: header.getSize(),
                           maxWidth: header.getSize(),
                           minWidth: header.getSize(),
                         }}
-                        onClick={() => header.column.toggleSorting()}
                       >
-                        <div className="flex items-center truncate w-full justify-between">
+                        <button className="flex items-center truncate w-full justify-between bg-transparent"
+                          onClick={() => header.column.toggleSorting()}
+                          tabIndex={header.column.id !== "drag-handle" && header.column.id !== "play-handle" ? 0 : -1}
+                        >
                           {header.isPlaceholder
                             ? null
                             : flexRender(
@@ -217,7 +245,7 @@ function BeatTable({
                               null
                             }
                           </div>
-                        </div>
+                        </button>
 
                         {header.column.getCanResize() && (
                           <div
@@ -235,13 +263,15 @@ function BeatTable({
           </div>
           <div className="h-[calc(100%-48px)]">
             <table className="w-full">
-              <tbody>
+              <tbody ref={tBodyRef}>
                 {tableInstance.getRowModel().rows.map((rowElement) => (
                   <DraggableRow
+                    table={tableInstance}
                     row={rowElement as Row<Beat>}
                     key={rowElement.id}
                     onRowSelection={onRowSelection}
                     selectedBeats={selectedBeats}
+                    tBodyRef={tBodyRef}
                   />
                 ))}
               </tbody>

@@ -3,6 +3,8 @@
 
 Beatbank is an open-source organizational tool for managing and analyzing audio files. Whether you're a musician or a producer, Beatbank helps you keep your beats organized and accessible, even outside of Rekordbox or a DAW. Plus, it doubles as a cross-platform desktop audio player.
 
+[Visit Our Releases Page For Easy Installation By Clicking Here](https://github.com/parkertonra/beatbank-senior-project/releases)
+
 ## ✨ Features
 
 - **🎛️ Table View for Beats**
@@ -57,13 +59,12 @@ Ensure you have the following installed on your system:
    ```
    After the build process completes, an .exe file will be generated in the src-tauri/target/release directory of your project.
   
+5. **Tests**
+    ```bash
+   pnpm test
+   ```
 
 Future Enhancements:
 - Allow users to star sets to prioritize favs/ones being worked on.
 - BeatSet page has multiple tabs / ways to look at the set
 
-
-## 📝 Changelog
-**Tauri:** Initialized a new tauri project with a splash screen & file input.
-**tailwind:** added tailwind CSS
-**diesel:** added diesel as a rust dependency for ORM

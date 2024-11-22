@@ -122,14 +122,14 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
   return (
     <>
       <div className="w-full flex items-center justify-between px-4 min-h-[64px] bg-gray-700 rounded-xl my-4 bg-opacity-80 backdrop-blur-3xl shadow-sm">
-        <h2 className="text-2xl font-bold text-white truncate max-w-[300px] flex items-center m-0 mt-2">
+        <h2 className="text-2xl font-bold text-white truncate max-w-[300px] flex items-center m-0 p-0">
           {currentCollection.set_name}
         </h2>
 
-        <div className="flex items-center gap-8 xl:gap-12 text-[1.1rem]" >
+        <div className="flex items-center gap-8 xl:gap-12 text-md">
           {/* Always visible - even on small screens */}
           <div className="flex items-center whitespace-nowrap">
-            <span className="text-gray-400 mr-2">beats:</span>
+            <span className="text-gray-400 mr-2">Beats:</span>
             <span>{collectionBeats.length}</span>
           </div>
 

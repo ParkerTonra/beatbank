@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Beat, CollOrder, RowOrder, AudioExtension, TempoDetectionExtension } from "./bindings";
 import Sidebar from "./components/Sidebar";
 import "./App.css";
@@ -24,7 +24,6 @@ import { useNavigate } from 'react-router-dom';
 
 import TableHeader from "./components/TableHeader";
 
-
 import { Table } from "@tanstack/react-table";
 import { open, OpenDialogOptions } from "@tauri-apps/api/dialog";
 import { MenuItem } from "primereact/menuitem";
@@ -33,6 +32,8 @@ import BeatCollectionComponent from "./components/BeatCollection";
 import BeatbankLogo from './assets/BeatbankLogo.png';
 import { dialog } from "@tauri-apps/api";
 import { Tooltip } from "primereact/tooltip";
+import { StepType, TourProvider, useTour } from "@reactour/tour";
+
 
 function AppContainer() {
   // state
@@ -41,8 +42,10 @@ function AppContainer() {
   const [selectedBeats, setSelectedBeats] = useState<Beat[]>([]);
 
   const [cancelUpload, setCancelUpload] = useState(false);
-
   const [isCreatingSet, setIsCreatingSet] = useState(false);
+
+  const { setIsOpen: setIsTourOpen } = useTour();
+
 
   const [_, setTheme] = useState<string>('light');
   //@ts-ignore
@@ -118,9 +121,6 @@ function AppContainer() {
 
         // Then fetch data
         await fetchData();
-
-        // Finally close splash screen
-        setShowSplashScreen(false);
       } catch (error) {
         console.error('Error initializing app:', error);
       }
@@ -205,7 +205,7 @@ function AppContainer() {
         setIsFileDragging(false);
       }, 5000);
     });
-    
+
     const unlistenCancelled = listen('tauri://file-drop-cancelled', () => {
       clearTimeout(dragTimeoutId);
       setIsFileDragging(false);
@@ -744,22 +744,22 @@ function AppContainer() {
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
       <div className="flex bg-slate-900 justify-center h-screen overflow-x-hidden">
-        <Sidebar 
-        beatCollections={beatCollections}
-        setBeatCollections={setBeatCollections}
-        setSelectedBeats={setSelectedBeats} 
-        setIsEditingSet={setIsEditingSet}
-        isCreatingSet={isCreatingSet}
-        setIsCreatingSet={setIsCreatingSet}
-        isEditingSet={isEditingSet} 
-        currentCollection={currentCollection} 
-        fetchSetData={fetchSetData} 
+        <Sidebar
+          beatCollections={beatCollections}
+          setBeatCollections={setBeatCollections}
+          setSelectedBeats={setSelectedBeats}
+          setIsEditingSet={setIsEditingSet}
+          isCreatingSet={isCreatingSet}
+          setIsCreatingSet={setIsCreatingSet}
+          isEditingSet={isEditingSet}
+          currentCollection={currentCollection}
+          fetchSetData={fetchSetData}
         />
         <div className="flex-1 flex flex-col overflow-x-auto">
           <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
-            <span className="fixed right-4 top-2">
-              <img src={BeatbankLogo} width={60} height={100} draggable={false} />
-            </span>
+            <div className="fixed right-4 top-4" id="icon-tutorial">
+              <img src={BeatbankLogo} width={60} height={100} draggable={false} onClick={() => setIsTourOpen(true)} />
+            </div>
             <TableContext.Provider value={{ tableInstance, setTableInstance }}>
               <div className="flex flex-col flex-1 h-full">
                 <TableHeader
@@ -785,10 +785,10 @@ function AppContainer() {
                       path="/"
                       element={
                         <>
-                          <div>
-                            <div className="mb-6">
-                              <h2 className="text-2xl font-bold mb-2 pl-0 pb-0">All Beats</h2>
-                            </div>
+                          <div className="w-full flex items-center justify-between px-4 min-h-[64px] bg-gray-700 rounded-xl my-4 bg-opacity-80 backdrop-blur-3xl shadow-sm">
+                            <h2 className="text-2xl font-bold text-white truncate max-w-[300px] flex items-center m-0 p-0">
+                              All beats
+                            </h2>
                           </div>
                           <BeatTable
                             beats={beats}
@@ -947,11 +947,65 @@ function AppContainer() {
   );
 }
 
+const steps: StepType[] = [
+  {
+    selector: "#beatbank-title",
+    content: "Welcome to BeatBank!",
+    position: [100, 90]
+  },
+  {
+    selector: "#beat-table",
+    content: "Here is where all your beats will display after adding them to Beatbank.",
+    position: "center"
+  },
+  {
+    selector: "#edit-columns",
+    content: "This button allows you to customize which columns are visible in the table.",
+    position: "bottom"
+  },
+  {
+    selector: "#add-beats",
+    content: "This dropdown is where you'll add your beats to the table. You can add any number of audio files, or choose to upload an entire folder.",
+    position: "bottom"
+  },
+  {
+    selector: "#beat-table",
+    content: "You can also drag and drop your audio files onto the table to add them.",
+    position: "center"
+  },
+  {
+    selector: "#table-header-bpm",
+    content: "Beatbank will automatically detect the tempos of your beats (in beats per minute) and display them in the table.",
+    position: "bottom"
+  },
+  {
+    selector: "#beat-jockey",
+    content: "The Beat Jockey is your simplified listening experience. Use the controls on the bottom footer to maximize your audio enjoyment",
+    position: "center"
+  },
+  {
+    selector: "#icon-tutorial",
+    content: "Click the Beatbank icon to return to this tutorial at any time.",
+    position: "bottom"
+  }
+]
+
+const styles = {
+  badge: (base) => ({ ...base, color: 'blue' }),
+  popover: (base) => ({
+    ...base,
+    borderRadius: "16px",
+    color: "black",
+  }),
+}
+
 function App() {
   return (
-    <Router>
-      <AppContainer />
-    </Router>
+    <TourProvider steps={steps} styles={styles} scrollSmooth>
+      <Router>
+        <AppContainer/>
+      </Router>
+    </TourProvider>
   );
 }
 

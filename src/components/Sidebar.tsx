@@ -32,7 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const navigate = useNavigate();
   const [newSetName, setNewSetName] = useState("");
   const modalRef = useRef<HTMLInputElement>(null);
-  
+
   useEffect(() => {
     setBeatCollections(beatCollections);
   }, [beatCollections, setBeatCollections]);
@@ -52,18 +52,16 @@ const Sidebar: React.FC<SidebarProps> = ({
     } else {
       setNewSetName("");
       setIsCreatingSet(true);
-      // focus cursor on the new window
-
       setTitle("");
       console.warn("Please enter a valid title for the new set");
     }
-
-
   };
+
   const returnToAllBeats = () => {
     setSelectedBeats([]);
     navigate("/");
   };
+
   const handleSetSave = async (setData: Partial<BeatCollection>) => {
     try {
       if (setData.id) {
@@ -123,18 +121,12 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div className="w-64 h-screen bg-gray-800 text-white p-4 flex flex-col">
-      <h1 className="text-3xl font-bold font-guerilla py-0 mb-4">BEATBANK</h1>
+      <h1 className="text-3xl font-bold font-guerilla py-0 mb-4" id="beatbank-title">BEATBANK</h1>
       <form onSubmit={handleCreateSetClick} className="mb-4">
-        <input
-          type="text"
-          placeholder="Enter a name for a new set"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full mb-2 p-2 border border-gray-600 bg-gray-700 text-white rounded"
-        />
         <button
           type="submit"
           className="w-full bg-blue-500 hover:bg-blue-600 text-white p-2 rounded transition duration-200"
+          tabIndex={0}
         >
           Add New Set
         </button>
@@ -144,6 +136,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <button className="block w-full text-left p-2 bg-gray-500 hover:bg-gray-600 rounded h-12 items-center justify-start cursor-pointer mb-2"
           aria-labelledby="set-list"
           onClick={returnToAllBeats}
+          tabIndex={0}
         >
           All Beats
         </button>
@@ -152,6 +145,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             key={collection.id}
             collection={collection}
             setSelectedBeats={setSelectedBeats}
+            tabIndex={0}
           />
         ))}
       </div>
