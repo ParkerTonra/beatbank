@@ -1,6 +1,6 @@
 // In TableHeader.tsx
 
-import { Beat, BeatCollection } from "../bindings";
+import { Beat } from "../bindings";
 import DropdownMenu from "./DropdownMenu";
 import { Dialog } from "primereact/dialog";
 import { MenuItem } from "primereact/menuitem";
@@ -23,6 +23,7 @@ interface TableHeaderProps {
   handleForceFirstTimeSetup: () => void;
   handleEditSet: () => void;
   isInCollection: boolean;
+  handleDeleteSet: () => void;
 }
 
 
@@ -42,6 +43,7 @@ export const TableHeader = ({
   handleForceFirstTimeSetup,
   handleEditSet,
   isInCollection,
+  handleDeleteSet,
 }: TableHeaderProps) => {
   const { tableInstance } = useTableContext();
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
@@ -89,12 +91,25 @@ export const TableHeader = ({
       </button>
       {isInCollection && (
 
-      <button
-        onClick={handleEditSet}
-        className="mr-2 mb-2"
-      >
-        <span className="pi pi-pencil mr-2" /> Edit Set
-      </button>
+        <button
+          onClick={handleEditSet}
+          className="mr-2 mb-2"
+        >
+          <span className="pi pi-pencil mr-2" /> Edit Set
+        </button>
+
+
+      )}
+
+      {isInCollection && (
+
+        <button
+          onClick={handleDeleteSet}
+          className="mr-2 mb-2"
+        >
+          <span className="pi pi-pencil mr-2" /> Delete Set
+        </button>
+
 
       )}
 
@@ -154,13 +169,13 @@ export const TableHeader = ({
       )}
       {/* Reset to default settings button.
       TODO: This should be obfuscated final build */}
-      <button onClick={handleForceFirstTimeSetup}
+      {/* <button onClick={handleForceFirstTimeSetup}
         className="h-8 w-8 mt-1.5 mx-4 flex items-center justify-center"
         data-pr-tooltip="Reset to default settings"
         data-pr-position="top"
       >
         <span className="pi pi-refresh" />
-      </button>
+      </button> */}
 
       {uploadStatus && (
         <button
@@ -204,7 +219,7 @@ export const TableHeader = ({
           </div>
         </div>
       </Dialog>
-      <Tooltip target="button"/>
+      <Tooltip target="button" />
     </div>
   );
 };

@@ -4,7 +4,6 @@ import { BeatCollection, CollectionChangeset } from "./../bindings";
 import { Link } from 'react-router-dom';
 import DroppableCollection from "./DroppableCollection";
 import CollectionCard from "./CollectionCard";
-import { set } from "date-fns";
 
 interface SidebarProps {
   collections: BeatCollection[];

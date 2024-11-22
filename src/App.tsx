@@ -256,6 +256,22 @@ function AppContainer() {
     }
   };
 
+  const handleDeleteSet = async () => {
+    if (!collectionId) {
+      message('Please select a set first.', { title: 'Error', type: 'error' });
+      return;
+    }
+    try {
+      await invoke('delete_beat_collection', {
+        id: collectionId
+      });
+      // Refresh data or update state as needed
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting set:', error);
+    }
+  };
+
   const removeBeatsFromSet = async () => {
     if (!selectedBeats.length) {
       message('Please select a beat first.', { title: 'Error', type: 'error' });
@@ -745,6 +761,7 @@ function AppContainer() {
                   handleForceFirstTimeSetup={handleForceSetup}
                   handleEditSet={handleEditSet}
                   isInCollection={isInCollection}
+                  handleDeleteSet={handleDeleteSet}
                 />
                 <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
                   strategy={verticalListSortingStrategy}>

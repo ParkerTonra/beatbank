@@ -222,7 +222,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({ set, onCloseCollection,
                     {/* Action Buttons */}
                     <div className="flex justify-end space-x-2 pt-4">
                         <div
-                        data-pr-tooltip={!hasChanges() ? "Make changes to enable saving" : "Save"}
+                        data-pr-tooltip={!hasChanges() && !isCreating ? "Make changes to enable saving" : ""}
                         data-pr-position="top"
                         className="relative"
                         >
@@ -231,14 +231,14 @@ const CollectionCard: React.FC<CollectionCardProps> = ({ set, onCloseCollection,
                             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-sm"
                             data-pr-tooltip={!hasChanges() ? "No changes made" : "Save"}
                             data-pr-position="top"
-                            disabled={!hasChanges()}
+                            disabled={!hasChanges() && !isCreating}
 
                         >
                             {isCreating ? "Create" : "Save"}
                         </Button>
                         </div>
                         
-                        {!hasChanges() && (
+                        {!hasChanges() && !isCreating && (
                             <div className="absolute bottom-10 left-0 bg-gray-800 text-white text-xs rounded-md py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 Make changes to enable the button
                             </div>

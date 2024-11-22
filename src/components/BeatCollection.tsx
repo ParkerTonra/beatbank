@@ -84,7 +84,11 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
     }
   }, [id, setCollectionBeats, fetchSetData]);
 
-  const formatDate = (date: string) => {
+  const formatDate = (date: string | null) => {
+    console.log('Formatting date:', date);
+    if (date === null || date === undefined) {ç
+      return 'N/A';
+    }
     const dateObj = new Date(date);
     return dateObj.toLocaleDateString('en-US', {
         year: 'numeric',
@@ -134,7 +138,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
             
             <div className="whitespace-nowrap">
               <span className="text-gray-400 mr-2">Date:</span>
-              <span>{formatDate(currentCollection?.date_played || 'N/A')}</span>
+              <span>{formatDate(currentCollection?.date_played)}</span>
             </div>
             
             <div className="whitespace-nowrap">
