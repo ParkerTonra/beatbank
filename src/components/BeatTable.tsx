@@ -23,6 +23,8 @@ interface BeatTableProps {
   selectedBeats: Beat[];
   setSelectedBeats: Dispatch<SetStateAction<Beat[]>>;
   isEditing: boolean;
+  isEditingSet: boolean;
+  isCreatingSet: boolean;
   setIsEditing: (isEditing: boolean) => void;
   fetchData: () => void;
   columnVisibility: VisibilityState;
@@ -43,6 +45,8 @@ function BeatTable({
   selectedBeats,
   setSelectedBeats,
   isEditing,
+  isEditingSet,
+  isCreatingSet,
   setIsEditing,
   fetchData,
   columnVisibility,
@@ -103,27 +107,28 @@ function BeatTable({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isEditing || isEditingSet || isCreatingSet) {
+        return;
+      }
       // Check for Ctrl+A or Cmd+A
       if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
         e.preventDefault(); // Prevent the default browser select-all behavior
-
         // Select all rows
         tableInstance.getRowModel().rows.forEach(row => {
           row.toggleSelected(true);
         });
-
         setSelectedBeats(beats || []);
       }
     };
-
+    
     // Add the event listener
     document.addEventListener('keydown', handleKeyDown);
-
+    
     // Clean up
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [beats, tableInstance, setSelectedBeats]);
+  }, [beats, tableInstance, setSelectedBeats, isEditing, isEditingSet, isCreatingSet]);
 
   const onRowSelection = (e: React.MouseEvent<HTMLTableRowElement>, row: Row<Beat>): void => {
     const beat = row.original;

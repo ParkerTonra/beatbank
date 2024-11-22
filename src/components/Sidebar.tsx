@@ -7,6 +7,8 @@ import { useNavigate } from "react-router-dom";
 
 interface SidebarProps {
   collections: BeatCollection[];
+  isCreatingSet: boolean;
+  setIsCreatingSet: (isCreatingSet: boolean) => void;
   setSelectedBeats: (beats: Beat[]) => void;
   setIsEditingSet: (isEditingSet: boolean) => void;
   isEditingSet: boolean;
@@ -18,6 +20,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   collections,
   setSelectedBeats,
   setIsEditingSet,
+  isCreatingSet,
+  setIsCreatingSet,
   isEditingSet,
   currentCollection,
   fetchSetData,
@@ -25,7 +29,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [title, setTitle] = useState("");
   const [beatCollections, setBeatCollections] = useState<BeatCollection[]>(collections);
   const navigate = useNavigate();
-  const [isCreatingSet, setIsCreatingSet] = useState(false);
   const [newSetName, setNewSetName] = useState("");
 
   useEffect(() => {

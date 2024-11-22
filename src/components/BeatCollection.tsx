@@ -12,6 +12,8 @@ interface BeatCollProps {
   onDragEnd: (event: DragEndEvent) => void;
   onBeatPlay: (beat: Beat) => void;
   isEditing: boolean;
+  isEditingSet: boolean;
+  isCreatingSet: boolean;
   setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
   selectedBeats: Beat[];
   setSelectedBeats: React.Dispatch<React.SetStateAction<Beat[]>>;
@@ -31,6 +33,8 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
   onDragEnd,
   onBeatPlay,
   isEditing,
+  isEditingSet,
+  isCreatingSet,
   setIsEditing,
   selectedBeats,
   setSelectedBeats,
@@ -159,6 +163,8 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
         beats={beats}
         onBeatPlay={onBeatPlay}
         isEditing={isEditing}
+        isEditingSet={isEditingSet}
+        isCreatingSet={isCreatingSet}
         setIsEditing={setIsEditing}
         selectedBeats={selectedBeats}
         setSelectedBeats={setSelectedBeats}
