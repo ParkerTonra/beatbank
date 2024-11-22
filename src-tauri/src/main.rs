@@ -1,28 +1,18 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-mod db;
-mod models;
-mod schema;
-mod store;
-mod audio_analysis;
+use beatbank_tauri::{ benchmarks::run_detailed_benchmark, db, models, schema, store, Beat, BeatChangeset, BeatCollection, CancellationToken, CollOrder, CollectionChangeset };
+pub mod audio_analysis;
 use audio_analysis::AnalysisError;
 use diesel::prelude::*;
-use models::{CollOrder, CollectionChangeset};
 use serde::Deserialize;
 use serde_json::{self, json};
 use std::{
     env, path::Path, sync::{Arc, Mutex}
 };
 use log::{error, info};
-use crate::models::BeatChangeset;
-use crate::models::{Beat, BeatCollection};
 use tauri::{ AppHandle, Manager, State};
 
-use tokio::spawn;
 use tokio::runtime::Runtime;
-use tauri::async_runtime;
-use tokio::sync::watch;
-
 
 
 struct DatabaseConnection {
@@ -61,26 +51,6 @@ impl AnalysisProgress {
     }
 }
 
-#[derive(Clone)]
-pub struct CancellationToken {
-    sender: watch::Sender<bool>,
-    receiver: watch::Receiver<bool>,
-}
-
-impl CancellationToken {
-    pub fn new() -> Self {
-        let (sender, receiver) = watch::channel(false);
-        Self { sender, receiver }
-    }
-
-    pub fn cancel(&self) {
-        let _ = self.sender.send(true);
-    }
-
-    pub fn is_cancelled(&self) -> bool {
-        *self.receiver.borrow()
-    }
-}
 
 #[derive(Clone)]
 pub struct AppState {
@@ -428,6 +398,23 @@ fn remove_beats_from_collection(
 }
 
 
+#[tauri::command]
+async fn run_benchmark(state: State<'_, AppState>, file_path: String) -> Result<serde_json::Value, String> {
+    let result = run_detailed_benchmark(&file_path)?;
+    
+    Ok(json!({
+        "filePath": result.file_path,
+        "fileSize": result.file_size,
+        "loadTimeMs": result.load_time_ms,
+        "analysisTimeMs": result.analysis_time_ms,
+        "totalTimeMs": result.total_time_ms,
+        "samplesProcessed": result.samples_processed,
+        "sampleRate": result.sample_rate,
+        "detectedBpm": result.detected_bpm,
+    }))
+}
+
+
 // Opens the file location in the default file manager & selects the file
 // Needs to be tested on Mac & Linux
 #[tauri::command]
@@ -524,6 +511,7 @@ fn main() {
             store::check_is_first_time,
             store::first_time_setup,
             store::force_first_time_setup,
+            run_benchmark,
             
         ])
         .setup(|app| {

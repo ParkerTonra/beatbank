@@ -1,6 +1,6 @@
 [package]
-name = "beatbank"
-version = "0.1.0"
+name = "beatbank-tauri"
+version = "0.6.0"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -9,6 +9,15 @@ edition = "2021"
 
 [build-dependencies]
 tauri-build = { version = "1.5.5", features = [] }
+criterion = "0.4"
+
+[lib]
+name = "beatbank_tauri"
+path = "src/lib.rs"
+
+[[bin]]
+name = "beatbank-tauri"
+path = "src/main.rs"
 
 [dependencies]
 rusqlite = { version = "0.32.0", features = ["bundled"] }
@@ -25,6 +34,17 @@ open = "3.2"
 aubio = { version = "0.2.1", features = ["bindgen"] }
 log = "0.4.22"
 env_logger = "0.11.5"
+criterion = "0.4"
+dirs = "5.0"
+
+
+[[bench]]
+name = "audio_benchmarks"
+harness = false
+path = "benches/audio_benchmarks.rs"
+
+
+
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

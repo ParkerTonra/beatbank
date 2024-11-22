@@ -87,7 +87,7 @@ fn detect_bpm(audio_data: Vec<Smpl>, sample_rate: u32, cancellation_token: &Arc<
     }
 }
 
-fn load_audio(file_path: &str, cancellation_token: &Arc<CancellationToken>) -> Result<(Vec<f32>, u32), String> {
+pub fn load_audio(file_path: &str, cancellation_token: &Arc<CancellationToken>) -> Result<(Vec<f32>, u32), String> {
     println!("Loading audio file...");
     // Create the media source and stream
     let file = File::open(Path::new(file_path)).map_err(|e| e.to_string())?;

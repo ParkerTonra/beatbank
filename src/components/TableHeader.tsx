@@ -24,6 +24,7 @@ interface TableHeaderProps {
   handleEditSet: () => void;
   isInCollection: boolean;
   handleDeleteSet: () => void;
+  setShowBenchmarkDialog: (show: boolean) => void;
 }
 
 
@@ -43,6 +44,7 @@ export const TableHeader = ({
   handleEditSet,
   isInCollection,
   handleDeleteSet,
+  setShowBenchmarkDialog,
 }: TableHeaderProps) => {
   const { tableInstance } = useTableContext();
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
@@ -98,7 +100,15 @@ export const TableHeader = ({
         </button>
 
 
+
       )}
+
+      <button
+        onClick={() => setShowBenchmarkDialog(true)}
+        className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded"
+      >
+        Run Benchmarks
+      </button>
 
       {isInCollection && (
 
@@ -110,7 +120,7 @@ export const TableHeader = ({
         </button>
 
       )}
-      
+
       {tableInstance && (
         <Dialog
           header="Edit Columns"
@@ -156,7 +166,7 @@ export const TableHeader = ({
         title="Add"
         icon="pi pi-plus"
         items={addBeatItems}
-        
+
       />
 
       {selectedBeats.length > 0 && (

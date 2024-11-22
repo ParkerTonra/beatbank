@@ -33,6 +33,8 @@ import BeatCollectionComponent from "./components/BeatCollection";
 import BeatbankLogo from './assets/BeatbankLogo.png';
 import { dialog } from "@tauri-apps/api";
 import { Tooltip } from "primereact/tooltip";
+import BenchmarkComponent from "./components/BenchmarkComponent";
+import { set } from "date-fns";
 
 function AppContainer() {
   // state
@@ -62,6 +64,8 @@ function AppContainer() {
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
 
   const [isEditingSet, setIsEditingSet] = useState(false);
+
+  const [showBenchmarkDialog, setShowBenchmarkDialog] = useState(false);
 
 
   // react router hooks
@@ -132,6 +136,17 @@ function AppContainer() {
   useEffect(() => {
     fetchColumnVisibility();
   }, [setColumnVisibility]);
+
+  useEffect(() => {
+    if (showBenchmarkDialog) {
+      handleBenchmarkStart();
+    }
+  }, [showBenchmarkDialog, setShowBenchmarkDialog]);
+
+  const handleBenchmarkStart = async () => {
+    navigate('/benchmark');
+  };
+
 
   //TODO: consolidate
   const folderDialogOptions: OpenDialogOptions = {
@@ -777,6 +792,7 @@ function AppContainer() {
                   handleEditSet={handleEditSet}
                   isInCollection={isInCollection}
                   handleDeleteSet={handleDeleteSet}
+                  setShowBenchmarkDialog={setShowBenchmarkDialog}
                 />
                 <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
                   strategy={verticalListSortingStrategy}>
@@ -836,6 +852,7 @@ function AppContainer() {
                           handleRefresh={handleRefresh}
                         />}
                     />
+                  <Route path="/benchmark" element={<BenchmarkComponent />} />                  
                   </Routes>
                 </SortableContext>
               </div>
