@@ -30,7 +30,6 @@ const BenchmarkComponent = () => {
       });
 
       if (!selectedFiles) return [];
-
       return Array.isArray(selectedFiles) ? selectedFiles : [selectedFiles];
     } catch (error) {
       console.error('Error selecting files:', error);
@@ -41,23 +40,38 @@ const BenchmarkComponent = () => {
   const runBenchmark = async (filePaths: string[]) => {
     setIsRunning(true);
     const benchmarkResults: BenchmarkResult[] = [];
+    const BATCH_SIZE = 3;  // Match your actual batch size
 
-    for (const filePath of filePaths) {
-      const startTime = performance.now();
-      
-      try {
-        // Run the backend benchmark
-        const backendResult = await invoke('run_benchmark', { filePath }) as Omit<BenchmarkResult, 'frontendTimeMs'>;
+    try {
+      // Process files in batches
+      for (let i = 0; i < filePaths.length; i += BATCH_SIZE) {
+        const batchStart = performance.now();
+        const batch = filePaths.slice(i, i + BATCH_SIZE);
         
-        // Add frontend timing
-        const frontendTime = performance.now() - startTime;
-        benchmarkResults.push({
-          ...backendResult,
-          frontendTimeMs: frontendTime,
-        });
-      } catch (error) {
-        console.error(`Benchmark failed for ${filePath}:`, error);
+        // Run benchmarks in parallel for each batch
+        const batchResults = await Promise.all(batch.map(async (filePath) => {
+          try {
+            const backendResult = await invoke('run_benchmark', { filePath }) as Omit<BenchmarkResult, 'frontendTimeMs'>;
+            return {
+              ...backendResult,
+              frontendTimeMs: performance.now() - batchStart,
+            };
+          } catch (error) {
+            console.error(`Benchmark failed for ${filePath}:`, error);
+            return null;
+          }
+        }));
+
+        // Add successful results from this batch
+        benchmarkResults.push(...batchResults.filter((result): result is BenchmarkResult => 
+          result !== null
+        ));
+
+        // Small delay between batches to match your actual implementation
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
+    } catch (error) {
+      console.error('Error in batch processing:', error);
     }
 
     setResults(prev => [...prev, ...benchmarkResults]);
