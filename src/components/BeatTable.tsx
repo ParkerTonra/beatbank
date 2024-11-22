@@ -24,8 +24,6 @@ interface BeatTableProps {
   setSelectedBeats: Dispatch<SetStateAction<Beat[]>>;
   isEditing: boolean;
   setIsEditing: (isEditing: boolean) => void;
-  isEditingSet: boolean;
-  setIsEditingSet: (isEditingSet: boolean) => void;
   fetchData: () => void;
   columnVisibility: VisibilityState;
   setColumnVisibility: OnChangeFn<VisibilityState>;
@@ -46,8 +44,6 @@ function BeatTable({
   setSelectedBeats,
   isEditing,
   setIsEditing,
-  isEditingSet,
-  setIsEditingSet,
   fetchData,
   columnVisibility,
   setColumnVisibility,
@@ -257,12 +253,12 @@ function BeatTable({
               onClose={() => {
                 setIsEditing(false);
               }}
-              onSave={(updatedBeat: EditThisBeat) => {
+              onSaveBeat={(updatedBeat: EditThisBeat) => {
                 console.log("Saving updated beat...");
                 setIsEditing(false);
                 setSelectedBeats([]);
 
-                invoke("update_beat", {
+                invoke("edit_beat", {
                   beat: updatedBeat
                 })
                   .then((response) => {

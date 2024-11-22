@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Beat, CollOrder, RowOrder, AudioExtension, TempoDetectionExtension, BeatCollection } from "./bindings";
+import { Beat, CollOrder, RowOrder, AudioExtension, TempoDetectionExtension } from "./bindings";
 import Sidebar from "./components/Sidebar";
 import "./App.css";
 import "./Main.css";
@@ -244,9 +244,19 @@ function AppContainer() {
     });
   };
 
+  const handleEditSet = async () => {
+    if (!collectionId) {
+      message('Please select a set first.', { title: 'Error', type: 'error' });
+      return;
+    }
+    try {
+      setIsEditingSet(true);
+    } catch (error) {
+      console.error('Error attempting to edit set:', error);
+    }
+  };
+
   const removeBeatsFromSet = async () => {
-    //remove after debug
-    console.log("removeBeatsFromSet");
     if (!selectedBeats.length) {
       message('Please select a beat first.', { title: 'Error', type: 'error' });
       return;
@@ -521,24 +531,6 @@ function AppContainer() {
     }
   };
 
-  const handleSetSave = async (setData: Partial<BeatCollection>) => {
-        try {
-            const newCollection: BeatCollection = await invoke("new_beat_collection", {
-                setName: setData.set_name,
-                venue: setData.venue,
-                city: setData.city,
-                stateName: setData.state_name,
-                datePlayed: setData.date_played,
-                dateCreated: setData.date_created
-            });
-            
-            console.log("New beat collection created:", newCollection);
-            setBeatCollections([...beatCollections, newCollection]);
-            setIsCreatingSet(false);
-        } catch (error) {
-            console.error("Error creating new beat collection:", error);
-        }
-    };
 
   const handleDragStart = (event: DragStartEvent) => {
     const activeId = event.active.id.toString();
@@ -652,7 +644,6 @@ function AppContainer() {
       icon: "pi pi-plus",
       items: beatCollections.map(set => ({
         label: set.set_name,
-        // Fix: Call addBeatsToSet instead of handleAddToCollection
         command: () => addBeatsToSet(set.id)
       }))
     },
@@ -732,7 +723,7 @@ function AppContainer() {
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
       <div className="flex bg-slate-900 justify-center h-screen overflow-x-hidden">
-        <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} setIsEditingSet={setIsEditingSet} />
+        <Sidebar collections={beatCollections} onAddBeatToCollection={handleAddToCollection} setIsEditingSet={setIsEditingSet} isEditingSet={isEditingSet} currentCollection={currentCollection} />
         <div className="flex-1 flex flex-col overflow-x-auto">
           <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
             <span className="fixed right-4 top-2">
@@ -752,6 +743,7 @@ function AppContainer() {
                   showEditColumnsDialog={showEditColumnsDialog}
                   setShowEditColumnsDialog={setShowEditColumnsDialog}
                   handleForceFirstTimeSetup={handleForceSetup}
+                  handleEditSet={handleEditSet}
                 />
                 <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
                   strategy={verticalListSortingStrategy}>
@@ -827,7 +819,7 @@ function AppContainer() {
                 </button>
               </div>
             )}
-            
+
             {/* Processing overlay */}
             {isProcessing && (
               <div className="fixed bottom-4 left-4 flex items-center bg-gray-900 bg-opacity-95 rounded-lg p-4 shadow-lg z-40 max-w-md">
@@ -879,25 +871,25 @@ function AppContainer() {
                   </div>
                 </div>
                 <div className="flex flex-col flex-grow mx-8 space-y-3">
-                <button
-                  onClick={() => handleCancel()}
-                  className="p-2 text-white hover:bg-red-500 bg-red-400 rounded-md w-16"
-                  title="Cancel"
-                  data-pr-tooltip="Cancel adding beats"
-                  data-pr-position="right"
-                >
-                  <span>Cancel</span>
-                </button>
-                <button
-                  onClick={() => setShowStatusDialog(!showStatusDialog)}
-                  className="p-2 text-white hover:bg-blue-500 bg-blue-400 rounded-md w-16"
-                  type="button"
-                  data-pr-tooltip="Upload Status"
-                  data-pr-position="right"
-                >
-                  <span>Status</span>
-                </button>
-                <Tooltip target = "button"/>
+                  <button
+                    onClick={() => handleCancel()}
+                    className="p-2 text-white hover:bg-red-500 bg-red-400 rounded-md w-16"
+                    title="Cancel"
+                    data-pr-tooltip="Cancel adding beats"
+                    data-pr-position="right"
+                  >
+                    <span>Cancel</span>
+                  </button>
+                  <button
+                    onClick={() => setShowStatusDialog(!showStatusDialog)}
+                    className="p-2 text-white hover:bg-blue-500 bg-blue-400 rounded-md w-16"
+                    type="button"
+                    data-pr-tooltip="Upload Status"
+                    data-pr-position="right"
+                  >
+                    <span>Status</span>
+                  </button>
+                  <Tooltip target="button" />
                 </div>
               </div>
             )}

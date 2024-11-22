@@ -21,6 +21,7 @@ interface TableHeaderProps {
   showEditColumnsDialog: boolean;
   setShowEditColumnsDialog: (show: boolean) => void;
   handleForceFirstTimeSetup: () => void;
+  handleEditSet: () => void;
 }
 
 
@@ -38,6 +39,7 @@ export const TableHeader = ({
   showEditColumnsDialog,
   setShowEditColumnsDialog,
   handleForceFirstTimeSetup,
+  handleEditSet,
 }: TableHeaderProps) => {
   const { tableInstance } = useTableContext();
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
@@ -83,8 +85,12 @@ export const TableHeader = ({
       >
         <span className="pi pi-pencil mr-2" /> Edit Columns
       </button>
-
-      {}
+      <button
+        onClick={handleEditSet}
+        className="mr-2 mb-2"
+      >
+        <span className="pi pi-pencil mr-2" /> Edit Set
+      </button>
 
 
       {tableInstance && (

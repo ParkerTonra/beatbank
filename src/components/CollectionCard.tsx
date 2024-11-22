@@ -1,10 +1,10 @@
 import { useState } from "react";
 import type { BeatCollection } from "../bindings";
 
-interface EditSetCardProps {
+interface CollectionCardProps {
     set?: SetFormState;
-    onClose: () => void;
-    onSave: (setData: Partial<BeatCollection>) => void;
+    onCloseCollection: () => void;
+    onSaveCollection: (setData: Partial<BeatCollection>) => void;
     isCreating?: boolean;
 }
 
@@ -15,7 +15,6 @@ interface SetFormState {
     city?: string;
     state_name?: string;
     date_played?: string;
-    date_created?: string;
 }
 
 interface FormErrors {
@@ -24,16 +23,37 @@ interface FormErrors {
     date_created?: string;
 }
 
-const EditSetCard: React.FC<EditSetCardProps> = ({ set, onClose, onSave, isCreating = false }) => {
+
+
+const CollectionCard: React.FC<CollectionCardProps> = ({ set, onCloseCollection, onSaveCollection, isCreating = false }) => {
     const [editedSet, setEditedSet] = useState<SetFormState>({
+        id: set?.id,
         set_name: set?.set_name || "",
         venue: set?.venue || "",
         city: set?.city || "",
         state_name: set?.state_name || "",
         date_played: set?.date_played || "",
-        date_created: set?.date_created || new Date().toISOString().split('T')[0],
     });
     const [errors, setErrors] = useState<FormErrors>({});
+
+    const prepareSubmissionData = () => {
+        // Ensure we only send YYYY-MM-DD format
+        const formattedDate = editedSet.date_played ? 
+            editedSet.date_played.split('T')[0].split(' ')[0] // This ensures we only get YYYY-MM-DD
+            : null;
+            
+        const submissionData: Partial<BeatCollection> = {
+            id: isCreating ? undefined : editedSet.id,
+            set_name: editedSet.set_name || undefined,
+            venue: editedSet.venue || undefined,
+            city: editedSet.city || undefined,
+            state_name: editedSet.state_name || undefined,
+            date_played: formattedDate || undefined,
+        };
+        console.log("formatted date", formattedDate);
+        console.log("submission data", submissionData);
+        return submissionData;
+    };
 
     const validateField = (name: string, value: string): string | undefined => {
         switch (name) {
@@ -73,29 +93,14 @@ const EditSetCard: React.FC<EditSetCardProps> = ({ set, onClose, onSave, isCreat
 
         // Validate all fields before submission
         const newErrors: FormErrors = {};
-        if (!editedSet.set_name.trim()) {
+        if (!editedSet.set_name?.trim()) {
             newErrors.set_name = 'Set name is required';
         }
-        if (editedSet.date_played && !/^\d{4}-\d{2}-\d{2}$/.test(editedSet.date_played)) {
-            newErrors.date_played = 'Please enter a valid date (YYYY-MM-DD)';
-        }
-        if (editedSet.date_created && !/^\d{4}-\d{2}-\d{2}$/.test(editedSet.date_created)) {
-            newErrors.date_created = 'Please enter a valid date (YYYY-MM-DD)';
-        }
-
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
             return;
         }
-
-        // Prepare submission data
-        const submissionData: Partial<BeatCollection> = {
-            ...editedSet,
-            // Only include id if we're editing an existing set
-            ...(isCreating ? {} : { id: editedSet.id }),
-        };
-
-        onSave(submissionData);
+        onSaveCollection(prepareSubmissionData());
     };
 
     return (
@@ -104,7 +109,7 @@ const EditSetCard: React.FC<EditSetCardProps> = ({ set, onClose, onSave, isCreat
                 <h1 className="text-2xl font-bold mb-4">
                     {isCreating ? "Create New Set" : "Edit Set"}
                 </h1>
-                
+
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Set Name Field */}
                     <div>
@@ -117,9 +122,8 @@ const EditSetCard: React.FC<EditSetCardProps> = ({ set, onClose, onSave, isCreat
                             id="set_name"
                             value={editedSet.set_name}
                             onChange={handleChange}
-                            className={`mt-1 block w-full p-2 bg-gray-700 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
-                                errors.set_name ? 'border-red-500' : 'border-gray-600'
-                            }`}
+                            className={`mt-1 block w-full p-2 bg-gray-700 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${errors.set_name ? 'border-red-500' : 'border-gray-600'
+                                }`}
                             required
                         />
                         {errors.set_name && <p className="text-red-500 text-sm mt-1">{errors.set_name}</p>}
@@ -182,26 +186,12 @@ const EditSetCard: React.FC<EditSetCardProps> = ({ set, onClose, onSave, isCreat
                                 id="date_played"
                                 value={editedSet.date_played}
                                 onChange={handleChange}
-                                className={`mt-1 block w-full p-2 bg-gray-700 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
-                                    errors.date_played ? 'border-red-500' : 'border-gray-600'
-                                }`}
+                                className={`mt-1 block w-full p-2 bg-gray-700 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${errors.date_played ? 'border-red-500' : 'border-gray-600'
+                                    }`}
                             />
                             {errors.date_played && <p className="text-red-500 text-sm mt-1">{errors.date_played}</p>}
                         </div>
                         <div>
-                            <label htmlFor="date_created" className="block text-sm font-medium text-gray-300">
-                                Date Created
-                            </label>
-                            <input
-                                type="date"
-                                name="date_created"
-                                id="date_created"
-                                value={editedSet.date_created}
-                                onChange={handleChange}
-                                className={`mt-1 block w-full p-2 bg-gray-700 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
-                                    errors.date_created ? 'border-red-500' : 'border-gray-600'
-                                }`}
-                            />
                             {errors.date_created && <p className="text-red-500 text-sm mt-1">{errors.date_created}</p>}
                         </div>
                     </div>
@@ -216,7 +206,7 @@ const EditSetCard: React.FC<EditSetCardProps> = ({ set, onClose, onSave, isCreat
                         </button>
                         <button
                             type="button"
-                            onClick={onClose}
+                            onClick={onCloseCollection}
                             className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md shadow-sm"
                         >
                             Cancel
@@ -228,4 +218,4 @@ const EditSetCard: React.FC<EditSetCardProps> = ({ set, onClose, onSave, isCreat
     );
 };
 
-export default EditSetCard;
+export default CollectionCard;

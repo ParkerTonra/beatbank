@@ -5,7 +5,7 @@ import { EditThisBeat } from "../bindings";
 interface EditBeatCardProps {
     beat: Beat;
     onClose: () => void;
-    onSave: (updatedBeat: EditThisBeat) => void;
+    onSaveBeat: (updatedBeat: EditThisBeat) => void;
 }
 
 interface BeatFormState {
@@ -33,7 +33,7 @@ interface FormErrors {
     track_number?: string;
 }
 
-const EditBeatCard: React.FC<EditBeatCardProps> = ({ beat, onClose, onSave }) => {
+const EditBeatCard: React.FC<EditBeatCardProps> = ({ beat, onClose, onSaveBeat }) => {
     const [editedBeat, setEditedBeat] = useState<BeatFormState>({
         id: beat.id,
         title: beat.title || "",
@@ -146,7 +146,7 @@ const EditBeatCard: React.FC<EditBeatCardProps> = ({ beat, onClose, onSave }) =>
             duration: editedBeat.duration,
         };
 
-        onSave(submissionData);
+        onSaveBeat(submissionData);
     };
 
     return (

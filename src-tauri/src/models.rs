@@ -12,8 +12,8 @@ use the following command in terminal: diesel migration run
 -----------------------------------------------------*/
 
 use diesel::prelude::*;
-use serde::{Serialize, Deserialize};
-use chrono::{DateTime, Utc, NaiveDateTime};
+use serde::{Deserialize, Deserializer, Serialize};
+use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use diesel::sql_types::Timestamp;
 
 #[derive(Queryable, Selectable, Debug)]
@@ -123,6 +123,32 @@ pub struct BeatChangeset {
     pub lyricist: Option<String>,
     pub cover_art: Option<String>,
     pub file_path: Option<String>,
+}
+
+fn deserialize_naive_date<'de, D>(deserializer: D) -> Result<Option<NaiveDateTime>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    println!("Deserializing date");
+    let s = Option::<String>::deserialize(deserializer)?;
+    Ok(s.map(|s| {
+        NaiveDate::parse_from_str(&s, "%Y-%m-%d")
+            .map(|date| date.and_hms_opt(0, 0, 0).unwrap()) // Convert NaiveDate to NaiveDateTime at midnight
+            .map_err(serde::de::Error::custom)
+    }).transpose()?)
+}
+
+#[derive(serde::Deserialize)]
+#[derive(AsChangeset)]
+#[diesel(table_name = crate::schema::beat_collection)]
+pub struct CollectionChangeset {
+    pub id: i32,
+    pub set_name: Option<String>,
+    pub venue: Option<String>,
+    pub city: Option<String>,
+    pub state_name: Option<String>,
+    #[serde(deserialize_with = "deserialize_naive_date")]
+    pub date_played: Option<NaiveDateTime>,
 }
 
 #[derive(serde::Deserialize)]
