@@ -113,12 +113,12 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
 
   return (
     <>
-      <div className="w-full flex items-center justify-between px-4 py-2 min-h-[64px]">
+      <div className="w-full flex items-center justify-between px-4 min-h-[64px] bg-gray-700 rounded-xl my-4 bg-opacity-80 backdrop-blur-3xl shadow-sm">
         <h2 className="text-2xl font-bold text-white truncate max-w-[300px]">
           {currentCollection.set_name}
         </h2>
         
-        <div className="flex items-center gap-8 xl:gap-12">
+        <div className="flex items-center gap-8 xl:gap-12 text-xl" >
           {/* Always visible - even on small screens */}
           <div className="flex items-center whitespace-nowrap">
             <span className="text-gray-400 mr-2">beats:</span>
@@ -128,7 +128,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
           {/* Hidden on screens smaller than 1280px */}
           <div className="hidden xl:flex items-center gap-8">
             <div className="whitespace-nowrap">
-              <span className="text-gray-400 mr-2">Venue:</span>
+              <span className="text-gray-400 mr-2 text">Venue:</span>
               <span>{currentCollection.venue || 'N/A'}</span>
             </div>
             
