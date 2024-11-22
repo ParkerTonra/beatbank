@@ -25,8 +25,12 @@ const DropdownMenu = ({
   };
 
   return (
-    <div className="mr-2">
-      <Button icon={icon} onClick={handleButtonClick}>
+    <div className="mr-2" id="add-beats">
+      <Button
+        icon={icon}
+        onClick={handleButtonClick}
+        tabIndex={0}
+      >
         <span className="ml-2">{title}</span>
       </Button>
       <TieredMenu

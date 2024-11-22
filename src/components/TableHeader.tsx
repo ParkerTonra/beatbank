@@ -4,10 +4,10 @@ import { Beat } from "../bindings";
 import DropdownMenu from "./DropdownMenu";
 import { Dialog } from "primereact/dialog";
 import { MenuItem } from "primereact/menuitem";
-import { Tooltip } from 'primereact/tooltip';
 
 import { useTableContext } from "../contexts/TableContext";
 import { useEffect, useState } from "react";
+import { XIcon } from "lucide-react";
 
 interface TableHeaderProps {
   selectedBeats: Beat[];
@@ -22,8 +22,6 @@ interface TableHeaderProps {
   setShowEditColumnsDialog: (show: boolean) => void;
   handleForceFirstTimeSetup: () => void;
 }
-
-
 
 export const TableHeader = ({
   selectedBeats,
@@ -80,55 +78,21 @@ export const TableHeader = ({
       <button
         onClick={() => setShowEditColumnsDialog(true)}
         className="mr-2 mb-2"
+        id="edit-columns"
+        tabIndex={0}
+        aria-controls={showEditColumnsDialog ? "edit-columns-dialog" : undefined}
+        aria-expanded={showEditColumnsDialog}
+        aria-modal="true"
       >
         <span className="pi pi-pencil mr-2" /> Edit Columns
       </button>
-      
-      {tableInstance && (
-        <Dialog
-          header="Edit Columns"
-          visible={showEditColumnsDialog}
-          className="bg-blue-900 w-3/4 h-1/2 p-4 rounded-md border-2 border-black"
-          modal
-          onHide={() => setShowEditColumnsDialog(false)}
-        >
-          <div className="px-4 shadow rounded mt-4 text-sm grid grid-cols-2 gap-4">
-            {/* Toggle All columns */}
-            <div>
-              <label className="inline-flex cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={Object.values(columnVisibility).every(c => c)}
-                  onChange={handleToggleAll}
-                  className="w-4 mr-2"
-                />
-                <span className="font-bold mt-[-2px]">Toggle All</span>
-              </label>
-            </div>
-
-            {/* Toggle by column*/}
-            {tableInstance.getAllLeafColumns()
-              .filter(column => column.id !== "drag-handle")
-              .map(column => (
-                <label key={column.id} className="inline-flex justify-start cursor-pointer mb-2">
-                  <input
-                    type="checkbox"
-                    checked={columnVisibility[column.id] ?? false}
-                    onChange={() => handleToggleColumn(column)}
-                    className="w-4 mr-2"
-                  />
-                  <span className="capitalize mt-[-2px]">{column.id.split("_").join(" ")}</span>
-                </label>
-              ))}
-          </div>
-        </Dialog>
-      )}
 
       <DropdownMenu
         className="mr-2"
         title="Add"
         icon="pi pi-plus"
         items={addBeatItems}
+        tabIndex={0}
       />
 
       {selectedBeats.length > 0 && (
@@ -136,6 +100,7 @@ export const TableHeader = ({
           title={`Beat Settings (${selectedBeats.length})`}
           icon="pi pi-cog"
           items={beatActionItems}
+          tabIndex={0}
         />
       )}
       {/* Reset to default settings button.
@@ -144,6 +109,7 @@ export const TableHeader = ({
         className="h-8 w-8 mt-1.5 mx-4 flex items-center justify-center"
         data-pr-tooltip="Reset to default settings"
         data-pr-position="top"
+        tabIndex={-1}
       >
         <span className="pi pi-refresh" />
       </button>
@@ -154,14 +120,17 @@ export const TableHeader = ({
           className="h-8 w-8 mt-1.5 mx-4 flex items-center justify-center"
           data-pr-tooltip="Upload Status"
           data-pr-position="top"
+          tabIndex={0}
+          aria-controls={showStatusDialog ? "show-status-dialog" : undefined}
+          aria-expanded={showStatusDialog}
+          aria-modal="true"
         >
           <span className="pi pi-info-circle" />
         </button>
       )}
 
-
-
       <Dialog
+        id="show-status-dialog"
         header="Upload Status"
         visible={showStatusDialog}
         className="bg-blue-900 w-3/4 h-1/2 p-4 rounded-md border-2 border-black"
@@ -190,7 +159,50 @@ export const TableHeader = ({
           </div>
         </div>
       </Dialog>
-      <Tooltip target="button"/>
+
+      {tableInstance && (
+        <Dialog
+          id="edit-columns-dialog"
+          header="Edit Columns"
+          visible={showEditColumnsDialog}
+          className="bg-blue-900 w-3/4 h-1/2 p-4 rounded-md border-2 border-black"
+          modal
+          onHide={() => setShowEditColumnsDialog(false)}
+          closeIcon={<div tabIndex={-1}> <XIcon stroke="#00FFFF" /></div>}
+        >
+          <div className="px-4 shadow rounded mt-4 text-sm grid grid-cols-2 gap-4">
+            {/* Toggle All columns */}
+            <div>
+              <label className="inline-flex cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Object.values(columnVisibility).every(c => c)}
+                  onChange={handleToggleAll}
+                  className="w-4 mr-2"
+                  tabIndex={0}
+                />
+                <span className="font-bold mt-[-2px]">Toggle All</span>
+              </label>
+            </div>
+
+            {/* Toggle by column*/}
+            {tableInstance.getAllLeafColumns()
+              .filter(column => column.id !== "drag-handle")
+              .map(column => (
+                <label key={column.id} className="inline-flex justify-start cursor-pointer mb-2">
+                  <input
+                    type="checkbox"
+                    checked={columnVisibility[column.id] ?? false}
+                    onChange={() => handleToggleColumn(column)}
+                    className="w-4 mr-2 "
+                    tabIndex={0}
+                  />
+                  <span className="capitalize mt-[-2px]">{column.id.split("_").join(" ")}</span>
+                </label>
+              ))}
+          </div>
+        </Dialog>
+      )}
     </div>
   );
 };

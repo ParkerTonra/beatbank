@@ -28,6 +28,7 @@ const formatDate = (datetime: string): string => {
 export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Beat>[] => [
   {
     accessorKey: "drag-handle",
+    id: "drag-handle",
     header: "",
     cell: ({ row }: { row: Row }) => (
       <div className="flex justify-center">

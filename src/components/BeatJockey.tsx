@@ -123,6 +123,7 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({
                                     onClick={stopBeat}
                                     className="text-slate-400 hover:text-white transition"
                                     data-testID="stop-beat"
+                                    tabIndex={0}
                                 >
                                     <StopCircle size={20} />
                                 </button>
@@ -130,6 +131,7 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({
                                     onClick={togglePlayPause}
                                     className="text-white hover:scale-110 transition"
                                     data-testID="play-pause-beat"
+                                    tabIndex={0}
                                 >
                                     {isPlaying ? <Pause size={20} /> : <Play size={20} />}
                                 </button>
@@ -144,10 +146,11 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({
                                         max={duration || 100}
                                         value={currentTime}
                                         onChange={handleSeek}
-                                        className="w-full h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer 
-                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 
-                    [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white 
-                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer"
+                                        className="w-full h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer
+                                        focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-500 focus:opacity-100
+                                        [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3
+                                        [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white
+                                        [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer"
                                     />
                                 </div>
                                 <span>{formatTime(duration)}</span>
@@ -157,22 +160,25 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({
 
                     <div className="w-1/4 min-w-[150px] flex justify-end items-center gap-2">
                         <button
-                            onClick={toggleMute}
-                            className="text-slate-400 hover:text-white transition"
+                          onClick={toggleMute}
+                          className="text-slate-400 hover:text-white transition"
+                          tabIndex={0}
                         >
                             {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
                         </button>
                         <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.01"
-                            value={isMuted ? 0 : volume}
-                            onChange={handleVolume}
-                            className="w-24 h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer
-              [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 
-              [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white 
-              [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer"
+                          tabIndex={0}
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={isMuted ? 0 : volume}
+                          onChange={handleVolume}
+                          className="w-24 h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer
+                            focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-500 focus:opacity-100
+                            [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3
+                            [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white
+                            [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer"
                         />
                     </div>
                 </div>

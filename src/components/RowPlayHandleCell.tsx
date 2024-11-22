@@ -7,8 +7,15 @@ interface RowPlayHandleCellProps {
 }
 
 const RowPlayHandleCell: React.FC<RowPlayHandleCellProps> = ({ onPlay }) => {
+  const handlePlay = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      onPlay();
+      e.preventDefault();
+    }
+  }
+
   return (
-    <button onClick={onPlay} className="bg-transparent">
+    <button onClick={handlePlay} onKeyDown={handlePlay} className="bg-transparent z-30" tabIndex={0}>
       <Play size={18} color='darkgray' />
     </button>
   );

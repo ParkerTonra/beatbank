@@ -52,10 +52,10 @@ function BeatTable({
   handleRefresh,
 }: BeatTableProps) {
 
-
   // row selection state
   const lastSelectedIndex = useRef('');
   const { setTableInstance } = useTableContext();
+  const tBodyRef = useRef<HTMLTableSectionElement>(null);
 
   const finalColumnDef = useMemo(
     () => createColumnDef(onBeatPlay),
@@ -175,14 +175,14 @@ function BeatTable({
   }
 
   return (
-    <div className="w-full h-full flex flex-col overflow-x-auto max-w-full">
+    <div className="w-full h-full flex flex-col overflow-x-auto max-w-full" id="beat-table">
       {/* Main table container with fixed height and scroll */}
       <div className="flex-1 min-h-0"> {/* This ensures the container can shrink */}
         <div className="h-full relative">
           {/* Header wrapper - fixed position */}
-          <div className="sticky top-0 z-10 ">
+          <div className="sticky top-0 z-10">
             <table className="w-full min-h-full">
-              <thead className="bg-gray-600">
+              <thead className="bg-gray-600 pt-2">
                 {tableInstance.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
@@ -194,9 +194,11 @@ function BeatTable({
                           maxWidth: header.getSize(),
                           minWidth: header.getSize(),
                         }}
-                        onClick={() => header.column.toggleSorting()}
                       >
-                        <div className="flex items-center truncate w-full justify-between">
+                        <button className="flex items-center truncate w-full justify-between bg-transparent"
+                          onClick={() => header.column.toggleSorting()}
+                          tabIndex={header.column.id !== "drag-handle" && header.column.id !== "play-handle" ? 0 : -1}
+                        >
                           {header.isPlaceholder
                             ? null
                             : flexRender(
@@ -212,7 +214,7 @@ function BeatTable({
                               null
                             }
                           </div>
-                        </div>
+                        </button>
 
                         {header.column.getCanResize() && (
                           <div
@@ -230,13 +232,15 @@ function BeatTable({
           </div>
           <div className="h-[calc(100%-48px)]">
             <table className="w-full">
-              <tbody>
+              <tbody ref={tBodyRef}>
                 {tableInstance.getRowModel().rows.map((rowElement) => (
                   <DraggableRow
+                    table={tableInstance}
                     row={rowElement as Row<Beat>}
                     key={rowElement.id}
                     onRowSelection={onRowSelection}
                     selectedBeats={selectedBeats}
+                    tBodyRef={tBodyRef}
                   />
                 ))}
               </tbody>

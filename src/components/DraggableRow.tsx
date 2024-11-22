@@ -1,16 +1,18 @@
 // DraggableRow.tsx
-import { Cell, flexRender, Row } from '@tanstack/react-table';
+import { Cell, flexRender, Row, Table } from '@tanstack/react-table';
 import { useDraggable, DragOverlay } from '@dnd-kit/core';
 import { Beat } from '../bindings';
 import GhostRow from './GhostDragRow';
+import { MutableRefObject } from "react";
 
 interface DraggableRowProps {
   row: Row<Beat>;
-  onRowSelection: (e: React.MouseEvent<HTMLTableRowElement>, row: Row<Beat>) => void;
+  onRowSelection: (e: React.MouseEvent<HTMLTableRowElement> | React.KeyboardEvent<HTMLTableRowElement>, row: Row<Beat>) => void;
   selectedBeats: Beat[];
+  tBodyRef: MutableRefObject<HTMLTableSectionElement>;
 }
 
-function DraggableRow({ row, onRowSelection, selectedBeats}: DraggableRowProps) {
+function DraggableRow({ row, onRowSelection, selectedBeats, tBodyRef}: DraggableRowProps) {
   const isSelected = row.getIsSelected();
   const draggableId = isSelected && selectedBeats.length > 1
     ? `selected-beats-${selectedBeats.map(b => b.id).join('-')}`
@@ -39,6 +41,21 @@ function DraggableRow({ row, onRowSelection, selectedBeats}: DraggableRowProps) 
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTableRowElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onRowSelection(e, row);
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const currentRow = tBodyRef.current?.children.namedItem(row.id);
+      (currentRow?.nextElementSibling as HTMLTableRowElement)?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const currentRow = tBodyRef.current?.children.namedItem(row.id);
+      (currentRow?.previousElementSibling as HTMLTableRowElement)?.focus();
+    }
+  };
+
   return (
   <>
     {isDragging && (
@@ -62,7 +79,10 @@ function DraggableRow({ row, onRowSelection, selectedBeats}: DraggableRowProps) 
         {...attributes}
         {...listeners}
         onClick={handleClick}
+        onKeyDown={handleKeyPress}
         className={`border-b-2 border-gray-500 cursor-pointer ${row.getIsSelected() ? 'bg-blue-900' : ''}`}
+        tabIndex={0}
+        id={row.id}
       >
         {row.getVisibleCells().map((cell: Cell<Beat, unknown>) => (
           <td 

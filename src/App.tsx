@@ -22,7 +22,6 @@ import { useAudio } from "./hooks/useAudio";
 import { FileEntry, readDir } from "@tauri-apps/api/fs";
 import TableHeader from "./components/TableHeader";
 
-
 import { Table } from "@tanstack/react-table";
 import { open, OpenDialogOptions } from "@tauri-apps/api/dialog";
 import { MenuItem } from "primereact/menuitem";
@@ -31,6 +30,8 @@ import BeatCollectionComponent from "./components/BeatCollection";
 import BeatbankLogo from './assets/BeatbankLogo.png';
 import { dialog } from "@tauri-apps/api";
 import { Tooltip } from "primereact/tooltip";
+import { StepType, TourProvider, useTour } from "@reactour/tour";
+
 
 function AppContainer() {
   // state
@@ -39,6 +40,8 @@ function AppContainer() {
   const [selectedBeats, setSelectedBeats] = useState<Beat[]>([]);
 
   const [cancelUpload, setCancelUpload] = useState(false);
+
+  const { setIsOpen: setIsTourOpen } = useTour();
 
   const [_, setTheme] = useState<string>('light');
   //@ts-ignore
@@ -109,9 +112,6 @@ function AppContainer() {
 
         // Then fetch data
         await fetchData();
-
-        // Finally close splash screen
-        setShowSplashScreen(false);
       } catch (error) {
         console.error('Error initializing app:', error);
       }
@@ -196,7 +196,7 @@ function AppContainer() {
         setIsFileDragging(false);
       }, 5000);
     });
-    
+
     const unlistenCancelled = listen('tauri://file-drop-cancelled', () => {
       clearTimeout(dragTimeoutId);
       setIsFileDragging(false);
@@ -707,7 +707,7 @@ function AppContainer() {
         <div className="flex-1 flex flex-col overflow-x-auto">
           <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
             <span className="fixed right-4 top-2">
-              <img src={BeatbankLogo} width={60} height={100} draggable={false} />
+              <img src={BeatbankLogo} width={60} height={100} draggable={false} onClick={() => setIsTourOpen(true)} />
             </span>
             <TableContext.Provider value={{ tableInstance, setTableInstance }}>
               <div className="flex flex-col flex-1 h-full">
@@ -889,11 +889,45 @@ function AppContainer() {
   );
 }
 
+const steps: StepType[] = [
+  {
+    selector: "#beatbank-title",
+    content: "Welcome to BeatBank!",
+    position: "right"
+  },
+  {
+    selector: "#beat-table",
+    content: "Here is where all your beats will display after uploading",
+    position: "top"
+  },
+  {
+    selector: "#edit-columns",
+    content: "This button will allow you to customize the columns that are visible in the table",
+    position: "bottom"
+  },
+  {
+    selector: "#add-beats",
+    content: "This is a dropdown that will allow you to add beats, either by selecting multiple audio files from your audio system or selecting an entire folder",
+    position: "bottom"
+  },
+]
+
+const styles = {
+  badge: (base) => ({ ...base, color: 'blue' }),
+  popover: (base) => ({
+    ...base,
+    borderRadius: "16px",
+    color: "black",
+  }),
+}
+
 function App() {
   return (
-    <Router>
-      <AppContainer />
-    </Router>
+    <TourProvider steps={steps} styles={styles} scrollSmooth>
+      <Router>
+        <AppContainer />
+      </Router>
+    </TourProvider>
   );
 }
 

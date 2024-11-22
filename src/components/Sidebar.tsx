@@ -46,39 +46,41 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div className="w-64 h-screen bg-gray-800 text-white p-4 flex flex-col">
-      <h1 className="text-3xl font-bold font-guerilla py-0 mb-4">BEATBANK</h1>
+      <h1 className="text-3xl font-bold font-guerilla py-0 mb-4" id="beatbank-title">BEATBANK</h1>
       <form onSubmit={handleNewBeatCollection} className="mb-4">
         <input
           type="text"
-          placeholder="Enter a name for a new set"
+          placehold   er="Enter a name for a new set"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="w-full mb-2 p-2 border border-gray-600 bg-gray-700 text-white rounded"
+          tabIndex={0}
         />
         <button
           type="submit"
           className="w-full bg-blue-500 hover:bg-blue-600 text-white p-2 rounded transition duration-200"
+          tabIndex={0}
         >
           Add New Set
         </button>
       </form>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto px-1">
         <h3 className="text-lg font-semibold mb-2" id="set-list">My sets:</h3>
-        <ul className="space-y-2" aria-labelledby="set-list">
-          <li
-            className="block w-full text-left p-2 bg-gray-500 py-4 hover:bg-gray-600 rounded h-12 items-center justify-start cursor-pointer"
-            onClick={returnToAllBeats}
-          >
-              All Beats
-          </li>
-          {beatCollections.map((collection) => (
-            <DroppableCollection
-              key={collection.id}
-              collection={collection}
-              setSelectedBeats={setSelectedBeats}
-            />
-          ))}
-        </ul>
+        <button
+          className="block w-full text-left p-2 bg-gray-500 hover:bg-gray-600 rounded h-12 items-center justify-start cursor-pointer mb-2"
+          onClick={returnToAllBeats}
+          tabIndex={0}
+        >
+            All Beats
+        </button>
+        {beatCollections.map((collection, index) => (
+          <DroppableCollection
+            key={collection.id}
+            collection={collection}
+            setSelectedBeats={setSelectedBeats}
+            tabIndex={0}
+          />
+        ))}
       </div>
     </div>
   );

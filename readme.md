@@ -62,8 +62,3 @@ Future Enhancements:
 - Allow users to star sets to prioritize favs/ones being worked on.
 - BeatSet page has multiple tabs / ways to look at the set
 
-
-## 📝 Changelog
-**Tauri:** Initialized a new tauri project with a splash screen & file input.
-**tailwind:** added tailwind CSS
-**diesel:** added diesel as a rust dependency for ORM

@@ -5,11 +5,13 @@ import { Beat, BeatCollection } from '../bindings';
 interface DroppableCollectionProps {
   collection: BeatCollection;
   setSelectedBeats: (beats: Beat[]) => void;
+  tabIndex: number;
 }
 
 const DroppableCollection: React.FC<DroppableCollectionProps> = ({
   collection,
   setSelectedBeats,
+  tabIndex,
 }) => {
 
   const location = useLocation();
@@ -30,18 +32,19 @@ const DroppableCollection: React.FC<DroppableCollectionProps> = ({
   };
 
   return (
-    <li
+    <button
       ref={setNodeRef}
       onClick={handleClick}
       className={`${setId === collection.id.toString() 
           ? "bg-gray-600" 
           : "bg-gray-700"
-        } p-2 rounded hover:bg-gray-600 transition duration-200 cursor-pointer 
+        } p-2 rounded hover:bg-gray-600 transition duration-200 cursor-pointer w-full text-left mb-2
         ${isOver ? 'border-2 border-green-500' : ''}
       `}
+      tabIndex={tabIndex}
     >
       {collection.set_name}
-    </li>
+    </button>
   );
 };
 
