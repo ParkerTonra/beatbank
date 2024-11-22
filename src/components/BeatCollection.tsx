@@ -12,6 +12,8 @@ interface BeatCollProps {
   onDragEnd: (event: DragEndEvent) => void;
   onBeatPlay: (beat: Beat) => void;
   isEditing: boolean;
+  isEditingSet: boolean;
+  isCreatingSet: boolean;
   setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
   selectedBeats: Beat[];
   setSelectedBeats: React.Dispatch<React.SetStateAction<Beat[]>>;
@@ -31,6 +33,8 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
   onDragEnd,
   onBeatPlay,
   isEditing,
+  isEditingSet,
+  isCreatingSet,
   setIsEditing,
   selectedBeats,
   setSelectedBeats,
@@ -44,6 +48,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
 }) => {
   const { id } = useParams<{ id: string }>();
   const {
+    collectionBeats,
     setCollectionBeats,
     loading,
     error,
@@ -83,6 +88,19 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
     }
   }, [id, setCollectionBeats, fetchSetData]);
 
+  const formatDate = (date: string | null | undefined) => {
+    console.log('Formatting date:', date);
+    if (date === null || date === undefined) {
+      return 'N/A';
+    }
+    const dateObj = new Date(date);
+    return dateObj.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   // Initial data fetch
   useEffect(() => {
     if (id) {
@@ -103,22 +121,50 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
 
   return (
     <>
-      <div className="mb-6 flex w-full justify-between">
-        <h2 className="text-2xl font-bold pl-0 pb-0">{currentCollection.set_name}</h2>
-        <div className="mt-4 flex">
-          <div className="mr-4">
-            Venue: {currentCollection.venue || 'N/A'}
+      <div className="w-full flex items-center justify-between px-4 min-h-[64px] bg-gray-700 rounded-xl my-4 bg-opacity-80 backdrop-blur-3xl shadow-sm">
+        <h2 className="text-2xl font-bold text-white truncate max-w-[300px] flex items-center m-0 p-0">
+          {currentCollection.set_name}
+        </h2>
+
+        <div className="flex items-center gap-8 xl:gap-12 text-md">
+          {/* Always visible - even on small screens */}
+          <div className="flex items-center whitespace-nowrap">
+            <span className="text-gray-400 mr-2">Beats:</span>
+            <span>{collectionBeats.length}</span>
           </div>
-          <div>
-            Date Played: {currentCollection.date_played || 'N/A'}
+
+          {/* Hidden on screens smaller than 1280px */}
+          <div className="hidden xl:flex items-center gap-8">
+            <div className="whitespace-nowrap">
+              <span className="text-gray-400 mr-2 text">Venue:</span>
+              <span>{currentCollection.venue || 'N/A'}</span>
+            </div>
+
+            <div className="whitespace-nowrap">
+              <span className="text-gray-400 mr-2">Date:</span>
+              <span>{formatDate(currentCollection?.date_played)}</span>
+            </div>
+
+            <div className="whitespace-nowrap">
+              <span className="text-gray-400 mr-2">City:</span>
+              <span>{currentCollection.city || 'N/A'}</span>
+            </div>
+
+            <div className="whitespace-nowrap">
+              <span className="text-gray-400 mr-2">State:</span>
+              <span>{currentCollection.state_name || 'N/A'}</span>
+            </div>
           </div>
         </div>
       </div>
+
 
       <BeatTable
         beats={beats}
         onBeatPlay={onBeatPlay}
         isEditing={isEditing}
+        isEditingSet={isEditingSet}
+        isCreatingSet={isCreatingSet}
         setIsEditing={setIsEditing}
         selectedBeats={selectedBeats}
         setSelectedBeats={setSelectedBeats}

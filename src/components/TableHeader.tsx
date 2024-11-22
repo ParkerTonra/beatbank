@@ -21,6 +21,9 @@ interface TableHeaderProps {
   showEditColumnsDialog: boolean;
   setShowEditColumnsDialog: (show: boolean) => void;
   handleForceFirstTimeSetup: () => void;
+  handleEditSet: () => void;
+  isInCollection: boolean;
+  handleDeleteSet: () => void;
 }
 
 export const TableHeader = ({
@@ -35,7 +38,9 @@ export const TableHeader = ({
   uploadedFiles,
   showEditColumnsDialog,
   setShowEditColumnsDialog,
-  handleForceFirstTimeSetup,
+  handleEditSet,
+  isInCollection,
+  handleDeleteSet,
 }: TableHeaderProps) => {
   const { tableInstance } = useTableContext();
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
@@ -87,6 +92,26 @@ export const TableHeader = ({
         <span className="pi pi-pencil mr-2" /> Edit Columns
       </button>
 
+      {isInCollection && (
+        <button
+          onClick={handleEditSet}
+          className="mr-2 mb-2"
+          tabIndex={0}
+        >
+          <span className="pi pi-pencil mr-2" /> Edit Set
+        </button>
+      )}
+
+      {isInCollection && (
+        <button
+          onClick={handleDeleteSet}
+          className="mr-2 mb-2"
+          tabIndex={0}
+        >
+          <span className="pi pi-trash mr-2" /> Delete Set
+        </button>
+      )}
+
       <DropdownMenu
         className="mr-2"
         title="Add"
@@ -103,16 +128,6 @@ export const TableHeader = ({
           tabIndex={0}
         />
       )}
-      {/* Reset to default settings button.
-      TODO: This should be obfuscated final build */}
-      <button onClick={handleForceFirstTimeSetup}
-        className="h-8 w-8 mt-1.5 mx-4 flex items-center justify-center"
-        data-pr-tooltip="Reset to default settings"
-        data-pr-position="top"
-        tabIndex={-1}
-      >
-        <span className="pi pi-refresh" />
-      </button>
 
       {uploadStatus && (
         <button

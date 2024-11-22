@@ -74,7 +74,7 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({
         await invoke('open_file_location', { path: currentBeat?.file_path });
     };
     return (
-        <div className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 px-4 py-3">
+        <div className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 px-4 py-3" id="beat-jockey">
             <div className="max-w-7xl mx-auto">
                 <div className="flex items-center justify-between gap-4">
                     {/* Track Info */}
@@ -116,7 +116,7 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({
                     </div>
 
                     {/* Rest of the component remains the same */}
-                    <div className="flex-1 max-w-2xl" id="beat-jockey">
+                    <div className="flex-1 max-w-2xl">
                         <div className="flex flex-col items-center gap-2">
                             <div className="flex items-center gap-4">
                                 <button

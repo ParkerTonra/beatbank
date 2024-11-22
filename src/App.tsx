@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Beat, CollOrder, RowOrder, AudioExtension, TempoDetectionExtension } from "./bindings";
 import Sidebar from "./components/Sidebar";
 import "./App.css";
@@ -20,6 +20,8 @@ import { listen } from '@tauri-apps/api/event';
 import BeatJockey from "./components/BeatJockey";
 import { useAudio } from "./hooks/useAudio";
 import { FileEntry, readDir } from "@tauri-apps/api/fs";
+import { useNavigate } from 'react-router-dom';
+
 import TableHeader from "./components/TableHeader";
 
 import { Table } from "@tanstack/react-table";
@@ -40,8 +42,10 @@ function AppContainer() {
   const [selectedBeats, setSelectedBeats] = useState<Beat[]>([]);
 
   const [cancelUpload, setCancelUpload] = useState(false);
+  const [isCreatingSet, setIsCreatingSet] = useState(false);
 
   const { setIsOpen: setIsTourOpen } = useTour();
+
 
   const [_, setTheme] = useState<string>('light');
   //@ts-ignore
@@ -60,6 +64,8 @@ function AppContainer() {
   const [uploadStatus, setUploadStatus] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
 
+  const [isEditingSet, setIsEditingSet] = useState(false);
+
 
   // react router hooks
   const location = useLocation();
@@ -68,9 +74,12 @@ function AppContainer() {
   const collectionId = collectionIdMatch ? parseInt(collectionIdMatch[1], 10) : null;
   const { isPlaying, currentBeat, playBeat, stopBeat, togglePlayPause, audioRef } = useAudio();
 
+  const navigate = useNavigate();
+
   const {
     beats,
     beatCollections,
+    setBeatCollections,
     currentCollection,
     fetchData,
     columnVisibility,
@@ -236,9 +245,40 @@ function AppContainer() {
     });
   };
 
+  const handleEditSet = async () => {
+    if (!collectionId) {
+      message('Please select a set first.', { title: 'Error', type: 'error' });
+      return;
+    }
+    try {
+      setIsEditingSet(true);
+    } catch (error) {
+      console.error('Error attempting to edit set:', error);
+    }
+  };
+
+  const handleDeleteSet = async () => {
+    if (!collectionId) {
+      message('Please select a set first.', { title: 'Error', type: 'error', });
+      return;
+    }
+    const confirmed = await confirm('Are you sure you want to delete this set? This cannot be undone.');
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await invoke('delete_beat_collection', {
+        id: collectionId
+      });
+      // Refresh data or update state as needed
+      fetchData();
+      navigate('/');
+    } catch (error) {
+      console.error('Error deleting set:', error);
+    }
+  };
+
   const removeBeatsFromSet = async () => {
-    //remove after debug
-    console.log("removeBeatsFromSet");
     if (!selectedBeats.length) {
       message('Please select a beat first.', { title: 'Error', type: 'error' });
       return;
@@ -511,6 +551,7 @@ function AppContainer() {
     }
   };
 
+
   const handleDragStart = (event: DragStartEvent) => {
     const activeId = event.active.id.toString();
     if (activeId.startsWith('sortable-') || activeId.startsWith('beat-')) {
@@ -623,8 +664,8 @@ function AppContainer() {
       icon: "pi pi-plus",
       items: beatCollections.map(set => ({
         label: set.set_name,
-        // Fix: Call addBeatsToSet instead of handleAddToCollection
-        command: () => addBeatsToSet(set.id)
+        command: () => addBeatsToSet(set.id),
+        draggable: false
       }))
     },
     {
@@ -703,12 +744,22 @@ function AppContainer() {
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
       <div className="flex bg-slate-900 justify-center h-screen overflow-x-hidden">
-        <Sidebar collections={beatCollections} setSelectedBeats={setSelectedBeats} />
+        <Sidebar
+          beatCollections={beatCollections}
+          setBeatCollections={setBeatCollections}
+          setSelectedBeats={setSelectedBeats}
+          setIsEditingSet={setIsEditingSet}
+          isCreatingSet={isCreatingSet}
+          setIsCreatingSet={setIsCreatingSet}
+          isEditingSet={isEditingSet}
+          currentCollection={currentCollection}
+          fetchSetData={fetchSetData}
+        />
         <div className="flex-1 flex flex-col overflow-x-auto">
           <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
-            <span className="fixed right-4 top-2">
-              <img id="icon-tutorial" src={BeatbankLogo} width={60} height={100} draggable={false} onClick={() => setIsTourOpen(true)} />
-            </span>
+            <div className="fixed right-4 top-2" id="icon-tutorial">
+              <img src={BeatbankLogo} width={60} height={100} draggable={false} onClick={() => setIsTourOpen(true)} />
+            </div>
             <TableContext.Provider value={{ tableInstance, setTableInstance }}>
               <div className="flex flex-col flex-1 h-full">
                 <TableHeader
@@ -723,6 +774,9 @@ function AppContainer() {
                   showEditColumnsDialog={showEditColumnsDialog}
                   setShowEditColumnsDialog={setShowEditColumnsDialog}
                   handleForceFirstTimeSetup={handleForceSetup}
+                  handleEditSet={handleEditSet}
+                  isInCollection={isInCollection}
+                  handleDeleteSet={handleDeleteSet}
                 />
                 <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
                   strategy={verticalListSortingStrategy}>
@@ -731,10 +785,10 @@ function AppContainer() {
                       path="/"
                       element={
                         <>
-                          <div>
-                            <div className="mb-6">
-                              <h2 className="text-2xl font-bold mb-2 pl-0 pb-0">All Beats</h2>
-                            </div>
+                          <div className="w-full flex items-center justify-between px-4 min-h-[64px] bg-gray-700 rounded-xl my-4 bg-opacity-80 backdrop-blur-3xl shadow-sm">
+                            <h2 className="text-2xl font-bold text-white truncate max-w-[300px] flex items-center m-0 p-0">
+                              All beats
+                            </h2>
                           </div>
                           <BeatTable
                             beats={beats}
@@ -742,6 +796,8 @@ function AppContainer() {
                             selectedBeats={selectedBeats}
                             setSelectedBeats={setSelectedBeats}
                             isEditing={isEditing}
+                            isEditingSet={isEditingSet}
+                            isCreatingSet={isCreatingSet}
                             setIsEditing={setIsEditing}
                             fetchData={fetchData}
                             columnVisibility={columnVisibility}
@@ -766,6 +822,8 @@ function AppContainer() {
                           onDragEnd={handleDragEnd}
                           onBeatPlay={playBeat}
                           isEditing={isEditing}
+                          isEditingSet={isEditingSet}
+                          isCreatingSet={isCreatingSet}
                           setIsEditing={setIsEditing}
                           selectedBeats={selectedBeats}
                           setSelectedBeats={setSelectedBeats}
@@ -798,7 +856,7 @@ function AppContainer() {
                 </button>
               </div>
             )}
-            
+
             {/* Processing overlay */}
             {isProcessing && (
               <div className="fixed bottom-4 left-4 flex items-center bg-gray-900 bg-opacity-95 rounded-lg p-4 shadow-lg z-40 max-w-md">
@@ -850,25 +908,25 @@ function AppContainer() {
                   </div>
                 </div>
                 <div className="flex flex-col flex-grow mx-8 space-y-3">
-                <button
-                  onClick={() => handleCancel()}
-                  className="p-2 text-white hover:bg-red-500 bg-red-400 rounded-md w-16"
-                  title="Cancel"
-                  data-pr-tooltip="Cancel adding beats"
-                  data-pr-position="right"
-                >
-                  <span>Cancel</span>
-                </button>
-                <button
-                  onClick={() => setShowStatusDialog(!showStatusDialog)}
-                  className="p-2 text-white hover:bg-blue-500 bg-blue-400 rounded-md w-16"
-                  type="button"
-                  data-pr-tooltip="Upload Status"
-                  data-pr-position="right"
-                >
-                  <span>Status</span>
-                </button>
-                <Tooltip target = "button"/>
+                  <button
+                    onClick={() => handleCancel()}
+                    className="p-2 text-white hover:bg-red-500 bg-red-400 rounded-md w-16"
+                    title="Cancel"
+                    data-pr-tooltip="Cancel adding beats"
+                    data-pr-position="right"
+                  >
+                    <span>Cancel</span>
+                  </button>
+                  <button
+                    onClick={() => setShowStatusDialog(!showStatusDialog)}
+                    className="p-2 text-white hover:bg-blue-500 bg-blue-400 rounded-md w-16"
+                    type="button"
+                    data-pr-tooltip="Upload Status"
+                    data-pr-position="right"
+                  >
+                    <span>Status</span>
+                  </button>
+                  <Tooltip target="button" />
                 </div>
               </div>
             )}
@@ -897,8 +955,8 @@ const steps: StepType[] = [
   },
   {
     selector: "#beat-table",
-    content: "Here is where all your beats will display after adding them to beatbank.",
-    position: "top"
+    content: "Here is where all your beats will display after adding them to Beatbank.",
+    position: "center"
   },
   {
     selector: "#edit-columns",
@@ -913,22 +971,21 @@ const steps: StepType[] = [
   {
     selector: "#beat-table",
     content: "You can also drag and drop your audio files onto the table to add them.",
-    position: "bottom"
+    position: "center"
   },
   {
-    selector: "#add-beats",
+    selector: "#table-header-bpm",
     content: "Beatbank will automatically detect the tempos of your beats (in beats per minute) and display them in the table.",
     position: "bottom"
   },
-
   {
     selector: "#beat-jockey",
     content: "The Beat Jockey is your simplified listening experience. Use the controls on the bottom footer to maximize your audio enjoyment",
-    position: "top"
+    position: "center"
   },
   {
     selector: "#icon-tutorial",
-    content: "Click the beatbank icon to return to this tutorial at any time.",
+    content: "Click the Beatbank icon to return to this tutorial at any time.",
     position: "bottom"
   }
 ]
@@ -946,7 +1003,7 @@ function App() {
   return (
     <TourProvider steps={steps} styles={styles} scrollSmooth>
       <Router>
-        <AppContainer/>        
+        <AppContainer/>
       </Router>
     </TourProvider>
   );

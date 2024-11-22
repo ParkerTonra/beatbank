@@ -56,6 +56,7 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void): ColumnDef<Bea
   },
   {
     accessorKey: "bpm",
+    id: "bpm",
     header: "BPM",
     minSize: 80,
     size: 80,

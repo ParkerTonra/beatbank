@@ -35,6 +35,7 @@ const DroppableCollection: React.FC<DroppableCollectionProps> = ({
     <button
       ref={setNodeRef}
       onClick={handleClick}
+
       className={`${setId === collection.id.toString() 
           ? "bg-gray-600" 
           : "bg-gray-700"
@@ -42,6 +43,7 @@ const DroppableCollection: React.FC<DroppableCollectionProps> = ({
         ${isOver ? 'border-2 border-green-500' : ''}
       `}
       tabIndex={tabIndex}
+      draggable={false}
     >
       {collection.set_name}
     </button>

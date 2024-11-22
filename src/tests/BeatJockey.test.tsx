@@ -1,6 +1,5 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import BeatJockey from "../components/BeatJockey.tsx";
-import React from "react";
 
 const mockPlayPause = jest.fn();
 const mockStopPlay = jest.fn();

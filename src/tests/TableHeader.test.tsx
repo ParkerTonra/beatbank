@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import TableHeader from "../components/TableHeader.tsx";
 
 const defaultProps = {
@@ -12,6 +12,10 @@ const defaultProps = {
   uploadedFiles: [],
   showEditColumnsDialog: true,
   setShowEditColumnsDialog: jest.fn(),
+  handleForceFirstTimeSetup: jest.fn(),
+  handleEditSet: jest.fn(),
+  isInCollection: false,
+  handleDeleteSet: jest.fn(),
 }
 
 const setupTableHeader = (props = {}) => {
@@ -20,6 +24,7 @@ const setupTableHeader = (props = {}) => {
   render(
     <TableHeader
       {...combinedProps}
+      
     />);
 }
 

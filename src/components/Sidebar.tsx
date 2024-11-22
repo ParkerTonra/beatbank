@@ -1,53 +1,130 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
-import { Beat, BeatCollection } from "./../bindings";
+import { BeatCollection, CollectionChangeset, Beat } from "./../bindings";
 import DroppableCollection from "./DroppableCollection";
+import CollectionCard from "./CollectionCard";
 import { useNavigate } from "react-router-dom";
 
 interface SidebarProps {
-  collections: BeatCollection[];
+  beatCollections: BeatCollection[];
+  isCreatingSet: boolean;
+  setIsCreatingSet: (isCreatingSet: boolean) => void;
   setSelectedBeats: (beats: Beat[]) => void;
+  setIsEditingSet: (isEditingSet: boolean) => void;
+  isEditingSet: boolean;
+  currentCollection: BeatCollection | null;
+  fetchSetData: (setId: number) => Promise<void>;
+  setBeatCollections: (collections: BeatCollection[]) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
-  collections,
+  beatCollections,
   setSelectedBeats,
+  setIsEditingSet,
+  isCreatingSet,
+  setIsCreatingSet,
+  isEditingSet,
+  currentCollection,
+  fetchSetData,
+  setBeatCollections,
 }) => {
   const [title, setTitle] = useState("");
-  const [beatCollections, setBeatCollections] = useState<BeatCollection[]>(collections);
   const navigate = useNavigate();
+  const [newSetName, setNewSetName] = useState("");
+  const modalRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setBeatCollections(collections);
-  }, [collections]);
+    setBeatCollections(beatCollections);
+  }, [beatCollections, setBeatCollections]);
 
-  async function handleNewBeatCollection(event: React.FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    if (isCreatingSet && modalRef.current) {
+      modalRef.current.focus();
+    }
+  }, [isCreatingSet]);
+
+  const handleCreateSetClick = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (title.trim()) {
-      try {
-        const newCollection: BeatCollection = await invoke("new_beat_collection", {
-          setName: title.trim(),
-        });
-        console.log("New beat collection created:", newCollection);
-        setBeatCollections([...beatCollections, newCollection]);
-        setTitle(""); // Clear the input after successful creation
-      } catch (error) {
-        console.error("Error creating new beat collection:", error);
-      }
+      setNewSetName(title.trim());
+      setIsCreatingSet(true);
+      setTitle(""); // Clear the input
     } else {
+      setNewSetName("");
+      setIsCreatingSet(true);
+      // focus cursor on the new window
+
+      setTitle("");
       console.warn("Please enter a valid title for the new set");
     }
-  }
 
+
+  };
   const returnToAllBeats = () => {
     setSelectedBeats([]);
     navigate("/");
-  }
+  };
+  const handleSetSave = async (setData: Partial<BeatCollection>) => {
+    try {
+      if (setData.id) {
+        const collectionData: CollectionChangeset = {
+          id: setData.id,
+          set_name: setData.set_name || null,
+          venue: setData.venue || null,
+          city: setData.city || null,
+          state_name: setData.state_name || null,
+          date_played: setData.date_played || null
+        };
+
+        try {
+          await invoke("edit_beat_collection", {
+            collection: collectionData
+          });
+
+          setBeatCollections(beatCollections.map(collection => {
+            if (collection.id === setData.id) {
+              return {
+                ...collection,
+                // Only update non-null values
+                set_name: setData.set_name || collection.set_name,
+                venue: setData.venue ?? collection.venue,
+                city: setData.city ?? collection.city,
+                state_name: setData.state_name ?? collection.state_name,
+                date_played: setData.date_played ?? collection.date_played
+              };
+            }
+            return collection;
+          }));
+          setIsEditingSet(false);
+        } catch (error) {
+          console.error("Error updating beat collection:", error);
+        } finally {
+          fetchSetData(setData.id);
+        }
+      } else {
+        console.log("Creating new collection:", setData);
+        const newCollection: BeatCollection = await invoke("new_beat_collection", {
+          setName: setData.set_name,
+          venue: setData.venue,
+          city: setData.city,
+          stateName: setData.state_name,
+          datePlayed: setData.date_played
+        });
+
+        console.log("New beat collection created:", newCollection);
+        setBeatCollections([...beatCollections, newCollection]);
+        setIsCreatingSet(false);
+      }
+    } catch (error) {
+      console.error("Error creating/updating beat collection:", error);
+    }
+  };
+
 
   return (
     <div className="w-64 h-screen bg-gray-800 text-white p-4 flex flex-col">
       <h1 className="text-3xl font-bold font-guerilla py-0 mb-4" id="beatbank-title">BEATBANK</h1>
-      <form onSubmit={handleNewBeatCollection} className="mb-4">
+      <form onSubmit={handleCreateSetClick} className="mb-4">
         <input
           type="text"
           placeholder="Enter a name for a new set"
@@ -64,16 +141,16 @@ const Sidebar: React.FC<SidebarProps> = ({
           Add New Set
         </button>
       </form>
-      <div className="flex-1 overflow-y-auto px-1">
-        <h3 className="text-lg font-semibold mb-2" id="set-list">My sets:</h3>
-        <button
-          className="block w-full text-left p-2 bg-gray-500 hover:bg-gray-600 rounded h-12 items-center justify-start cursor-pointer mb-2"
+      <div className="flex-1 overflow-y-auto mb-28 pl-1 pr-3">
+        <h3 className="text-lg font-semibold mb-2">My sets:</h3>
+        <button className="block w-full text-left p-2 bg-gray-500 hover:bg-gray-600 rounded h-12 items-center justify-start cursor-pointer mb-2"
+          aria-labelledby="set-list"
           onClick={returnToAllBeats}
           tabIndex={0}
         >
-            All Beats
+          All Beats
         </button>
-        {beatCollections.map((collection, index) => (
+        {beatCollections.map((collection) => (
           <DroppableCollection
             key={collection.id}
             collection={collection}
@@ -82,7 +159,44 @@ const Sidebar: React.FC<SidebarProps> = ({
           />
         ))}
       </div>
-    </div>
+  {
+    isCreatingSet && (
+      <CollectionCard
+        ref={modalRef}
+        isCreating={true}
+        set={{
+          set_name: newSetName
+        }}
+        onCloseCollection={() => {
+          setIsCreatingSet(false);
+          setNewSetName("");
+        }}
+        onSaveCollection={handleSetSave}
+      />
+    )
+  }
+  {/* EditSetCard Modal (editing existing set) */ }
+  {
+    isEditingSet && (
+      <CollectionCard
+        isCreating={false}
+        set={{
+          id: currentCollection?.id,
+          set_name: currentCollection?.set_name,
+          venue: currentCollection?.venue,
+          city: currentCollection?.city,
+          state_name: currentCollection?.state_name,
+          date_played: currentCollection?.date_played?.toString(),
+        }}
+        onCloseCollection={() => {
+          setIsEditingSet(false);
+          setNewSetName("");
+        }}
+        onSaveCollection={handleSetSave}
+      />
+    )
+  }
+    </div >
   );
 };
 
