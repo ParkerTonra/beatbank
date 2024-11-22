@@ -40,7 +40,6 @@ export const TableHeader = ({
   uploadedFiles,
   showEditColumnsDialog,
   setShowEditColumnsDialog,
-  handleForceFirstTimeSetup,
   handleEditSet,
   isInCollection,
   handleDeleteSet,

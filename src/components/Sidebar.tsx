@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { BeatCollection, CollectionChangeset, Beat } from "./../bindings";
-import { Link } from 'react-router-dom';
 import DroppableCollection from "./DroppableCollection";
 import CollectionCard from "./CollectionCard";
 import { useNavigate } from "react-router-dom";
@@ -12,16 +11,16 @@ interface SidebarProps {
   setIsEditingSet: (isEditingSet: boolean) => void;
   isEditingSet: boolean;
   currentCollection: BeatCollection | null;
-  fetchData: () => void;
+  fetchSetData: (setId: number) => Promise<void>;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
   collections,
   setSelectedBeats,
+  setIsEditingSet,
   isEditingSet,
   currentCollection,
-  setIsEditingSet,
-  fetchData
+  fetchSetData,
 }) => {
   const [title, setTitle] = useState("");
   const [beatCollections, setBeatCollections] = useState<BeatCollection[]>(collections);
@@ -46,10 +45,11 @@ const Sidebar: React.FC<SidebarProps> = ({
       console.warn("Please enter a valid title for the new set");
     }
 
-    const returnToAllBeats = () => {
-      setSelectedBeats([]);
-      navigate("/");
-    };
+    
+  };
+  const returnToAllBeats = () => {
+    setSelectedBeats([]);
+    navigate("/");
   };
   const handleSetSave = async (setData: Partial<BeatCollection>) => {
     try {
@@ -62,9 +62,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                 state_name: setData.state_name || null,
                 date_played: setData.date_played || null
             };
-            
-            console.log("Date being sent:", collectionData.date_played);
-            console.log("Sending to Rust:", collectionData);
             
             try {
                 await invoke("edit_beat_collection", {
@@ -88,6 +85,8 @@ const Sidebar: React.FC<SidebarProps> = ({
               setIsEditingSet(false);
             } catch (error) {
                 console.error("Error updating beat collection:", error);
+            } finally {
+                fetchSetData(setData.id);
             }
         } else {
             console.log("Creating new collection:", setData);
@@ -105,12 +104,9 @@ const Sidebar: React.FC<SidebarProps> = ({
         }
     } catch (error) {
         console.error("Error creating/updating beat collection:", error);
-    } finally {
-        fetchData();
-        setIsCreatingSet(false);
-        setIsEditingSet(false);
-        setTitle("");
+    }
  };
+
 
   return (
     <div className="w-64 h-screen bg-gray-800 text-white p-4 flex flex-col">
@@ -132,17 +128,18 @@ const Sidebar: React.FC<SidebarProps> = ({
       </form>
       <div className="flex-1 overflow-y-auto">
         <h3 className="text-lg font-semibold mb-2">My sets:</h3>
-        <ul className="space-y-2">
-          <Link to="/">
+        <ul className="space-y-2" aria-labelledby="set-list">
           <li
             className="block w-full text-left p-2 bg-gray-500 py-4 hover:bg-gray-600 rounded h-12 items-center justify-start cursor-pointer"
             onClick={returnToAllBeats}
           >
-          </Link>
+              All Beats
+          </li>
           {beatCollections.map((collection) => (
             <DroppableCollection
               key={collection.id}
               collection={collection}
+              setSelectedBeats={setSelectedBeats}
             />
           ))}
         </ul>
