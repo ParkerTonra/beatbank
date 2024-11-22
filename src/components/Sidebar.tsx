@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { BeatCollection, CollectionChangeset, Beat } from "./../bindings";
 import DroppableCollection from "./DroppableCollection";
@@ -27,16 +27,22 @@ const Sidebar: React.FC<SidebarProps> = ({
   isEditingSet,
   currentCollection,
   fetchSetData,
-  fetchData,
   setBeatCollections,
 }) => {
   const [title, setTitle] = useState("");
   const navigate = useNavigate();
   const [newSetName, setNewSetName] = useState("");
-
+  const modalRef = useRef<HTMLInputElement>(null);
+  
   useEffect(() => {
     setBeatCollections(beatCollections);
   }, [beatCollections, setBeatCollections]);
+
+  useEffect(() => {
+    if (isCreatingSet && modalRef.current) {
+      modalRef.current.focus();
+    }
+  }, [isCreatingSet]);
 
   const handleCreateSetClick = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -47,11 +53,13 @@ const Sidebar: React.FC<SidebarProps> = ({
     } else {
       setNewSetName("");
       setIsCreatingSet(true);
+      // focus cursor on the new window
+
       setTitle("");
       console.warn("Please enter a valid title for the new set");
     }
 
-    
+
   };
   const returnToAllBeats = () => {
     setSelectedBeats([]);
@@ -59,59 +67,59 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
   const handleSetSave = async (setData: Partial<BeatCollection>) => {
     try {
-        if (setData.id) {
-            const collectionData: CollectionChangeset = {
-                id: setData.id,
-                set_name: setData.set_name || null,
-                venue: setData.venue || null,
-                city: setData.city || null,
-                state_name: setData.state_name || null,
-                date_played: setData.date_played || null
-            };
-            
-            try {
-                await invoke("edit_beat_collection", {
-                    collection: collectionData
-                });
-                
-                setBeatCollections(beatCollections.map(collection => {
-                  if (collection.id === setData.id) {
-                      return {
-                          ...collection,
-                          // Only update non-null values
-                          set_name: setData.set_name || collection.set_name,
-                          venue: setData.venue ?? collection.venue,
-                          city: setData.city ?? collection.city,
-                          state_name: setData.state_name ?? collection.state_name,
-                          date_played: setData.date_played ?? collection.date_played
-                      };
-                  }
-                  return collection;
-              }));
-              setIsEditingSet(false);
-            } catch (error) {
-                console.error("Error updating beat collection:", error);
-            } finally {
-                fetchSetData(setData.id);
+      if (setData.id) {
+        const collectionData: CollectionChangeset = {
+          id: setData.id,
+          set_name: setData.set_name || null,
+          venue: setData.venue || null,
+          city: setData.city || null,
+          state_name: setData.state_name || null,
+          date_played: setData.date_played || null
+        };
+
+        try {
+          await invoke("edit_beat_collection", {
+            collection: collectionData
+          });
+
+          setBeatCollections(beatCollections.map(collection => {
+            if (collection.id === setData.id) {
+              return {
+                ...collection,
+                // Only update non-null values
+                set_name: setData.set_name || collection.set_name,
+                venue: setData.venue ?? collection.venue,
+                city: setData.city ?? collection.city,
+                state_name: setData.state_name ?? collection.state_name,
+                date_played: setData.date_played ?? collection.date_played
+              };
             }
-        } else {
-            console.log("Creating new collection:", setData);
-            const newCollection: BeatCollection = await invoke("new_beat_collection", {
-                setName: setData.set_name,
-                venue: setData.venue,
-                city: setData.city,
-                stateName: setData.state_name,
-                datePlayed: setData.date_played
-            });
-            
-            console.log("New beat collection created:", newCollection);
-            setBeatCollections([...beatCollections, newCollection]);
-            setIsCreatingSet(false);
+            return collection;
+          }));
+          setIsEditingSet(false);
+        } catch (error) {
+          console.error("Error updating beat collection:", error);
+        } finally {
+          fetchSetData(setData.id);
         }
+      } else {
+        console.log("Creating new collection:", setData);
+        const newCollection: BeatCollection = await invoke("new_beat_collection", {
+          setName: setData.set_name,
+          venue: setData.venue,
+          city: setData.city,
+          stateName: setData.state_name,
+          datePlayed: setData.date_played
+        });
+
+        console.log("New beat collection created:", newCollection);
+        setBeatCollections([...beatCollections, newCollection]);
+        setIsCreatingSet(false);
+      }
     } catch (error) {
-        console.error("Error creating/updating beat collection:", error);
+      console.error("Error creating/updating beat collection:", error);
     }
- };
+  };
 
 
   return (
@@ -132,58 +140,60 @@ const Sidebar: React.FC<SidebarProps> = ({
           Add New Set
         </button>
       </form>
-      <div className="flex-1 overflow-y-auto mb-28">
+      <div className="flex-1 overflow-y-auto mb-28 pl-1 pr-3">
         <h3 className="text-lg font-semibold mb-2">My sets:</h3>
-        <ul className="space-y-2" aria-labelledby="set-list">
-          <li
-            className="block w-full text-left p-2 bg-gray-500 py-4 hover:bg-gray-600 rounded h-12 items-center justify-start cursor-pointer"
-            onClick={returnToAllBeats}
-          >
-              All Beats
-          </li>
-          {beatCollections.map((collection) => (
-            <DroppableCollection
-              key={collection.id}
-              collection={collection}
-              setSelectedBeats={setSelectedBeats}
-            />
-          ))}
-        </ul>
+        <button className="block w-full text-left p-2 bg-gray-500 hover:bg-gray-600 rounded h-12 items-center justify-start cursor-pointer mb-2"
+          aria-labelledby="set-list"
+          onClick={returnToAllBeats}
+        >
+          All Beats
+        </button>
+        {beatCollections.map((collection) => (
+          <DroppableCollection
+            key={collection.id}
+            collection={collection}
+            setSelectedBeats={setSelectedBeats}
+          />
+        ))}
       </div>
-      {/* EditSetCard Modal (creating new set) */}
-      {isCreatingSet && (
-        <CollectionCard
-          isCreating={true}
-          set={{
-            set_name: newSetName
-          }}
-          onCloseCollection={() => {
-            setIsCreatingSet(false);
-            setNewSetName("");
-          }}
-          onSaveCollection={handleSetSave}
-        />
-      )}
-      {/* EditSetCard Modal (editing existing set) */}
-      {isEditingSet && (
-        <CollectionCard
-          isCreating={false}
-          set={{
-            id: currentCollection?.id,
-            set_name: currentCollection?.set_name,
-            venue: currentCollection?.venue,
-            city: currentCollection?.city,
-            state_name: currentCollection?.state_name,
-            date_played: currentCollection?.date_played?.toString(),
-          }}
-          onCloseCollection={() => {
-            setIsEditingSet(false);
-            setNewSetName("");
-          }}
-          onSaveCollection={handleSetSave}
-        />
-      )}
-    </div>
+  {
+    isCreatingSet && (
+      <CollectionCard
+        ref={modalRef}
+        isCreating={true}
+        set={{
+          set_name: newSetName
+        }}
+        onCloseCollection={() => {
+          setIsCreatingSet(false);
+          setNewSetName("");
+        }}
+        onSaveCollection={handleSetSave}
+      />
+    )
+  }
+  {/* EditSetCard Modal (editing existing set) */ }
+  {
+    isEditingSet && (
+      <CollectionCard
+        isCreating={false}
+        set={{
+          id: currentCollection?.id,
+          set_name: currentCollection?.set_name,
+          venue: currentCollection?.venue,
+          city: currentCollection?.city,
+          state_name: currentCollection?.state_name,
+          date_played: currentCollection?.date_played?.toString(),
+        }}
+        onCloseCollection={() => {
+          setIsEditingSet(false);
+          setNewSetName("");
+        }}
+        onSaveCollection={handleSetSave}
+      />
+    )
+  }
+    </div >
   );
 };
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { forwardRef, RefObject, useState } from "react";
 import type { BeatCollection } from "../bindings";
 import { Tooltip } from "primereact/tooltip";
 import { Button } from "primereact/button";
@@ -8,6 +8,7 @@ interface CollectionCardProps {
     onCloseCollection: () => void;
     onSaveCollection: (setData: Partial<BeatCollection>) => void;
     isCreating?: boolean;
+    ref?: RefObject<HTMLInputElement>;
 }
 
 interface SetFormState {
@@ -27,7 +28,12 @@ interface FormErrors {
 
 
 
-const CollectionCard: React.FC<CollectionCardProps> = ({ set, onCloseCollection, onSaveCollection, isCreating = false }) => {
+
+
+
+const CollectionCard = forwardRef<HTMLInputElement, Omit<CollectionCardProps, 'ref'>>((props, ref) => {
+    const { set, onCloseCollection, onSaveCollection, isCreating = false } = props;
+    
     const [editedSet, setEditedSet] = useState<SetFormState>({
         id: set?.id,
         set_name: set?.set_name || "",
@@ -148,6 +154,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({ set, onCloseCollection,
                             className={`mt-1 block w-full p-2 bg-gray-700 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${errors.set_name ? 'border-red-500' : 'border-gray-600'
                                 }`}
                             required
+                            ref={ref}
                         />
                         {errors.set_name && <p className="text-red-500 text-sm mt-1">{errors.set_name}</p>}
                     </div>
@@ -258,6 +265,6 @@ const CollectionCard: React.FC<CollectionCardProps> = ({ set, onCloseCollection,
         </div>
         
     );
-};
+});
 
 export default CollectionCard;
