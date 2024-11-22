@@ -12,13 +12,15 @@ interface SidebarProps {
   setIsEditingSet: (isEditingSet: boolean) => void;
   isEditingSet: boolean;
   currentCollection: BeatCollection | null;
+  fetchSetData: (setId: number) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
   collections,
   isEditingSet,
   currentCollection,
-  setIsEditingSet
+  setIsEditingSet,
+  fetchSetData
 }) => {
   const [title, setTitle] = useState("");
   const [beatCollections, setBeatCollections] = useState<BeatCollection[]>(collections);
@@ -54,9 +56,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                 date_played: setData.date_played || null
             };
             
-            console.log("Date being sent:", collectionData.date_played);
-            console.log("Sending to Rust:", collectionData);
-            
             try {
                 await invoke("edit_beat_collection", {
                     collection: collectionData
@@ -79,6 +78,8 @@ const Sidebar: React.FC<SidebarProps> = ({
               setIsEditingSet(false);
             } catch (error) {
                 console.error("Error updating beat collection:", error);
+            } finally {
+                fetchSetData(setData.id);
             }
         } else {
             console.log("Creating new collection:", setData);
