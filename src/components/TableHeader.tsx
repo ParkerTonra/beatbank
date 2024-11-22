@@ -1,6 +1,6 @@
 // In TableHeader.tsx
 
-import { Beat } from "../bindings";
+import { Beat, BeatCollection } from "../bindings";
 import DropdownMenu from "./DropdownMenu";
 import { Dialog } from "primereact/dialog";
 import { MenuItem } from "primereact/menuitem";
@@ -22,6 +22,7 @@ interface TableHeaderProps {
   setShowEditColumnsDialog: (show: boolean) => void;
   handleForceFirstTimeSetup: () => void;
   handleEditSet: () => void;
+  isInCollection: boolean;
 }
 
 
@@ -40,6 +41,7 @@ export const TableHeader = ({
   setShowEditColumnsDialog,
   handleForceFirstTimeSetup,
   handleEditSet,
+  isInCollection,
 }: TableHeaderProps) => {
   const { tableInstance } = useTableContext();
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
@@ -85,6 +87,8 @@ export const TableHeader = ({
       >
         <span className="pi pi-pencil mr-2" /> Edit Columns
       </button>
+      {isInCollection && (
+
       <button
         onClick={handleEditSet}
         className="mr-2 mb-2"
@@ -92,6 +96,7 @@ export const TableHeader = ({
         <span className="pi pi-pencil mr-2" /> Edit Set
       </button>
 
+      )}
 
       {tableInstance && (
         <Dialog

@@ -744,6 +744,7 @@ function AppContainer() {
                   setShowEditColumnsDialog={setShowEditColumnsDialog}
                   handleForceFirstTimeSetup={handleForceSetup}
                   handleEditSet={handleEditSet}
+                  isInCollection={isInCollection}
                 />
                 <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
                   strategy={verticalListSortingStrategy}>
