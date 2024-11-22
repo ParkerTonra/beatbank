@@ -664,7 +664,8 @@ function AppContainer() {
       icon: "pi pi-plus",
       items: beatCollections.map(set => ({
         label: set.set_name,
-        command: () => addBeatsToSet(set.id)
+        command: () => addBeatsToSet(set.id),
+        draggable: false
       }))
     },
     {
@@ -746,7 +747,6 @@ function AppContainer() {
         <Sidebar 
         beatCollections={beatCollections}
         setBeatCollections={setBeatCollections}
-        fetchData={fetchData}
         setSelectedBeats={setSelectedBeats} 
         setIsEditingSet={setIsEditingSet}
         isCreatingSet={isCreatingSet}

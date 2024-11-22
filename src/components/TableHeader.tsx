@@ -166,16 +166,6 @@ export const TableHeader = ({
           items={beatActionItems}
         />
       )}
-      {/* Reset to default settings button.
-      TODO: This should be obfuscated final build */}
-      {/* <button onClick={handleForceFirstTimeSetup}
-        className="h-8 w-8 mt-1.5 mx-4 flex items-center justify-center"
-        data-pr-tooltip="Reset to default settings"
-        data-pr-position="top"
-      >
-        <span className="pi pi-refresh" />
-      </button> */}
-
       {uploadStatus && (
         <button
           onClick={() => setShowStatusDialog(true)}

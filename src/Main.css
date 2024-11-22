@@ -92,7 +92,7 @@
   background-color: #1e293b;
   margin-left: 8px;
   border-radius: 4px;
-  overflow-y: scroll;
+  overflow-y: auto;
   margin-bottom: 12rem;
   top: 0;
   max-height: 520px;
@@ -111,6 +111,10 @@
 .p-menuitem-link {
   padding: 4px;
   margin-bottom: 4px;
+}
+
+.p-menuitem-link, .p-menuitem-text {
+  -webkit-user-drag: none;
 }
 
 .p-menuitem-link:hover {

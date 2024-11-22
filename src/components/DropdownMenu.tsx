@@ -30,7 +30,7 @@ const DropdownMenu = ({
         <span className="ml-2">{title}</span>
       </Button>
       <TieredMenu
-        className={`absolute left-full top-0 bg-slate-800 p-2 ${className}`}
+        className={`absolute left-full top-0 bg-slate-800 p-2 ${className} select-none`}
         model={items}
         breakpoint="767px"
         popup

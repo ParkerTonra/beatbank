@@ -14,7 +14,6 @@ interface SidebarProps {
   isEditingSet: boolean;
   currentCollection: BeatCollection | null;
   fetchSetData: (setId: number) => Promise<void>;
-  fetchData: () => Promise<void>;
   setBeatCollections: (collections: BeatCollection[]) => void;
 }
 
