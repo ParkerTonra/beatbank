@@ -156,6 +156,7 @@ export const TableHeader = ({
         title="Add"
         icon="pi pi-plus"
         items={addBeatItems}
+        
       />
 
       {selectedBeats.length > 0 && (

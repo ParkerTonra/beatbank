@@ -92,6 +92,11 @@
   background-color: #1e293b;
   margin-left: 8px;
   border-radius: 4px;
+  overflow-y: scroll;
+  margin-bottom: 12rem;
+  top: 0;
+  max-height: 520px;
+  position: absolute;
 }
 
 .p-dialog, .p-dialog-header, .p-dialog-content {
