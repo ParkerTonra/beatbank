@@ -757,7 +757,7 @@ function AppContainer() {
         />
         <div className="flex-1 flex flex-col overflow-x-auto">
           <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
-            <div className="fixed right-4 top-2" id="icon-tutorial">
+            <div className="fixed right-4 top-4" id="icon-tutorial">
               <img src={BeatbankLogo} width={60} height={100} draggable={false} onClick={() => setIsTourOpen(true)} />
             </div>
             <TableContext.Provider value={{ tableInstance, setTableInstance }}>
