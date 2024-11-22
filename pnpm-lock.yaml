@@ -23,6 +23,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@18.3.1)
+      '@reactour/tour':
+        specifier: ^3.7.0
+        version: 3.7.0(react@18.3.1)
       '@tanstack/react-table':
         specifier: ^8.20.5
         version: 8.20.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1134,6 +1137,26 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
+  '@reactour/mask@1.1.0':
+    resolution: {integrity: sha512-GkJMLuTs3vTsm4Ryq2uXcE4sMzRP1p4xSd6juSOMqbHa7IVD/UiLCLqJWHR9xGSQPbYhpZAZAORUG5cS0U5tBA==}
+    peerDependencies:
+      react: 16.x || 17.x || 18.x
+
+  '@reactour/popover@1.2.0':
+    resolution: {integrity: sha512-1JMykZ+MmDmRlEVC5+DwlvK1exwV5bFHtiSFwVXnoPZmsSfwId6SLyjo9H6bybeuNtNEzviKdsF/ZBC1UQbDqg==}
+    peerDependencies:
+      react: 16.x || 17.x || 18.x
+
+  '@reactour/tour@3.7.0':
+    resolution: {integrity: sha512-p0USaOBc5fcNBS5ZiQ2lsmztAhIGCUfx913Zw14FbEM8bhSXpR1F2JD0alVj9Ya1N+pnTNYatf14rSNGJsEnCg==}
+    peerDependencies:
+      react: 16.x || 17.x || 18.x
+
+  '@reactour/utils@0.5.0':
+    resolution: {integrity: sha512-yQs5Nm/Dg1xRM7d/S/UILBV5OInrTgrjGzgc81/RP5khqdO5KnpOaC46yF83kDtCalte8X3RCwp+F2YA509k1w==}
+    peerDependencies:
+      react: 16.x || 17.x || 18.x
+
   '@remix-run/router@1.20.0':
     resolution: {integrity: sha512-mUnk8rPJBI9loFDZ+YzPGdeniYK+FTmRD1TMCz7ev2SNIozyKKpnGgsxO34u6Z4z/t0ITuu7voi/AshfsGsgFg==}
     engines: {node: '>=14.0.0'}
@@ -1217,6 +1240,11 @@ packages:
     resolution: {integrity: sha512-fOvu7PCQjAj4eWDEuD8Xz5gpzFqXzGlxHZozHP4b9Jxv9APtdxL6STqztDzMLuRXEc4UpXGGhx029Xgm91QBeA==}
     cpu: [x64]
     os: [win32]
+
+  '@rooks/use-mutation-observer@4.11.2':
+    resolution: {integrity: sha512-vpsdrZdr6TkB1zZJcHx+fR1YC/pHs2BaqcuYiEGjBVbwY5xcC49+h0hAUtQKHth3oJqXfIX/Ng8S7s5HFHdM/A==}
+    peerDependencies:
+      react: '>=16.8.0'
 
   '@sinclair/typebox@0.27.8':
     resolution: {integrity: sha512-+Fj43pSMwJs4KRrH/938Uf+uAELIgVBmQzg/q1YG10djyfA3TnrU8N8XzqCh/okZdszqBQTZf96idMfE5lnwTA==}
@@ -2639,6 +2667,9 @@ packages:
 
   requires-port@1.0.0:
     resolution: {integrity: sha512-KigOCHcocU3XODJxsu8i/j8T9tzT4adHiecwORRQ0ZZFcp7ahwXuRU1m+yuO90C5ZUyGeGfocHDI14M3L3yDAQ==}
+
+  resize-observer-polyfill@1.5.1:
+    resolution: {integrity: sha512-LwZrotdHOo12nQuZlHEmtuXdqGoOD0OhaxopaNFxWzInpEgaLWoVuAMbTzixuosCx2nEG58ngzW3vxdWoxIgdg==}
 
   resolve-cwd@3.0.0:
     resolution: {integrity: sha512-OrZaX2Mb+rJCpH/6CpSqt9xFVpN++x01XnN2ie9g6P5/3xelLAkXWVADpdz1IHD/KFfEXyE6V0U01OQ3UO2rEg==}
@@ -4310,6 +4341,29 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
+  '@reactour/mask@1.1.0(react@18.3.1)':
+    dependencies:
+      '@reactour/utils': 0.5.0(react@18.3.1)
+      react: 18.3.1
+
+  '@reactour/popover@1.2.0(react@18.3.1)':
+    dependencies:
+      '@reactour/utils': 0.5.0(react@18.3.1)
+      react: 18.3.1
+
+  '@reactour/tour@3.7.0(react@18.3.1)':
+    dependencies:
+      '@reactour/mask': 1.1.0(react@18.3.1)
+      '@reactour/popover': 1.2.0(react@18.3.1)
+      '@reactour/utils': 0.5.0(react@18.3.1)
+      react: 18.3.1
+
+  '@reactour/utils@0.5.0(react@18.3.1)':
+    dependencies:
+      '@rooks/use-mutation-observer': 4.11.2(react@18.3.1)
+      react: 18.3.1
+      resize-observer-polyfill: 1.5.1
+
   '@remix-run/router@1.20.0': {}
 
   '@rollup/rollup-android-arm-eabi@4.21.3':
@@ -4359,6 +4413,10 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.21.3':
     optional: true
+
+  '@rooks/use-mutation-observer@4.11.2(react@18.3.1)':
+    dependencies:
+      react: 18.3.1
 
   '@sinclair/typebox@0.27.8': {}
 
@@ -5949,6 +6007,8 @@ snapshots:
   require-directory@2.1.1: {}
 
   requires-port@1.0.0: {}
+
+  resize-observer-polyfill@1.5.1: {}
 
   resolve-cwd@3.0.0:
     dependencies:
