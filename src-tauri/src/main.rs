@@ -7,7 +7,7 @@ mod store;
 mod audio_analysis;
 use audio_analysis::AnalysisError;
 use diesel::prelude::*;
-use models::CollOrder;
+use models::{CollOrder, CollectionChangeset};
 use serde::Deserialize;
 use serde_json::{self, json};
 use std::{
@@ -281,11 +281,11 @@ fn delete_beats(ids: Vec<i32>, state: State<'_, AppState>) -> Result<(), String>
 }
 
 #[tauri::command]
-fn update_beat(beat: BeatChangeset, state: State<'_, AppState>) -> Result<(), String> {
+fn edit_beat(beat: BeatChangeset, state: State<'_, AppState>) -> Result<(), String> {
     let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
     let conn = &mut conn_guard.conn;
 
-    db::update_beat(conn, beat)
+    db::edit_beat(conn, beat)
         .map_err(|e| e.to_string())
 }
 
@@ -337,6 +337,14 @@ fn new_beat_collection(
     )
     .map_err(|e| e.to_string())?;
     Ok(collection)
+}
+
+#[tauri::command]
+fn edit_beat_collection(state: State<'_, AppState>, collection: CollectionChangeset) -> Result<(), String> {
+    let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
+    let conn = &mut conn_guard.conn;
+    db::update_collection(conn, collection).map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -494,9 +502,10 @@ fn main() {
             cancel_processing,
             delete_beat,
             delete_beats,
-            update_beat,
+            edit_beat,
             fetch_column_vis,
             new_beat_collection,
+            edit_beat_collection,
             fetch_collections,
             delete_beat_collection,
             add_beat_to_collection,

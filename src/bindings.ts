@@ -27,6 +27,15 @@ export type BeatCollection = {
   date_created?: string;
 };
 
+export type CollectionChangeset = {
+  id: number;            // Make this required since it's for changes
+  set_name?: string | null;    // Optional with null
+  venue?: string | null;       // Optional with null
+  city?: string | null;        // Optional with null
+  state_name?: string | null;  // Optional with null
+  date_played?: string | null; // Optional with null for timestamp
+};
+
 export type ColumnVis = {
   title: boolean;
   bpm: boolean;

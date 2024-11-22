@@ -20,6 +20,8 @@ import { listen } from '@tauri-apps/api/event';
 import BeatJockey from "./components/BeatJockey";
 import { useAudio } from "./hooks/useAudio";
 import { FileEntry, readDir } from "@tauri-apps/api/fs";
+import { useNavigate } from 'react-router-dom';
+
 import TableHeader from "./components/TableHeader";
 
 
@@ -40,6 +42,8 @@ function AppContainer() {
 
   const [cancelUpload, setCancelUpload] = useState(false);
 
+  const [isCreatingSet, setIsCreatingSet] = useState(false);
+
   const [_, setTheme] = useState<string>('light');
   //@ts-ignore
   const [settingsPath, setSettingsPath] = useState<string>('');
@@ -57,6 +61,8 @@ function AppContainer() {
   const [uploadStatus, setUploadStatus] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
 
+  const [isEditingSet, setIsEditingSet] = useState(false);
+
 
   // react router hooks
   const location = useLocation();
@@ -65,9 +71,12 @@ function AppContainer() {
   const collectionId = collectionIdMatch ? parseInt(collectionIdMatch[1], 10) : null;
   const { isPlaying, currentBeat, playBeat, stopBeat, togglePlayPause, audioRef } = useAudio();
 
+  const navigate = useNavigate();
+
   const {
     beats,
     beatCollections,
+    setBeatCollections,
     currentCollection,
     fetchData,
     columnVisibility,
@@ -236,9 +245,40 @@ function AppContainer() {
     });
   };
 
+  const handleEditSet = async () => {
+    if (!collectionId) {
+      message('Please select a set first.', { title: 'Error', type: 'error' });
+      return;
+    }
+    try {
+      setIsEditingSet(true);
+    } catch (error) {
+      console.error('Error attempting to edit set:', error);
+    }
+  };
+
+  const handleDeleteSet = async () => {
+    if (!collectionId) {
+      message('Please select a set first.', { title: 'Error', type: 'error', });
+      return;
+    }
+    const confirmed = await confirm('Are you sure you want to delete this set? This cannot be undone.');
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await invoke('delete_beat_collection', {
+        id: collectionId
+      });
+      // Refresh data or update state as needed
+      fetchData();
+      navigate('/');
+    } catch (error) {
+      console.error('Error deleting set:', error);
+    }
+  };
+
   const removeBeatsFromSet = async () => {
-    //remove after debug
-    console.log("removeBeatsFromSet");
     if (!selectedBeats.length) {
       message('Please select a beat first.', { title: 'Error', type: 'error' });
       return;
@@ -511,6 +551,7 @@ function AppContainer() {
     }
   };
 
+
   const handleDragStart = (event: DragStartEvent) => {
     const activeId = event.active.id.toString();
     if (activeId.startsWith('sortable-') || activeId.startsWith('beat-')) {
@@ -623,8 +664,8 @@ function AppContainer() {
       icon: "pi pi-plus",
       items: beatCollections.map(set => ({
         label: set.set_name,
-        // Fix: Call addBeatsToSet instead of handleAddToCollection
-        command: () => addBeatsToSet(set.id)
+        command: () => addBeatsToSet(set.id),
+        draggable: false
       }))
     },
     {
@@ -703,7 +744,17 @@ function AppContainer() {
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
       <div className="flex bg-slate-900 justify-center h-screen overflow-x-hidden">
-        <Sidebar collections={beatCollections} setSelectedBeats={setSelectedBeats} />
+        <Sidebar 
+        beatCollections={beatCollections}
+        setBeatCollections={setBeatCollections}
+        setSelectedBeats={setSelectedBeats} 
+        setIsEditingSet={setIsEditingSet}
+        isCreatingSet={isCreatingSet}
+        setIsCreatingSet={setIsCreatingSet}
+        isEditingSet={isEditingSet} 
+        currentCollection={currentCollection} 
+        fetchSetData={fetchSetData} 
+        />
         <div className="flex-1 flex flex-col overflow-x-auto">
           <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
             <span className="fixed right-4 top-2">
@@ -723,6 +774,9 @@ function AppContainer() {
                   showEditColumnsDialog={showEditColumnsDialog}
                   setShowEditColumnsDialog={setShowEditColumnsDialog}
                   handleForceFirstTimeSetup={handleForceSetup}
+                  handleEditSet={handleEditSet}
+                  isInCollection={isInCollection}
+                  handleDeleteSet={handleDeleteSet}
                 />
                 <SortableContext items={beats.map((beat) => `sortable-${beat.id}`)}
                   strategy={verticalListSortingStrategy}>
@@ -742,6 +796,8 @@ function AppContainer() {
                             selectedBeats={selectedBeats}
                             setSelectedBeats={setSelectedBeats}
                             isEditing={isEditing}
+                            isEditingSet={isEditingSet}
+                            isCreatingSet={isCreatingSet}
                             setIsEditing={setIsEditing}
                             fetchData={fetchData}
                             columnVisibility={columnVisibility}
@@ -766,6 +822,8 @@ function AppContainer() {
                           onDragEnd={handleDragEnd}
                           onBeatPlay={playBeat}
                           isEditing={isEditing}
+                          isEditingSet={isEditingSet}
+                          isCreatingSet={isCreatingSet}
                           setIsEditing={setIsEditing}
                           selectedBeats={selectedBeats}
                           setSelectedBeats={setSelectedBeats}
@@ -798,7 +856,7 @@ function AppContainer() {
                 </button>
               </div>
             )}
-            
+
             {/* Processing overlay */}
             {isProcessing && (
               <div className="fixed bottom-4 left-4 flex items-center bg-gray-900 bg-opacity-95 rounded-lg p-4 shadow-lg z-40 max-w-md">
@@ -850,25 +908,25 @@ function AppContainer() {
                   </div>
                 </div>
                 <div className="flex flex-col flex-grow mx-8 space-y-3">
-                <button
-                  onClick={() => handleCancel()}
-                  className="p-2 text-white hover:bg-red-500 bg-red-400 rounded-md w-16"
-                  title="Cancel"
-                  data-pr-tooltip="Cancel adding beats"
-                  data-pr-position="right"
-                >
-                  <span>Cancel</span>
-                </button>
-                <button
-                  onClick={() => setShowStatusDialog(!showStatusDialog)}
-                  className="p-2 text-white hover:bg-blue-500 bg-blue-400 rounded-md w-16"
-                  type="button"
-                  data-pr-tooltip="Upload Status"
-                  data-pr-position="right"
-                >
-                  <span>Status</span>
-                </button>
-                <Tooltip target = "button"/>
+                  <button
+                    onClick={() => handleCancel()}
+                    className="p-2 text-white hover:bg-red-500 bg-red-400 rounded-md w-16"
+                    title="Cancel"
+                    data-pr-tooltip="Cancel adding beats"
+                    data-pr-position="right"
+                  >
+                    <span>Cancel</span>
+                  </button>
+                  <button
+                    onClick={() => setShowStatusDialog(!showStatusDialog)}
+                    className="p-2 text-white hover:bg-blue-500 bg-blue-400 rounded-md w-16"
+                    type="button"
+                    data-pr-tooltip="Upload Status"
+                    data-pr-position="right"
+                  >
+                    <span>Status</span>
+                  </button>
+                  <Tooltip target="button" />
                 </div>
               </div>
             )}

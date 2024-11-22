@@ -13,7 +13,7 @@ use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
 
-use crate::models::{Beat, BeatChangeset, BeatCollection, NewBeat, NewBeatCollection};
+use crate::{models::{Beat, BeatChangeset, BeatCollection, CollectionChangeset, NewBeat, NewBeatCollection}, schema::beat_collection};
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
@@ -167,11 +167,20 @@ pub fn delete_beats(conn: &mut SqliteConnection, ids: Vec<i32>) -> Result<(), Di
         .map(|_| ())
 }
 
-pub fn update_beat(conn: &mut SqliteConnection, beat: BeatChangeset) -> Result<(), DieselError> {
+pub fn edit_beat(conn: &mut SqliteConnection, beat: BeatChangeset) -> Result<(), DieselError> {
     use crate::schema::beats::dsl::*;
 
     diesel::update(beats.find(beat.id))
         .set(&beat)
+        .execute(conn)
+        .map(|_| ())
+}
+
+pub fn update_collection(conn: &mut SqliteConnection, collection: CollectionChangeset) -> Result<(), DieselError> {
+    use crate::schema::beat_collection::dsl::*;
+    println!("Updating collection: {:?}", collection.set_name);
+    diesel::update(beat_collection.find(collection.id))
+        .set(&collection)
         .execute(conn)
         .map(|_| ())
 }

@@ -23,6 +23,8 @@ interface BeatTableProps {
   selectedBeats: Beat[];
   setSelectedBeats: Dispatch<SetStateAction<Beat[]>>;
   isEditing: boolean;
+  isEditingSet: boolean;
+  isCreatingSet: boolean;
   setIsEditing: (isEditing: boolean) => void;
   fetchData: () => void;
   columnVisibility: VisibilityState;
@@ -43,6 +45,8 @@ function BeatTable({
   selectedBeats,
   setSelectedBeats,
   isEditing,
+  isEditingSet,
+  isCreatingSet,
   setIsEditing,
   fetchData,
   columnVisibility,
@@ -103,27 +107,28 @@ function BeatTable({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isEditing || isEditingSet || isCreatingSet) {
+        return;
+      }
       // Check for Ctrl+A or Cmd+A
       if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
         e.preventDefault(); // Prevent the default browser select-all behavior
-
         // Select all rows
         tableInstance.getRowModel().rows.forEach(row => {
           row.toggleSelected(true);
         });
-
         setSelectedBeats(beats || []);
       }
     };
-
+    
     // Add the event listener
     document.addEventListener('keydown', handleKeyDown);
-
+    
     // Clean up
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [beats, tableInstance, setSelectedBeats]);
+  }, [beats, tableInstance, setSelectedBeats, isEditing, isEditingSet, isCreatingSet]);
 
   const onRowSelection = (e: React.MouseEvent<HTMLTableRowElement>, row: Row<Beat>): void => {
     const beat = row.original;
@@ -245,37 +250,36 @@ function BeatTable({
         </div>
       </div>
 
-            {isEditing && selectedBeats.length === 1 && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                  <EditBeatCard
-                    beat={tableInstance.getSelectedRowModel().rows[0].original as Beat}
-                    onClose={() => {
-                      setIsEditing(false);
-                    }}
-                    onSave={(updatedBeat: EditThisBeat) => {
-                      console.log("Saving updated beat...");
-                      setIsEditing(false);
-                      setSelectedBeats([]);
+      {isEditing && selectedBeats.length === 1 && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <EditBeatCard
+              beat={tableInstance.getSelectedRowModel().rows[0].original as Beat}
+              onClose={() => {
+                setIsEditing(false);
+              }}
+              onSaveBeat={(updatedBeat: EditThisBeat) => {
+                console.log("Saving updated beat...");
+                setIsEditing(false);
+                setSelectedBeats([]);
 
-                      invoke("update_beat", {
-                        beat: updatedBeat
-                      })
-                        .then((response) => {
-                          console.log("Beat successfully updated:", response);
-                          handleRefresh();
-                        })
-                        .catch((error) => {
-                          console.error("Error updating beat:", error);
-                        });
-                    }}
-                    />
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          }
+                invoke("edit_beat", {
+                  beat: updatedBeat
+                })
+                  .then((response) => {
+                    console.log("Beat successfully updated:", response);
+                    handleRefresh();
+                  })
+                  .catch((error) => {
+                    console.error("Error updating beat:", error);
+                  });
+              }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
-
-        export default BeatTable;
+export default BeatTable;
