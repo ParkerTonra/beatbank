@@ -29,7 +29,6 @@ describe("Sidebar", () => {
 
   it("Renders with the add new set input and button", () => {
     render(<Router><Sidebar collections={mockCollections} setSelectedBeats={jest.fn()} /></Router>);
-    screen.debug()
     expect(screen.getByRole("button", { name: /Add New Set/i, hidden: true })).toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/enter a name for a new set/i, {exact: true})).toBeInTheDocument();
   });
