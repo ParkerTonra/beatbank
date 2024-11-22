@@ -707,7 +707,7 @@ function AppContainer() {
         <div className="flex-1 flex flex-col overflow-x-auto">
           <main className="flex-1 bg-gray-600 p-6 flex flex-col overflow-y-auto mb-24">
             <span className="fixed right-4 top-2">
-              <img src={BeatbankLogo} width={60} height={100} draggable={false} onClick={() => setIsTourOpen(true)} />
+              <img id="icon-tutorial" src={BeatbankLogo} width={60} height={100} draggable={false} onClick={() => setIsTourOpen(true)} />
             </span>
             <TableContext.Provider value={{ tableInstance, setTableInstance }}>
               <div className="flex flex-col flex-1 h-full">
@@ -897,24 +897,40 @@ const steps: StepType[] = [
   },
   {
     selector: "#beat-table",
-    content: "Here is where all your beats will display after uploading",
+    content: "Here is where all your beats will display after adding them to beatbank.",
     position: "top"
   },
   {
     selector: "#edit-columns",
-    content: "This button will allow you to customize the columns that are visible in the table",
+    content: "This button allows you to customize which columns are visible in the table.",
     position: "bottom"
   },
   {
     selector: "#add-beats",
-    content: "This is a dropdown that will allow you to add beats, either by selecting multiple audio files from your audio system or selecting an entire folder",
+    content: "This dropdown is where you'll add your beats to the table. You can add any number of audio files, or choose to upload an entire folder.",
     position: "bottom"
   },
+  {
+    selector: "#beat-table",
+    content: "You can also drag and drop your audio files onto the table to add them.",
+    position: "bottom"
+  },
+  {
+    selector: "#add-beats",
+    content: "Beatbank will automatically detect the tempos of your beats (in beats per minute) and display them in the table.",
+    position: "bottom"
+  },
+
   {
     selector: "#beat-jockey",
     content: "The Beat Jockey is your simplified listening experience. Use the controls on the bottom footer to maximize your audio enjoyment",
     position: "top"
   },
+  {
+    selector: "#icon-tutorial",
+    content: "Click the beatbank icon to return to this tutorial at any time.",
+    position: "bottom"
+  }
 ]
 
 const styles = {
@@ -930,7 +946,7 @@ function App() {
   return (
     <TourProvider steps={steps} styles={styles} scrollSmooth>
       <Router>
-        <AppContainer />
+        <AppContainer/>        
       </Router>
     </TourProvider>
   );
