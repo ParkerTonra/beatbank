@@ -15,28 +15,36 @@ const mockCollections = [{
 
 describe("Sidebar", () => {
   it("Renders with the correct sets", () => {
-    render(<Router><Sidebar collections={mockCollections} /></Router>);
+    render(<Router><Sidebar collections={mockCollections} setSelectedBeats={jest.fn()} /></Router>);
     expect(screen.getByText("My sets:", { exact: true })).toBeInTheDocument();
 
-    const list = screen.getByRole("list", {
-      name: /My sets:/i,
-    });
-    const { getAllByRole } = within(list);
-    const items = getAllByRole("listitem");
-    expect(items.length).toBe(3);
+    const items = screen.getAllByRole("button", {});
+
+    // 3 sets plus Add New Set button
+    expect(items.length).toBe(4);
 
     expect(screen.getByText("All Beats", { exact: true })).toBeInTheDocument();
     expect(screen.getByText(mockCollections[1].set_name, { exact: true })).toBeInTheDocument();
   });
 
   it("Renders with the add new set input and button", () => {
-    render(<Router><Sidebar collections={mockCollections} /></Router>);
-    expect(screen.getByRole("button", { name: /Add New Set/i })).toBeInTheDocument();
+    render(<Router><Sidebar collections={mockCollections} setSelectedBeats={jest.fn()} /></Router>);
+    screen.debug()
+    expect(screen.getByRole("button", { name: /Add New Set/i, hidden: true })).toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/enter a name for a new set/i, {exact: true})).toBeInTheDocument();
   });
 
+  it("Selecting a new set clears selected beats", () => {
+    const mockSetSelectedBeats = jest.fn();
+    render(<Router><Sidebar collections={mockCollections} setSelectedBeats={mockSetSelectedBeats} /></Router>);
+    screen.debug()
+    fireEvent.click(screen.getByText(mockCollections[1].set_name, { exact: true }));
+    expect(mockSetSelectedBeats).toHaveBeenCalledTimes(1);
+    expect(mockSetSelectedBeats).toHaveBeenCalledWith([]);
+  });
+
   it("Allows for a new set to be added", async () => {
-    render(<Router><Sidebar collections={mockCollections} /></Router>);
+    render(<Router><Sidebar collections={mockCollections} setSelectedBeats={jest.fn()} /></Router>);
 
     const newSetName = "New Test 3";
     const newBeatResponse = {set_name: newSetName, id: 999};

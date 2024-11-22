@@ -50,7 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       <form onSubmit={handleNewBeatCollection} className="mb-4">
         <input
           type="text"
-          placehold   er="Enter a name for a new set"
+          placeholder="Enter a name for a new set"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="w-full mb-2 p-2 border border-gray-600 bg-gray-700 text-white rounded"

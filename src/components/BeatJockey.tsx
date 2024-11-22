@@ -116,7 +116,7 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({
                     </div>
 
                     {/* Rest of the component remains the same */}
-                    <div className="flex-1 max-w-2xl">
+                    <div className="flex-1 max-w-2xl" id="beat-jockey">
                         <div className="flex flex-col items-center gap-2">
                             <div className="flex items-center gap-4">
                                 <button

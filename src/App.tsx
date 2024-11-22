@@ -893,7 +893,7 @@ const steps: StepType[] = [
   {
     selector: "#beatbank-title",
     content: "Welcome to BeatBank!",
-    position: "right"
+    position: "bottom"
   },
   {
     selector: "#beat-table",
@@ -909,6 +909,11 @@ const steps: StepType[] = [
     selector: "#add-beats",
     content: "This is a dropdown that will allow you to add beats, either by selecting multiple audio files from your audio system or selecting an entire folder",
     position: "bottom"
+  },
+  {
+    selector: "#beat-jockey",
+    content: "The Beat Jockey is your simplified listening experience. Use the controls on the bottom footer to maximize your audio enjoyment",
+    position: "top"
   },
 ]
 
