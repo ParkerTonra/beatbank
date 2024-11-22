@@ -6,7 +6,7 @@ import CollectionCard from "./CollectionCard";
 import { useNavigate } from "react-router-dom";
 
 interface SidebarProps {
-  collections: BeatCollection[];
+  beatCollections: BeatCollection[];
   isCreatingSet: boolean;
   setIsCreatingSet: (isCreatingSet: boolean) => void;
   setSelectedBeats: (beats: Beat[]) => void;
@@ -14,10 +14,12 @@ interface SidebarProps {
   isEditingSet: boolean;
   currentCollection: BeatCollection | null;
   fetchSetData: (setId: number) => Promise<void>;
+  fetchData: () => Promise<void>;
+  setBeatCollections: (collections: BeatCollection[]) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
-  collections,
+  beatCollections,
   setSelectedBeats,
   setIsEditingSet,
   isCreatingSet,
@@ -25,15 +27,16 @@ const Sidebar: React.FC<SidebarProps> = ({
   isEditingSet,
   currentCollection,
   fetchSetData,
+  fetchData,
+  setBeatCollections,
 }) => {
   const [title, setTitle] = useState("");
-  const [beatCollections, setBeatCollections] = useState<BeatCollection[]>(collections);
   const navigate = useNavigate();
   const [newSetName, setNewSetName] = useState("");
 
   useEffect(() => {
-    setBeatCollections(collections);
-  }, [collections]);
+    setBeatCollections(beatCollections);
+  }, [beatCollections, setBeatCollections]);
 
   const handleCreateSetClick = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

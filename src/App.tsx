@@ -76,6 +76,7 @@ function AppContainer() {
   const {
     beats,
     beatCollections,
+    setBeatCollections,
     currentCollection,
     fetchData,
     columnVisibility,
@@ -742,7 +743,10 @@ function AppContainer() {
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
       <div className="flex bg-slate-900 justify-center h-screen overflow-x-hidden">
-        <Sidebar collections={beatCollections} 
+        <Sidebar 
+        beatCollections={beatCollections}
+        setBeatCollections={setBeatCollections}
+        fetchData={fetchData}
         setSelectedBeats={setSelectedBeats} 
         setIsEditingSet={setIsEditingSet}
         isCreatingSet={isCreatingSet}

@@ -113,6 +113,7 @@ export const useBeats = () => {
     collectionBeats,
     setCollectionBeats,
     beatCollections,
+    setBeatCollections,
     currentCollection,
     loading,
     error,
