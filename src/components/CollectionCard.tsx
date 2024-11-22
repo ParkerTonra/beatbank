@@ -26,14 +26,9 @@ interface FormErrors {
     date_created?: string;
 }
 
-
-
-
-
-
 const CollectionCard = forwardRef<HTMLInputElement, Omit<CollectionCardProps, 'ref'>>((props, ref) => {
     const { set, onCloseCollection, onSaveCollection, isCreating = false } = props;
-    
+
     const [editedSet, setEditedSet] = useState<SetFormState>({
         id: set?.id,
         set_name: set?.set_name || "",
@@ -58,8 +53,6 @@ const CollectionCard = forwardRef<HTMLInputElement, Omit<CollectionCardProps, 'r
             state_name: editedSet.state_name || undefined,
             date_played: formattedDate || undefined,
         };
-        console.log("formatted date", formattedDate);
-        console.log("submission data", submissionData);
         return submissionData;
     };
 
@@ -229,22 +222,22 @@ const CollectionCard = forwardRef<HTMLInputElement, Omit<CollectionCardProps, 'r
                     {/* Action Buttons */}
                     <div className="flex justify-end space-x-2 pt-4">
                         <div
-                        data-pr-tooltip={!hasChanges() && !isCreating ? "Make changes to enable saving" : ""}
-                        data-pr-position="top"
-                        className="relative"
-                        >
-                        < Button
-                            type="submit"
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-sm"
-                            data-pr-tooltip={!hasChanges() ? "No changes made" : "Save"}
+                            data-pr-tooltip={!hasChanges() && !isCreating ? "Make changes to enable saving" : ""}
                             data-pr-position="top"
-                            disabled={!hasChanges() && !isCreating}
-
+                            className="relative"
                         >
-                            {isCreating ? "Create" : "Save"}
-                        </Button>
+                            < Button
+                                type="submit"
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-sm"
+                                data-pr-tooltip={!hasChanges() ? "No changes made" : "Save"}
+                                data-pr-position="top"
+                                disabled={!hasChanges() && !isCreating}
+
+                            >
+                                {isCreating ? "Create" : "Save"}
+                            </Button>
                         </div>
-                        
+
                         {!hasChanges() && !isCreating && (
                             <div className="absolute bottom-10 left-0 bg-gray-800 text-white text-xs rounded-md py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 Make changes to enable the button
@@ -261,9 +254,9 @@ const CollectionCard = forwardRef<HTMLInputElement, Omit<CollectionCardProps, 'r
                     </div>
                 </form>
             </div>
-            
+
         </div>
-        
+
     );
 });
 
