@@ -132,7 +132,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           Add New Set
         </button>
       </form>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto mb-28">
         <h3 className="text-lg font-semibold mb-2">My sets:</h3>
         <ul className="space-y-2" aria-labelledby="set-list">
           <li
