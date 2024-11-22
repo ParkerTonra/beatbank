@@ -1,15 +1,15 @@
 // DraggableRow.tsx
-import { Cell, flexRender, Row, Table } from '@tanstack/react-table';
+import { Cell, flexRender, Row } from '@tanstack/react-table';
 import { useDraggable, DragOverlay } from '@dnd-kit/core';
 import { Beat } from '../bindings';
 import GhostRow from './GhostDragRow';
-import { MutableRefObject } from "react";
+import { RefObject } from "react";
 
 interface DraggableRowProps {
   row: Row<Beat>;
   onRowSelection: (e: React.MouseEvent<HTMLTableRowElement> | React.KeyboardEvent<HTMLTableRowElement>, row: Row<Beat>) => void;
   selectedBeats: Beat[];
-  tBodyRef: MutableRefObject<HTMLTableSectionElement>;
+  tBodyRef: RefObject<HTMLTableSectionElement>;
 }
 
 function DraggableRow({ row, onRowSelection, selectedBeats, tBodyRef}: DraggableRowProps) {

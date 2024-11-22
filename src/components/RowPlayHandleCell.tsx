@@ -1,4 +1,3 @@
-import React from 'react';
 import { Play } from "lucide-react";
 
 interface RowPlayHandleCellProps {
@@ -6,16 +5,19 @@ interface RowPlayHandleCellProps {
   onPlay: () => void;
 }
 
+interface KeyboardEvent {
+  key: string;
+}
+
 const RowPlayHandleCell: React.FC<RowPlayHandleCellProps> = ({ onPlay }) => {
-  const handlePlay = (e) => {
+  const handlePlay = (e: KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
       onPlay();
-      e.preventDefault();
     }
   }
 
   return (
-    <button onClick={handlePlay} onKeyDown={handlePlay} className="bg-transparent z-30" tabIndex={0}>
+    <button onClick={onPlay} onKeyPress={handlePlay} className="bg-transparent z-30" tabIndex={0}>
       <Play size={18} color='darkgray' />
     </button>
   );

@@ -1,8 +1,6 @@
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import Sidebar from "../components/Sidebar.tsx";
 import { HashRouter as Router } from "react-router-dom";
-import { mockIPC } from '@tauri-apps/api/mocks';
-import { invoke } from "@tauri-apps/api/tauri";
 
 const mockCollections = [{
     id: 1,
