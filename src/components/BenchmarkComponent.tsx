@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import { open } from '@tauri-apps/api/dialog';
+import { appDataDir } from '@tauri-apps/api/path';
+import { writeBinaryFile } from '@tauri-apps/api/fs';
 
 interface BenchmarkResult {
   filePath: string;
@@ -37,10 +39,41 @@ const BenchmarkComponent = () => {
     }
   };
 
+  const saveResultsToFile = async (benchmarkResults: BenchmarkResult[]) => {
+    try {
+      // Generate a unique filename with timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fileName = `benchmark_results_${timestamp}.json`;
+      
+      // Get the app's data directory
+      const appDataDirPath = await appDataDir();
+      const filePath = `${appDataDirPath}${fileName}`;
+
+      // Convert results to JSON string and then to Uint8Array
+      const jsonString = JSON.stringify(benchmarkResults, null, 2);
+      const data = new TextEncoder().encode(jsonString);
+
+      // Write the file using Tauri's filesystem API
+      await writeBinaryFile(filePath, data);
+      console.log(`Results saved to: ${filePath}`);
+      
+      return filePath;
+    } catch (error) {
+      console.error('Error saving results:', error);
+      throw error;
+    }
+  };
+
   const runBenchmark = async (filePaths: string[]) => {
     setIsRunning(true);
+    if (filePaths.length === 0) {
+      setIsRunning(false);
+      return;
+    }
+
     const benchmarkResults: BenchmarkResult[] = [];
-    const BATCH_SIZE = 3;  // Match your actual batch size
+    const BATCH_SIZE = 3;
+    
 
     try {
       // Process files in batches
@@ -62,14 +95,19 @@ const BenchmarkComponent = () => {
           }
         }));
 
+
         // Add successful results from this batch
         benchmarkResults.push(...batchResults.filter((result): result is BenchmarkResult => 
           result !== null
         ));
+        
+        
+
 
         // Small delay between batches to match your actual implementation
         await new Promise(resolve => setTimeout(resolve, 100));
       }
+      await saveResultsToFile(benchmarkResults);
     } catch (error) {
       console.error('Error in batch processing:', error);
     }
@@ -116,7 +154,7 @@ const BenchmarkComponent = () => {
         <div className="mt-4">
           <h3 className="text-lg font-semibold mb-2">Results</h3>
           <div className="overflow-x-auto">
-            <table className="min-w-full border-collapse border">
+            <table className="min-w-full border-collapse border select-all">
               <thead>
                 <tr>
                   <th className="border p-2">File</th>

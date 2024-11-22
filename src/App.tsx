@@ -754,7 +754,7 @@ function AppContainer() {
   if (error) return <div className="flex items-center justify-center h-screen">Error: {error.message}</div>;
 
   // Add global CSS to prevent text selection/dragging
-  document.body.classList.add('select-none');
+  //document.body.classList.add('select-none');
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
       <div className="flex bg-slate-900 justify-center h-screen overflow-x-hidden">

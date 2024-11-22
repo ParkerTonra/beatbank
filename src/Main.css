@@ -34,7 +34,6 @@
     width: 5px;
     background: rgba(0, 0, 0, 0.5);
     cursor: col-resize;
-    user-select: none;
     touch-action: none;
   }
   

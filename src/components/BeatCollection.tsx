@@ -126,7 +126,7 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
           {currentCollection.set_name}
         </h2>
 
-        <div className="flex items-center gap-8 xl:gap-12 text-[1.1rem]" >
+        <div className="flex items-center gap-8 xl:gap-12 text-md" >
           {/* Always visible - even on small screens */}
           <div className="flex items-center whitespace-nowrap">
             <span className="text-gray-400 mr-2">beats:</span>
