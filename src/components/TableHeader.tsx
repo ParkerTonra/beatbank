@@ -107,7 +107,7 @@ export const TableHeader = ({
           onClick={handleDeleteSet}
           className="mr-2 mb-2"
         >
-          <span className="pi pi-pencil mr-2" /> Delete Set
+          <span className="pi pi-trash mr-2" /> Delete Set
         </button>
 
 

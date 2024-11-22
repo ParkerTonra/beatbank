@@ -21,6 +21,8 @@ import { listen } from '@tauri-apps/api/event';
 import BeatJockey from "./components/BeatJockey";
 import { useAudio } from "./hooks/useAudio";
 import { FileEntry, readDir } from "@tauri-apps/api/fs";
+import { useNavigate } from 'react-router-dom';
+
 import TableHeader from "./components/TableHeader";
 
 
@@ -70,6 +72,7 @@ function AppContainer() {
   const collectionId = collectionIdMatch ? parseInt(collectionIdMatch[1], 10) : null;
   const { isPlaying, currentBeat, playBeat, stopBeat, togglePlayPause, audioRef } = useAudio();
 
+  const navigate = useNavigate();
 
   const {
     beats,
@@ -258,7 +261,11 @@ function AppContainer() {
 
   const handleDeleteSet = async () => {
     if (!collectionId) {
-      message('Please select a set first.', { title: 'Error', type: 'error' });
+      message('Please select a set first.', { title: 'Error', type: 'error', });
+      return;
+    }
+    const confirmed = await confirm('Are you sure you want to delete this set? This cannot be undone.');
+    if (!confirmed) {
       return;
     }
     try {
@@ -267,6 +274,7 @@ function AppContainer() {
       });
       // Refresh data or update state as needed
       fetchData();
+      navigate('/');
     } catch (error) {
       console.error('Error deleting set:', error);
     }
