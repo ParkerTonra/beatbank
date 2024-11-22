@@ -893,7 +893,7 @@ const steps: StepType[] = [
   {
     selector: "#beatbank-title",
     content: "Welcome to BeatBank!",
-    position: "bottom"
+    position: [100, 90]
   },
   {
     selector: "#beat-table",
