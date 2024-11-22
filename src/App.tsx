@@ -34,7 +34,6 @@ import BeatbankLogo from './assets/BeatbankLogo.png';
 import { dialog } from "@tauri-apps/api";
 import { Tooltip } from "primereact/tooltip";
 import BenchmarkComponent from "./components/BenchmarkComponent";
-import { set } from "date-fns";
 
 function AppContainer() {
   // state

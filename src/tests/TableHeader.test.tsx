@@ -16,6 +16,7 @@ const defaultProps = {
   handleEditSet: jest.fn(),
   isInCollection: false,
   handleDeleteSet: jest.fn(),
+  setShowBenchmarkDialog: jest.fn(),
 }
 
 const setupTableHeader = (props = {}) => {
