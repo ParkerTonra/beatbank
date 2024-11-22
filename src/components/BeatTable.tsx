@@ -182,7 +182,7 @@ function BeatTable({
           {/* Header wrapper - fixed position */}
           <div className="sticky top-0 z-10 ">
             <table className="w-full min-h-full">
-              <thead>
+              <thead className="bg-gray-600">
                 {tableInstance.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (

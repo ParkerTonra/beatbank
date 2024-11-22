@@ -40,8 +40,7 @@ function DraggableRow({ row, onRowSelection, selectedBeats}: DraggableRowProps) 
   };
 
   return (
-    
-    <>
+  <>
     {isDragging && (
         <DragOverlay 
           dropAnimation={null}

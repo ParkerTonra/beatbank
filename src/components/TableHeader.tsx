@@ -110,9 +110,8 @@ export const TableHeader = ({
           <span className="pi pi-trash mr-2" /> Delete Set
         </button>
 
-
       )}
-
+      
       {tableInstance && (
         <Dialog
           header="Edit Columns"

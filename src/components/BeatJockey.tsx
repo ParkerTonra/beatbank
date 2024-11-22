@@ -122,12 +122,14 @@ const BeatJockey: React.FC<BeatJockeyProps> = ({
                                 <button
                                     onClick={stopBeat}
                                     className="text-slate-400 hover:text-white transition"
+                                    data-testID="stop-beat"
                                 >
                                     <StopCircle size={20} />
                                 </button>
                                 <button
                                     onClick={togglePlayPause}
                                     className="text-white hover:scale-110 transition"
+                                    data-testID="play-pause-beat"
                                 >
                                     {isPlaying ? <Pause size={20} /> : <Play size={20} />}
                                 </button>
