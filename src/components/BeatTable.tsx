@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect, Dispatch, SetStateAction, useState } from "react";
+import { useMemo, useRef, useEffect, Dispatch, SetStateAction, useState } from "react";
 import {
   useReactTable,
   flexRender,
@@ -58,8 +58,8 @@ function BeatTable({
 
   // row selection state
   const lastSelectedIndex = useRef('');
-  const searchRef = useRef<HTMLInputElement>(null);
-  const tBodyRef = useRef<HTMLTableSectionElement>(null);
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  const tBodyRef = useRef<HTMLTableSectionElement | null>(null);
   const { setTableInstance } = useTableContext();
 
   const [searchValue, setSearchValue] = useState("");
@@ -142,7 +142,7 @@ function BeatTable({
     };
   }, [beats, tableInstance, setSelectedBeats, isEditing, isEditingSet, isCreatingSet]);
 
-  const onRowSelection = (e: React.MouseEvent<HTMLTableRowElement>, row: Row<Beat>): void => {
+  const onRowSelection = (e: React.MouseEvent<HTMLTableRowElement> | React.KeyboardEvent<HTMLTableRowElement>, row: Row<Beat>): void => {
     const beat = row.original;
     console.log("Row clicked:", beat);
 
@@ -266,7 +266,6 @@ function BeatTable({
               <tbody ref={tBodyRef}>
                 {tableInstance.getRowModel().rows.map((rowElement) => (
                   <DraggableRow
-                    table={tableInstance}
                     row={rowElement as Row<Beat>}
                     key={rowElement.id}
                     onRowSelection={onRowSelection}

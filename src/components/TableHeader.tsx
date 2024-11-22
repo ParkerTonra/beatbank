@@ -7,7 +7,6 @@ import { MenuItem } from "primereact/menuitem";
 
 import { useTableContext } from "../contexts/TableContext";
 import { useEffect, useState } from "react";
-import { XIcon } from "lucide-react";
 
 interface TableHeaderProps {
   selectedBeats: Beat[];
@@ -117,7 +116,6 @@ export const TableHeader = ({
         title="Add"
         icon="pi pi-plus"
         items={addBeatItems}
-        tabIndex={0}
       />
 
       {selectedBeats.length > 0 && (
@@ -125,7 +123,6 @@ export const TableHeader = ({
           title={`Beat Settings (${selectedBeats.length})`}
           icon="pi pi-cog"
           items={beatActionItems}
-          tabIndex={0}
         />
       )}
 

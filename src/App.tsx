@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Beat, CollOrder, RowOrder, AudioExtension, TempoDetectionExtension } from "./bindings";
 import Sidebar from "./components/Sidebar";
 import "./App.css";
@@ -991,8 +991,8 @@ const steps: StepType[] = [
 ]
 
 const styles = {
-  badge: (base) => ({ ...base, color: 'blue' }),
-  popover: (base) => ({
+  badge: (base: Object) => ({ ...base, color: 'blue' }),
+  popover: (base: Object) => ({
     ...base,
     borderRadius: "16px",
     color: "black",
