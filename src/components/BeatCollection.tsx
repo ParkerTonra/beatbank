@@ -121,36 +121,36 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
 
   return (
     <>
-      <div className="w-full flex items-center justify-between px-4 min-h-[64px] bg-gray-700 rounded-xl my-4 bg-opacity-80 backdrop-blur-3xl shadow-sm">
-        <h2 className="text-2xl font-bold text-white truncate max-w-[300px] flex items-center m-0 p-0">
+      <div className="w-full px-4 min-h-[64px] bg-gray-700 rounded-xl my-4 bg-opacity-80 backdrop-blur-3xl shadow-sm flex justify-between">
+        <div className="text-2xl max-w-[350px] min-w-[250px] font-bold text-white truncate m-0 mr-2 py-4">
           {currentCollection.set_name}
-        </h2>
+        </div>
 
-        <div className="flex items-center gap-8 xl:gap-12 text-md">
+        <div className="flex justify-between text-md">
           {/* Always visible - even on small screens */}
-          <div className="flex items-center whitespace-nowrap">
-            <span className="text-gray-400 mr-2">Beats:</span>
+          <div className="flex items-center whitespace-nowrap mr-4">
+            <span className="text-gray-400">Beats:</span>
             <span>{collectionBeats.length}</span>
           </div>
 
-          {/* Hidden on screens smaller than 1280px */}
-          <div className="hidden xl:flex items-center gap-8">
-            <div className="whitespace-nowrap">
+        {/*  /!* Hidden on screens smaller than 1280px *!/*/}
+          <div className="hidden xl:flex justify-end w-fit items-center">
+            <div className="truncate max-w-[280px] grow mr-4">
               <span className="text-gray-400 mr-2 text">Venue:</span>
               <span>{currentCollection.venue || 'N/A'}</span>
             </div>
 
-            <div className="whitespace-nowrap">
+            <div className="truncate max-w-[280px] grow mr-4">
               <span className="text-gray-400 mr-2">Date:</span>
               <span>{formatDate(currentCollection?.date_played)}</span>
             </div>
 
-            <div className="whitespace-nowrap">
+            <div className="truncate max-w-[280px] grow mr-4">
               <span className="text-gray-400 mr-2">City:</span>
               <span>{currentCollection.city || 'N/A'}</span>
             </div>
 
-            <div className="whitespace-nowrap">
+            <div className="truncate max-w-[280px] grow">
               <span className="text-gray-400 mr-2">State:</span>
               <span>{currentCollection.state_name || 'N/A'}</span>
             </div>

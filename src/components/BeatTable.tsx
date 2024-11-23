@@ -132,7 +132,7 @@ function BeatTable({
         setSelectedBeats([]);
       }
     };
-    
+
     // Add the event listener
     document.addEventListener('keydown', handleKeyDown);
     

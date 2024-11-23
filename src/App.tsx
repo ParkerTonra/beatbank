@@ -787,7 +787,7 @@ function AppContainer() {
                         <>
                           <div className="w-full flex items-center justify-between px-4 min-h-[64px] bg-gray-700 rounded-xl my-4 bg-opacity-80 backdrop-blur-3xl shadow-sm">
                             <h2 className="text-2xl font-bold text-white truncate max-w-[300px] flex items-center m-0 p-0">
-                              All beats
+                              All Beats
                             </h2>
                           </div>
                           <BeatTable
