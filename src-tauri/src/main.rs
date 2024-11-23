@@ -474,17 +474,32 @@ fn main() {
     env_logger::init();
     println!("Starting beatbank...");
 
-     // Add build-specific initialization
-     #[cfg(not(debug_assertions))]
+    #[cfg(not(debug_assertions))]
     {
         use tokio::runtime::Runtime;
+        
         // Create a runtime for the async force_first_time_setup
         let rt = Runtime::new().expect("Failed to create Tokio runtime");
-        if let Err(e) = rt.block_on(store::first_time_setup()) {
-            error!("Failed to force first time setup: {}", e);
-            panic!("First time setup failed: {}", e);
+        
+        // First check if it's first time setup
+        match rt.block_on(store::check_is_first_time()) {
+            Ok(is_first_time) => {
+                if is_first_time {
+                    // Only run first_time_setup if check_is_first_time returns true
+                    if let Err(e) = rt.block_on(store::first_time_setup()) {
+                        error!("Failed to complete first time setup: {}", e);
+                        panic!("First time setup failed: {}", e);
+                    }
+                    info!("Release build: First-time setup completed successfully");
+                } else {
+                    info!("Release build: Not first time, skipping setup");
+                }
+            },
+            Err(e) => {
+                error!("Failed to check if first time setup is needed: {}", e);
+                panic!("First time check failed: {}", e);
+            }
         }
-        info!("Release build: Forced first-time setup completed");
     }
     
     

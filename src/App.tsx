@@ -24,7 +24,7 @@ import { useNavigate } from 'react-router-dom';
 
 import TableHeader from "./components/TableHeader";
 
-import { Table } from "@tanstack/react-table";
+import { SortingState, Table } from "@tanstack/react-table";
 import { open, OpenDialogOptions } from "@tauri-apps/api/dialog";
 import { MenuItem } from "primereact/menuitem";
 import { TableContext } from "./contexts/TableContext";
@@ -43,6 +43,8 @@ function AppContainer() {
 
   const [cancelUpload, setCancelUpload] = useState(false);
   const [isCreatingSet, setIsCreatingSet] = useState(false);
+  const [isSorting, setIsSorting] = useState(false);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const { setIsOpen: setIsTourOpen } = useTour();
 
@@ -716,6 +718,10 @@ function AppContainer() {
   };
 
   const saveRowOrder = async (beatsToSave: Beat[]) => {
+    if (isSorting) {
+      message('reorder disabled while sorting');
+      return;
+    }
     // Don't try to save if we have no beats
     if (!beatsToSave.length) return;
 
@@ -726,6 +732,7 @@ function AppContainer() {
 
     try {
       await invoke("save_row_order", { rowOrder });
+      fetchData();
     } catch (error) {
       // Could add a toast notification here
       console.error("Error saving row order:", error);
@@ -809,6 +816,9 @@ function AppContainer() {
                             showEditColumnsDialog={showEditColumnsDialog}
                             setShowEditColumnsDialog={setShowEditColumnsDialog}
                             handleRefresh={handleRefresh}
+                            setIsSorting={setIsSorting}
+                            sorting={sorting} 
+                            setSorting={setSorting}
                           />
                         </>
                       }
@@ -834,6 +844,9 @@ function AppContainer() {
                           showEditColumnsDialog={showEditColumnsDialog}
                           setShowEditColumnsDialog={setShowEditColumnsDialog}
                           handleRefresh={handleRefresh}
+                          setIsSorting={setIsSorting}
+                          sorting={sorting}
+                          setSorting={setSorting}
                         />}
                     />
                   </Routes>

@@ -214,21 +214,6 @@ const EditBeatCard: React.FC<EditBeatCardProps> = ({ beat, onClose, onSaveBeat }
                         />
                     </div>
 
-                    <div>
-                        <label htmlFor="file_path" className="block text-sm font-medium text-gray-300">
-                            File Path
-                        </label>
-                        <input
-                            type="text"
-                            name="file_path"
-                            id="file_path"
-                            value={editedBeat.file_path}
-                            onChange={handleChange}
-                            className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                        />
-                    </div>
-
-
                     {/* Advanced Metadata Toggle */}
                     <div className="flex items-center mt-4">
                         <input

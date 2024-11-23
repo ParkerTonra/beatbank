@@ -56,6 +56,8 @@ function DraggableRow({ row, onRowSelection, selectedBeats, tBodyRef}: Draggable
     }
   };
 
+  const selectedBeatIds = selectedBeats.map(b => b.id);
+
   return (
   <>
     {isDragging && (
@@ -80,7 +82,7 @@ function DraggableRow({ row, onRowSelection, selectedBeats, tBodyRef}: Draggable
         {...listeners}
         onClick={handleClick}
         onKeyDown={handleKeyPress}
-        className={`border-b-2 border-gray-500 cursor-pointer ${row.getIsSelected() ? 'bg-blue-900' : ''}`}
+        className={`border-b-2 border-gray-500 cursor-pointer ${selectedBeatIds.includes(row.original.id) ? 'bg-blue-900' : ''}`}
         tabIndex={0}
         id={row.id}
       >

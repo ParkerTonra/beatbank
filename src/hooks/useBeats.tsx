@@ -12,7 +12,8 @@ const defaultColumnVisibility = {
   artist: false,
   date_added: false,
   file_path: false,
-  id: false
+  id: false,
+  genre: true,
 };
 
 export const useBeats = () => {
@@ -26,7 +27,9 @@ export const useBeats = () => {
     artist: true,
     date_added: true,
     file_path: true,
-    id: true
+    id: true,
+    genre: true,
+    row_order: true,
   });
   const [beatCollections, setBeatCollections] = useState<BeatCollection[]>([]);
   const [loading, setLoading] = useState(false);

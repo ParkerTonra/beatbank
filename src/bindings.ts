@@ -15,6 +15,7 @@ export type Beat = {
   file_path: string;
   bpm?: number | undefined;
   musical_key?: string;
+  row_order?: number;
 };
 
 export type BeatCollection = {
@@ -45,6 +46,8 @@ export type ColumnVis = {
   date_added: boolean;
   file_path: boolean;
   id: boolean;
+  genre: boolean;
+  row_order: boolean;
 }
 
 export type EditThisBeat = {
@@ -89,6 +92,8 @@ export interface ColumnVisibility {
   date_added: boolean;
   file_path: boolean;
   id: boolean;
+  genre: boolean;
+  row_order: boolean;
 }
 
 export interface ColumnVisibilityState {
@@ -100,6 +105,8 @@ export interface ColumnVisibilityState {
   date_added: boolean;
   file_path: boolean;
   id: boolean;
+  genre: boolean;
+  row_order: boolean;
 }
 
 export type AudioExtension = 'flac' | 'wav' | 'mp3' | 'ogg' | 'm4a' | 'aac' | 'aiff' | 'wma';
