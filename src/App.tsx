@@ -67,7 +67,7 @@ function AppContainer() {
   const [isEditingSet, setIsEditingSet] = useState(false);
 
 
-  // react router hooks
+  // react-router hooks
   const location = useLocation();
   const collectionIdMatch = location.pathname.match(/\/collection\/(\d+)/);
   const isInCollection = Boolean(collectionIdMatch);
