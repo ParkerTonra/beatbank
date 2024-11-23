@@ -135,7 +135,7 @@ fn fetch_column_vis() -> String {
 }
 
 #[tauri::command]
-async fn add_beat(state: State<'_, AppState>, file_path: String) -> Result<i32, String> {
+async fn add_beat(state: State<'_, AppState>, file_path: String, collection_id: Option<i32>) -> Result<i32, String> {
     let file_name = Path::new(&file_path)
         .file_name()
         .and_then(|name| name.to_str())
@@ -148,9 +148,12 @@ async fn add_beat(state: State<'_, AppState>, file_path: String) -> Result<i32, 
         let mut conn_guard = state.conn.lock().map_err(|e| e.to_string())?;
         let conn = &mut conn_guard.conn;
         db::add_beat(conn, &file_name, &file_path).map_err(|e| e.to_string())?
-    }; 
+    };
 
-    
+    if collection_id.is_some() {
+        add_beat_to_collection(state, collection_id.unwrap(), inserted_beat.id);
+    }
+
 
     Ok(inserted_beat.id)
 }
