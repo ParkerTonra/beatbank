@@ -136,7 +136,7 @@ function BeatTable({
         return;
       }
       // Check for Ctrl+A or Cmd+A
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
         e.preventDefault(); // Prevent the default browser select-all behavior
         // Select all rows
         tableInstance.getRowModel().rows.forEach(row => {
