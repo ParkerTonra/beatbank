@@ -480,7 +480,7 @@ fn main() {
         use tokio::runtime::Runtime;
         // Create a runtime for the async force_first_time_setup
         let rt = Runtime::new().expect("Failed to create Tokio runtime");
-        if let Err(e) = rt.block_on(store::force_first_time_setup()) {
+        if let Err(e) = rt.block_on(store::first_time_setup()) {
             error!("Failed to force first time setup: {}", e);
             panic!("First time setup failed: {}", e);
         }
