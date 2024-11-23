@@ -1,19 +1,14 @@
 import { useState } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import { open } from '@tauri-apps/api/dialog';
-import { appDataDir } from '@tauri-apps/api/path';
 import { writeBinaryFile } from '@tauri-apps/api/fs';
+import { appDataDir } from '@tauri-apps/api/path';
 
 interface BenchmarkResult {
   filePath: string;
-  fileSize: number;
-  loadTimeMs: number;
-  analysisTimeMs: number;
-  totalTimeMs: number;
-  samplesProcessed: number;
-  sampleRate: number;
-  detectedBpm: number | null;
+  backendTimeMs: number;
   frontendTimeMs: number;
+  accuracy: number;
 }
 
 const BenchmarkComponent = () => {
@@ -30,7 +25,6 @@ const BenchmarkComponent = () => {
           extensions: ['mp3', 'wav', 'flac']
         }]
       });
-
       if (!selectedFiles) return [];
       return Array.isArray(selectedFiles) ? selectedFiles : [selectedFiles];
     } catch (error) {
@@ -64,8 +58,9 @@ const BenchmarkComponent = () => {
     }
   };
 
-  const runBenchmark = async (filePaths: string[]) => {
+  const runBenchmark = async () => {
     setIsRunning(true);
+    const filePaths = await selectFiles();
     if (filePaths.length === 0) {
       setIsRunning(false);
       return;
@@ -73,7 +68,6 @@ const BenchmarkComponent = () => {
 
     const benchmarkResults: BenchmarkResult[] = [];
     const BATCH_SIZE = 3;
-    
 
     try {
       // Process files in batches
@@ -95,95 +89,48 @@ const BenchmarkComponent = () => {
           }
         }));
 
-
         // Add successful results from this batch
-        benchmarkResults.push(...batchResults.filter((result): result is BenchmarkResult => 
-          result !== null
-        ));
-        
-        
+        const validResults = batchResults.filter((result): result is BenchmarkResult => result !== null);
+        benchmarkResults.push(...validResults);
 
+        // Save results after each batch
+        await saveResultsToFile(benchmarkResults);
+        
+        // Update state with current results
+        setResults([...benchmarkResults]);
 
-        // Small delay between batches to match your actual implementation
+        // Small delay between batches
         await new Promise(resolve => setTimeout(resolve, 100));
       }
-      await saveResultsToFile(benchmarkResults);
     } catch (error) {
       console.error('Error in batch processing:', error);
-    }
-
-    setResults(prev => [...prev, ...benchmarkResults]);
-    setIsRunning(false);
-  };
-
-  const handleBenchmarkStart = async () => {
-    try {
-      const filePaths = await selectFiles();
-      if (filePaths.length > 0) {
-        await runBenchmark(filePaths);
-      }
-    } catch (error) {
-      console.error('Error starting benchmark:', error);
+    } finally {
+      setIsRunning(false);
     }
   };
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Audio Analysis Benchmark</h2>
+      <button
+        onClick={runBenchmark}
+        disabled={isRunning}
+        className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-400"
+      >
+        {isRunning ? 'Running Benchmark...' : 'Start Benchmark'}
+      </button>
       
-      <div className="flex gap-4 mb-4">
-        <button
-          className={`px-4 py-2 rounded ${isRunning ? 'bg-gray-400' : 'bg-blue-500 hover:bg-blue-600'} text-white`}
-          onClick={handleBenchmarkStart}
-          disabled={isRunning}
-        >
-          {isRunning ? 'Running Benchmark...' : 'Select Files & Run Benchmark'}
-        </button>
-        
-        {results.length > 0 && (
-          <button
-            className="px-4 py-2 rounded bg-gray-500 hover:bg-gray-600 text-white"
-            onClick={() => setResults([])}
-          >
-            Clear Results
-          </button>
-        )}
-      </div>
-
       {results.length > 0 && (
         <div className="mt-4">
-          <h3 className="text-lg font-semibold mb-2">Results</h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full border-collapse border select-all">
-              <thead>
-                <tr>
-                  <th className="border p-2">File</th>
-                  <th className="border p-2">Size</th>
-                  <th className="border p-2">Load Time</th>
-                  <th className="border p-2">Analysis Time</th>
-                  <th className="border p-2">Total Time</th>
-                  <th className="border p-2">Frontend Time</th>
-                  <th className="border p-2">Samples</th>
-                  <th className="border p-2">Sample Rate</th>
-                  <th className="border p-2">BPM</th>
-                </tr>
-              </thead>
-              <tbody>
-                {results.map((result, index) => (
-                  <tr key={index}>
-                    <td className="border p-2">{result.filePath.split('/').pop()}</td>
-                    <td className="border p-2">{(result.fileSize / 1024 / 1024).toFixed(2)} MB</td>
-                    <td className="border p-2">{result.loadTimeMs.toFixed(2)} ms</td>
-                    <td className="border p-2">{result.analysisTimeMs.toFixed(2)} ms</td>
-                    <td className="border p-2">{result.totalTimeMs.toFixed(2)} ms</td>
-                    <td className="border p-2">{result.frontendTimeMs.toFixed(2)} ms</td>
-                    <td className="border p-2">{result.samplesProcessed.toLocaleString()}</td>
-                    <td className="border p-2">{result.sampleRate} Hz</td>
-                    <td className="border p-2">{result.detectedBpm?.toFixed(1) ?? 'N/A'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <h2 className="text-xl font-bold">Results</h2>
+          <div className="mt-2 space-y-2">
+            {results.map((result, index) => (
+              <div key={index} className="p-2 border rounded">
+                <p>File: {result.filePath}</p>
+                <p>Backend Time: {result.backendTimeMs.toFixed(2)}ms</p>
+                <p>Frontend Time: {result.frontendTimeMs.toFixed(2)}ms</p>
+                <p>Accuracy: {(result.accuracy * 100).toFixed(2)}%</p>
+              </div>
+            ))}
           </div>
         </div>
       )}

@@ -199,6 +199,7 @@ fn migrate_old_settings(contents: &str) -> Result<Settings, String> {
 #[tauri::command]
 pub async fn check_is_first_time() -> Result<bool, String> {
     let settings = load_settings().await?;
+    println!("Is first time: {}", settings.is_first_time());
     Ok(settings.is_first_time())
 }
 
