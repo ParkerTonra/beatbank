@@ -13,7 +13,7 @@ import { useBeats } from "./hooks/useBeats";
 import { loadSettings, getSettingsPath, forceFirstTimeSetup } from './store';
 import { DndContext, DragEndEvent, DragStartEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { invoke } from "@tauri-apps/api/tauri";
-import { message } from "@tauri-apps/api/dialog";
+import { ask, confirm, message } from "@tauri-apps/api/dialog";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { HashRouter as Router, Route, Routes, useLocation } from "react-router-dom";
 import { listen } from '@tauri-apps/api/event';
@@ -723,7 +723,15 @@ function AppContainer() {
 
   const saveRowOrder = async (beatsToSave: Beat[]) => {
     if (isSorting && !isRowOrderSort) {
-      message('reorder disabled while sorting');
+      const askToUnsort = await confirm('Reorder disabled while sorting by column.  Would you like to unsort?', {
+        title: 'Beatbank',
+        cancelLabel: 'Cancel',
+        okLabel: 'Unsort'
+      });
+      if (askToUnsort) {
+        setSorting([]);
+        fetchData();
+      }
       return;
     }
     // Don't try to save if we have no beats
