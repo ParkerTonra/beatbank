@@ -1,6 +1,6 @@
 import RowDragHandleCell from "./../components/RowDragHandleCell.tsx";
 import RowPlayHandleCell from "./../components/RowPlayHandleCell.tsx";
-import { ColumnDef, SortingState } from "@tanstack/react-table";
+import { ColumnDef } from "@tanstack/react-table";
 import { Beat } from "../bindings";
 import { format } from "date-fns";
 import { Tooltip } from "primereact/tooltip";
@@ -26,34 +26,18 @@ const formatDate = (datetime: string): string => {
   return format(new Date(datetime), "yyyy-MM-dd");
 };
 
-export const createColumnDef = (onBeatPlay: (beat: Beat) => void
-  , setSorting: (sorting: SortingState) => void
-
-  , setIsSorting: (isSorting: boolean) => void
-
-): ColumnDef<Beat>[] => [
+export const createColumnDef = (
+  onBeatPlay: (beat: Beat) => void,
+): ColumnDef<Beat>[] => { return [
     {
       accessorKey: "drag-handle",
       id: "drag-handle",
       header: () => (
         <div className="flex justify-center items-center w-full h-full"
-          tabIndex={0} 
+          tabIndex={0}
           data-pr-tooltip="Currently sorted? Click to return to manual order. Otherwise, drag handles to reorder tracks"
           data-pr-position="top"
-          onClick={(e) => {
-            e.stopPropagation();
-            setSorting([{ id: 'row_order', desc: false }]);
-            setIsSorting(false);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              setSorting([{ id: 'row_order', desc: false }]);
-              setIsSorting(false);
-            }
-          }}>
-
-            
+        >
             <span className="pi pi-sort-alt" />
             <Tooltip target="[data-pr-tooltip]"   />
         </div>
@@ -152,7 +136,8 @@ export const createColumnDef = (onBeatPlay: (beat: Beat) => void
       size: 70,
       enableResizing: false,
     }
-  ];
+  ] as ColumnDef<Beat>[]
+};
 // function setAudioSrc(src: string): void {
 //   // Implement the function here
 //   // For example, you can set the audio source to the provided src

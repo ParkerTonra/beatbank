@@ -38,7 +38,6 @@ interface BeatTableProps {
   setShowEditColumnsDialog: (show: boolean) => void;
   collectionId?: number;
   handleRefresh: () => void;
-  setIsSorting: (isSorting: boolean) => void;
   sorting: SortingState;
   setSorting:(sorting: SortingState) => void;
 }
@@ -58,7 +57,6 @@ function BeatTable({
   collectionId,
   fetchSetData,
   handleRefresh,
-  setIsSorting,
   sorting,
   setSorting,
 }: BeatTableProps) {
@@ -73,8 +71,8 @@ function BeatTable({
   const [searchValue, setSearchValue] = useState("");
 
   const finalColumnDef = useMemo(
-    () => createColumnDef(onBeatPlay, setSorting, setIsSorting),
-    [onBeatPlay, setSorting, setIsSorting]
+    () => createColumnDef(onBeatPlay),
+    [onBeatPlay]
   );
 
   //if collectionId exists, useEffect to fetchData whenever collectionId changes
@@ -105,11 +103,6 @@ function BeatTable({
         : updater;
       
       setSorting(newSortingState);
-      // Only consider it "sorting" if we're not sorting by row_order
-      const isRowOrderSort = newSortingState.length === 1 && 
-        newSortingState[0].id === 'row_order' && 
-        !newSortingState[0].desc;
-      setIsSorting(!isRowOrderSort);
     },
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -248,7 +241,10 @@ function BeatTable({
                         }}
                       >
                         <button className="flex items-center truncate w-full justify-between bg-transparent"
-                          onClick={() => header.column.toggleSorting()}
+                          onClick={() => header.column.id !== "drag-handle"
+                            ? header.column.toggleSorting()
+                            : setSorting([{ id: 'row_order', desc: false }])
+                          }
                           tabIndex={header.column.id !== "drag-handle" && header.column.id !== "play-handle" ? 0 : -1}
                         >
                           {header.isPlaceholder

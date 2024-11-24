@@ -13,7 +13,7 @@ import { useBeats } from "./hooks/useBeats";
 import { loadSettings, getSettingsPath, forceFirstTimeSetup } from './store';
 import { DndContext, DragEndEvent, DragStartEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { invoke } from "@tauri-apps/api/tauri";
-import { message } from "@tauri-apps/api/dialog";
+import { confirm, message } from "@tauri-apps/api/dialog";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { HashRouter as Router, Route, Routes, useLocation } from "react-router-dom";
 import { listen } from '@tauri-apps/api/event';
@@ -43,8 +43,12 @@ function AppContainer() {
 
   const [cancelUpload, setCancelUpload] = useState(false);
   const [isCreatingSet, setIsCreatingSet] = useState(false);
-  const [isSorting, setIsSorting] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
+
+  const isSorting = sorting.length > 0;
+  const isRowOrderSort = sorting.length === 1 &&
+    sorting[0].id === 'row_order' &&
+    !sorting[0].desc;
 
   const { setIsOpen: setIsTourOpen } = useTour();
 
@@ -718,8 +722,16 @@ function AppContainer() {
   };
 
   const saveRowOrder = async (beatsToSave: Beat[]) => {
-    if (isSorting) {
-      message('reorder disabled while sorting');
+    if (isSorting && !isRowOrderSort) {
+      const askToUnsort = await confirm('Reorder disabled while sorting by column.  Would you like to unsort?', {
+        title: 'Beatbank',
+        cancelLabel: 'Cancel',
+        okLabel: 'Unsort'
+      });
+      if (askToUnsort) {
+        setSorting([]);
+        fetchData();
+      }
       return;
     }
     // Don't try to save if we have no beats
@@ -816,7 +828,6 @@ function AppContainer() {
                             showEditColumnsDialog={showEditColumnsDialog}
                             setShowEditColumnsDialog={setShowEditColumnsDialog}
                             handleRefresh={handleRefresh}
-                            setIsSorting={setIsSorting}
                             sorting={sorting} 
                             setSorting={setSorting}
                           />
@@ -844,7 +855,6 @@ function AppContainer() {
                           showEditColumnsDialog={showEditColumnsDialog}
                           setShowEditColumnsDialog={setShowEditColumnsDialog}
                           handleRefresh={handleRefresh}
-                          setIsSorting={setIsSorting}
                           sorting={sorting}
                           setSorting={setSorting}
                         />}
