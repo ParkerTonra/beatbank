@@ -1,6 +1,6 @@
 import RowDragHandleCell from "./../components/RowDragHandleCell.tsx";
 import RowPlayHandleCell from "./../components/RowPlayHandleCell.tsx";
-import { ColumnDef, SortingState } from "@tanstack/react-table";
+import { ColumnDef } from "@tanstack/react-table";
 import { Beat } from "../bindings";
 import { format } from "date-fns";
 import { Tooltip } from "primereact/tooltip";
@@ -28,7 +28,6 @@ const formatDate = (datetime: string): string => {
 
 export const createColumnDef = (
   onBeatPlay: (beat: Beat) => void,
-  setSorting: (sorting: SortingState) => void
 ): ColumnDef<Beat>[] => { return [
     {
       accessorKey: "drag-handle",

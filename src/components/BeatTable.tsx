@@ -71,8 +71,8 @@ function BeatTable({
   const [searchValue, setSearchValue] = useState("");
 
   const finalColumnDef = useMemo(
-    () => createColumnDef(onBeatPlay, setSorting),
-    [onBeatPlay, setSorting]
+    () => createColumnDef(onBeatPlay),
+    [onBeatPlay]
   );
 
   //if collectionId exists, useEffect to fetchData whenever collectionId changes
