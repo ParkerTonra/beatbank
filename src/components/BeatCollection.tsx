@@ -5,6 +5,7 @@ import { useBeats } from '../hooks/useBeats';
 import { Beat, BeatCollection } from '../bindings';
 import { DragEndEvent } from '@dnd-kit/core';
 import { invoke } from "@tauri-apps/api/tauri";
+import { format } from "date-fns";
 
 interface BeatCollProps {
   beats: Beat[];
@@ -89,16 +90,11 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
   }, [id, setCollectionBeats, fetchSetData]);
 
   const formatDate = (date: string | null | undefined) => {
-    console.log('Formatting date:', date);
     if (date === null || date === undefined) {
       return 'N/A';
     }
     const dateObj = new Date(date);
-    return dateObj.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    return format(dateObj, "yyyy-MM-dd");
   };
 
   // Initial data fetch
@@ -126,33 +122,30 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
           {currentCollection.set_name}
         </div>
 
-        <div className="flex justify-between text-md">
+        <div className="flex justify-between text-md max-w-[calc(100%-350px)]">
           {/* Always visible - even on small screens */}
           <div className="flex items-center whitespace-nowrap mr-4">
-            <span className="text-gray-400">Beats:</span>
+            <span className="text-gray-400 mr-1">Beats:{" "}</span>
             <span>{collectionBeats.length}</span>
           </div>
 
         {/*  /!* Hidden on screens smaller than 1280px *!/*/}
-          <div className="hidden xl:flex justify-end w-fit items-center">
-            <div className="truncate max-w-[280px] grow mr-4">
-              <span className="text-gray-400 mr-2 text">Venue:</span>
+          <div className="hidden xl:flex justify-end w-fit max-w-[90%] items-center">
+            <div className="truncate max-w-[30%] mr-4">
+              <span className="text-gray-400 mr-1 text">Venue:</span>
               <span>{currentCollection.venue || 'N/A'}</span>
             </div>
-
-            <div className="truncate max-w-[280px] grow mr-4">
-              <span className="text-gray-400 mr-2">Date:</span>
-              <span>{formatDate(currentCollection?.date_played)}</span>
-            </div>
-
-            <div className="truncate max-w-[280px] grow mr-4">
-              <span className="text-gray-400 mr-2">City:</span>
+            <div className="truncate max-w-[25%] mr-4">
+              <span className="text-gray-400 mr-1">City:</span>
               <span>{currentCollection.city || 'N/A'}</span>
             </div>
-
-            <div className="truncate max-w-[280px] grow">
-              <span className="text-gray-400 mr-2">State:</span>
+            <div className="truncate max-w-[25%] mr-4">
+              <span className="text-gray-400 mr-1">State:</span>
               <span>{currentCollection.state_name || 'N/A'}</span>
+            </div>
+            <div className="w-fit whitespace-nowrap">
+              <span className="text-gray-400 mr-1">Date:</span>
+              <span>{formatDate(currentCollection?.date_played)}</span>
             </div>
           </div>
         </div>
