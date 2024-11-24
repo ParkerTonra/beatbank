@@ -18,9 +18,7 @@ use crate::models::BeatChangeset;
 use crate::models::{Beat, BeatCollection};
 use tauri::{ AppHandle, Manager, State};
 
-use tokio::spawn;
 use tokio::runtime::Runtime;
-use tauri::async_runtime;
 use tokio::sync::watch;
 
 
@@ -200,7 +198,7 @@ async fn analyze_beat(state: State<'_, AppState>, beat_id: i32, file_path: Strin
         }).await.map_err(|e| e.to_string());
 
         match analysis_result {
-            Ok(Ok((bpm_string, bpm_float))) => {
+            Ok(Ok((_bpm_string, bpm_float))) => {
                 // Success case - update database and emit event
                 if let Ok(mut conn_guard) = conn.lock() {
                     use crate::schema::beats::dsl::*;
@@ -477,17 +475,34 @@ fn main() {
     env_logger::init();
     println!("Starting beatbank...");
 
-     // Add build-specific initialization
-     #[cfg(not(debug_assertions))]
+    #[cfg(not(debug_assertions))]
     {
         use tokio::runtime::Runtime;
+        
         // Create a runtime for the async force_first_time_setup
         let rt = Runtime::new().expect("Failed to create Tokio runtime");
-        if let Err(e) = rt.block_on(store::force_first_time_setup()) {
-            error!("Failed to force first time setup: {}", e);
-            panic!("First time setup failed: {}", e);
+        
+        // First check if it's first time setup
+        match rt.block_on(store::check_is_first_time()) {
+            
+            Ok(is_first_time) => {
+                if is_first_time {
+                    println!("First time setup needed");
+                    // Only run first_time_setup if check_is_first_time returns true
+                    if let Err(e) = rt.block_on(store::first_time_setup()) {
+                        error!("Failed to complete first time setup: {}", e);
+                        panic!("First time setup failed: {}", e);
+                    }
+                    info!("Release build: First-time setup completed successfully");
+                } else {
+                    info!("Release build: Not first time, skipping setup");
+                }
+            },
+            Err(e) => {
+                error!("Failed to check if first time setup is needed: {}", e);
+                panic!("First time check failed: {}", e);
+            }
         }
-        info!("Release build: Forced first-time setup completed");
     }
     
     
@@ -527,6 +542,7 @@ fn main() {
             store::check_is_first_time,
             store::first_time_setup,
             store::force_first_time_setup,
+            store::set_not_first_time,
             
         ])
         .setup(|app| {

@@ -5,6 +5,7 @@ import { useBeats } from '../hooks/useBeats';
 import { Beat, BeatCollection } from '../bindings';
 import { DragEndEvent } from '@dnd-kit/core';
 import { invoke } from "@tauri-apps/api/tauri";
+import { SortingState } from '@tanstack/react-table';
 
 interface BeatCollProps {
   beats: Beat[];
@@ -24,7 +25,8 @@ interface BeatCollProps {
   showEditColumnsDialog: boolean;
   setShowEditColumnsDialog: (show: boolean) => void;
   handleRefresh: () => void;
-
+  sorting: SortingState;
+  setSorting: (sorting: SortingState) => void;
 }
 
 const BeatCollectionComponent: React.FC<BeatCollProps> = ({
@@ -45,6 +47,8 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
   fetchData,
   fetchSetData,
   handleRefresh,
+  sorting,
+  setSorting,
 }) => {
   const { id } = useParams<{ id: string }>();
   const {
@@ -178,6 +182,8 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
         showEditColumnsDialog={showEditColumnsDialog}
         setShowEditColumnsDialog={setShowEditColumnsDialog}
         handleRefresh={handleRefresh}
+        sorting={sorting}
+        setSorting={setSorting}
       />
     </>
   );
