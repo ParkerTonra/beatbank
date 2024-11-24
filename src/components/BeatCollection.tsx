@@ -25,7 +25,6 @@ interface BeatCollProps {
   showEditColumnsDialog: boolean;
   setShowEditColumnsDialog: (show: boolean) => void;
   handleRefresh: () => void;
-  setIsSorting: (isSorting: boolean) => void;
   sorting: SortingState;
   setSorting: (sorting: SortingState) => void;
 }
@@ -48,7 +47,6 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
   fetchData,
   fetchSetData,
   handleRefresh,
-  setIsSorting,
   sorting,
   setSorting,
 }) => {
@@ -184,7 +182,6 @@ const BeatCollectionComponent: React.FC<BeatCollProps> = ({
         showEditColumnsDialog={showEditColumnsDialog}
         setShowEditColumnsDialog={setShowEditColumnsDialog}
         handleRefresh={handleRefresh}
-        setIsSorting={setIsSorting}
         sorting={sorting}
         setSorting={setSorting}
       />

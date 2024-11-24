@@ -43,8 +43,12 @@ function AppContainer() {
 
   const [cancelUpload, setCancelUpload] = useState(false);
   const [isCreatingSet, setIsCreatingSet] = useState(false);
-  const [isSorting, setIsSorting] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
+
+  const isSorting = sorting.length > 0;
+  const isRowOrderSort = sorting.length === 1 &&
+    sorting[0].id === 'row_order' &&
+    !sorting[0].desc;
 
   const { setIsOpen: setIsTourOpen } = useTour();
 
@@ -718,7 +722,7 @@ function AppContainer() {
   };
 
   const saveRowOrder = async (beatsToSave: Beat[]) => {
-    if (isSorting) {
+    if (isSorting && !isRowOrderSort) {
       message('reorder disabled while sorting');
       return;
     }
@@ -816,7 +820,6 @@ function AppContainer() {
                             showEditColumnsDialog={showEditColumnsDialog}
                             setShowEditColumnsDialog={setShowEditColumnsDialog}
                             handleRefresh={handleRefresh}
-                            setIsSorting={setIsSorting}
                             sorting={sorting} 
                             setSorting={setSorting}
                           />
@@ -844,7 +847,6 @@ function AppContainer() {
                           showEditColumnsDialog={showEditColumnsDialog}
                           setShowEditColumnsDialog={setShowEditColumnsDialog}
                           handleRefresh={handleRefresh}
-                          setIsSorting={setIsSorting}
                           sorting={sorting}
                           setSorting={setSorting}
                         />}
