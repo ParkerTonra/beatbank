@@ -18,9 +18,7 @@ use crate::models::BeatChangeset;
 use crate::models::{Beat, BeatCollection};
 use tauri::{ AppHandle, Manager, State};
 
-use tokio::spawn;
 use tokio::runtime::Runtime;
-use tauri::async_runtime;
 use tokio::sync::watch;
 
 
@@ -197,7 +195,7 @@ async fn analyze_beat(state: State<'_, AppState>, beat_id: i32, file_path: Strin
         }).await.map_err(|e| e.to_string());
 
         match analysis_result {
-            Ok(Ok((bpm_string, bpm_float))) => {
+            Ok(Ok((_bpm_string, bpm_float))) => {
                 // Success case - update database and emit event
                 if let Ok(mut conn_guard) = conn.lock() {
                     use crate::schema::beats::dsl::*;
