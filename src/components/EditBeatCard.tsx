@@ -215,14 +215,14 @@ const EditBeatCard: React.FC<EditBeatCardProps> = ({ beat, onClose, onSaveBeat }
                     </div>
 
                     <div>
-                        <label htmlFor="file_path" className="block text-sm font-medium text-gray-300">
-                            File Path
+                        <label htmlFor="genre" className="block text-sm font-medium text-gray-300">
+                            Genre
                         </label>
                         <input
                             type="text"
-                            name="file_path"
-                            id="file_path"
-                            value={editedBeat.file_path}
+                            name="genre"
+                            id="genre"
+                            value={editedBeat.genre}
                             onChange={handleChange}
                             className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                         />
@@ -243,26 +243,14 @@ const EditBeatCard: React.FC<EditBeatCardProps> = ({ beat, onClose, onSaveBeat }
                         </label>
                     </div>
 
+
+
                     {/* Advanced Fields */}
                     {showAdvanced && (
                         <>
                             <div>
-                                <label htmlFor="genre" className="block text-sm font-medium text-gray-300">
-                                    Genre
-                                </label>
-                                <input
-                                    type="text"
-                                    name="genre"
-                                    id="genre"
-                                    value={editedBeat.genre}
-                                    onChange={handleChange}
-                                    className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                />
-                            </div>
-
-                            <div>
                                 <label htmlFor="comments" className="block text-sm font-medium text-gray-300">
-                                    Comments
+                                    Notes
                                 </label>
                                 <input
                                     type="text"
@@ -288,86 +276,9 @@ const EditBeatCard: React.FC<EditBeatCardProps> = ({ beat, onClose, onSaveBeat }
                                     />
                                 </div>
 
-                                <div>
-                                    <label htmlFor="bpm" className="block text-sm font-medium text-gray-300">
-                                        BPM
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="bpm"
-                                        id="bpm"
-                                        value={editedBeat.bpm}
-                                        onChange={handleChange}
-                                        pattern="[0-9]*\.?[0-9]*"
-                                        className={`mt-1 block w-full p-2 bg-gray-700 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${errors.bpm ? 'border-red-500' : 'border-gray-600'
-                                            }`}
-                                    />
-                                    {errors.bpm && <p className="text-red-500 text-sm mt-1">{errors.bpm}</p>}
-                                </div>
 
-                                <div>
-                                    <label htmlFor="track_number" className="block text-sm font-medium text-gray-300">
-                                        Track Number
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="track_number"
-                                        id="track_number"
-                                        value={editedBeat.track_number}
-                                        onChange={handleChange}
-                                        pattern="[0-9]*"
-                                        className={`mt-1 block w-full p-2 bg-gray-700 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${errors.track_number ? 'border-red-500' : 'border-gray-600'
-                                            }`}
-                                    />
-                                    {errors.track_number && <p className="text-red-500 text-sm mt-1">{errors.track_number}</p>}
-                                </div>
 
-                                <div>
-                                    <label htmlFor="composer" className="block text-sm font-medium text-gray-300">
-                                        Composer
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="composer"
-                                        id="composer"
-                                        value={editedBeat.composer}
-                                        onChange={handleChange}
-                                        className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                </div>
 
-                                <div>
-                                    <label htmlFor="lyricist" className="block text-sm font-medium text-gray-300">
-                                        Lyricist
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="lyricist"
-                                        id="lyricist"
-                                        value={editedBeat.lyricist}
-                                        onChange={handleChange}
-                                        className="mt-1 block w-full p-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="cover_art" className="block text-sm font-medium text-gray-300">
-                                        Cover Art
-                                    </label>
-                                    <input
-                                        type="file"
-                                        name="cover_art"
-                                        id="cover_art"
-                                        onChange={handleChange}
-                                        accept="image/*"
-                                        className="mt-1 block w-full text-sm text-gray-300
-                                        file:mr-4 file:py-2 file:px-4
-                                        file:rounded-md file:border-0
-                                        file:text-sm file:font-semibold
-                                        file:bg-blue-600 file:text-white
-                                        hover:file:bg-blue-700"
-                                    />
-                                </div>
                             </div>
                         </>
                     )}

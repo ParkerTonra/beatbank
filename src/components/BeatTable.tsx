@@ -6,6 +6,7 @@ import {
   ColumnResizeMode,
   OnChangeFn,
   VisibilityState, Row, getSortedRowModel, Table, getFilteredRowModel,
+  SortingState,
 } from "@tanstack/react-table";
 import { createColumnDef } from "./../models/ColumnDef.tsx";
 import { Beat, EditThisBeat } from "./../bindings.ts";
@@ -37,6 +38,8 @@ interface BeatTableProps {
   setShowEditColumnsDialog: (show: boolean) => void;
   collectionId?: number;
   handleRefresh: () => void;
+  sorting: SortingState;
+  setSorting:(sorting: SortingState) => void;
 }
 
 function BeatTable({
@@ -54,6 +57,8 @@ function BeatTable({
   collectionId,
   fetchSetData,
   handleRefresh,
+  sorting,
+  setSorting,
 }: BeatTableProps) {
 
   // row selection state
@@ -61,6 +66,7 @@ function BeatTable({
   const searchRef = useRef<HTMLInputElement | null>(null);
   const tBodyRef = useRef<HTMLTableSectionElement | null>(null);
   const { setTableInstance } = useTableContext();
+
 
   const [searchValue, setSearchValue] = useState("");
 
@@ -85,11 +91,19 @@ function BeatTable({
     getRowId: (row) => row.id.toString(),
     state: {
       columnVisibility,
+      sorting,
     },
     enableRowSelection: true,
     enableMultiRowSelection: true,
     onColumnVisibilityChange: setColumnVisibility,
     enableSorting: true,
+    onSortingChange: (updater) => {
+      const newSortingState = typeof updater === 'function'
+        ? updater(sorting)
+        : updater;
+      
+      setSorting(newSortingState);
+    },
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
   });
@@ -115,7 +129,7 @@ function BeatTable({
         return;
       }
       // Check for Ctrl+A or Cmd+A
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
         e.preventDefault(); // Prevent the default browser select-all behavior
         // Select all rows
         tableInstance.getRowModel().rows.forEach(row => {
@@ -211,7 +225,7 @@ function BeatTable({
         <div className="h-full relative">
           {/* Header wrapper - fixed position */}
           <div className="sticky top-0 z-10">
-            <table className="w-full min-h-full">
+            <table className="w-full min-h-full pr-12">
               <thead className="bg-gray-600 pt-2">
                 {tableInstance.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>
@@ -227,7 +241,10 @@ function BeatTable({
                         }}
                       >
                         <button className="flex items-center truncate w-full justify-between bg-transparent"
-                          onClick={() => header.column.toggleSorting()}
+                          onClick={() => header.column.id !== "drag-handle"
+                            ? header.column.toggleSorting()
+                            : setSorting([{ id: 'row_order', desc: false }])
+                          }
                           tabIndex={header.column.id !== "drag-handle" && header.column.id !== "play-handle" ? 0 : -1}
                         >
                           {header.isPlaceholder
@@ -238,7 +255,7 @@ function BeatTable({
                             )}
                           <div>
                             {header.column.getIsSorted() === "asc" ? (
-                              <span className="pi pi-arrow-up text-xs" />
+                              <span className="pi pi-arrow-up text-xs ml-1.5" />
                             ) : header.column.getIsSorted() === "desc" ? (
                               <span className="pi pi-arrow-down text-xs" />
                             ) :
@@ -263,7 +280,7 @@ function BeatTable({
           </div>
           <div className="h-[calc(100%-48px)]">
             <table className="w-full">
-              <tbody ref={tBodyRef}>
+              <tbody ref={tBodyRef} >
                 {tableInstance.getRowModel().rows.map((rowElement) => (
                   <DraggableRow
                     row={rowElement as Row<Beat>}
@@ -283,7 +300,7 @@ function BeatTable({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <EditBeatCard
-              beat={tableInstance.getSelectedRowModel().rows[0].original as Beat}
+              beat={selectedBeats[0]}
               onClose={() => {
                 setIsEditing(false);
               }}

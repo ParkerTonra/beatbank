@@ -13,8 +13,7 @@ use the following command in terminal: diesel migration run
 
 use diesel::prelude::*;
 use serde::{Deserialize, Deserializer, Serialize};
-use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
-use diesel::sql_types::Timestamp;
+use chrono::{NaiveDate, NaiveDateTime};
 
 #[derive(Queryable, Selectable, Debug)]
 #[diesel(table_name = crate::schema::beats)]

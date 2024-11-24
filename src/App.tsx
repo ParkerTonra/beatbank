@@ -13,7 +13,7 @@ import { useBeats } from "./hooks/useBeats";
 import { loadSettings, getSettingsPath, forceFirstTimeSetup } from './store';
 import { DndContext, DragEndEvent, DragStartEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { invoke } from "@tauri-apps/api/tauri";
-import { message } from "@tauri-apps/api/dialog";
+import { confirm, message } from "@tauri-apps/api/dialog";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { HashRouter as Router, Route, Routes, useLocation } from "react-router-dom";
 import { listen } from '@tauri-apps/api/event';
@@ -24,7 +24,7 @@ import { useNavigate } from 'react-router-dom';
 
 import TableHeader from "./components/TableHeader";
 
-import { Table } from "@tanstack/react-table";
+import { SortingState, Table } from "@tanstack/react-table";
 import { open, OpenDialogOptions } from "@tauri-apps/api/dialog";
 import { MenuItem } from "primereact/menuitem";
 import { TableContext } from "./contexts/TableContext";
@@ -43,6 +43,12 @@ function AppContainer() {
 
   const [cancelUpload, setCancelUpload] = useState(false);
   const [isCreatingSet, setIsCreatingSet] = useState(false);
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const isSorting = sorting.length > 0;
+  const isRowOrderSort = sorting.length === 1 &&
+    sorting[0].id === 'row_order' &&
+    !sorting[0].desc;
 
   const { setIsOpen: setIsTourOpen } = useTour();
 
@@ -103,16 +109,26 @@ function AppContainer() {
 
   useEffect(() => {
     const initializeApp = async () => {
+      console.log("Initializing app...");
       try {
         // First load settings
         const settings = await loadSettings();
+        console.log("Settings loaded:", settings);
         setTheme(settings.theme);
 
         // Check if it's first time
         if (settings.is_first_time) {
           // Show welcome message and complete setup
-          await message('Welcome to beatbank!');
           await invoke('first_time_setup');
+          await message('Welcome to beatbank!'); // TODO: trigger tutorial
+          await invoke('set_not_first_time')
+            .catch(err => {
+              console.error('Failed to update first time settings:', err);
+              // Handle error appropriately
+            });
+
+        } else {
+          console.log("Not first time, skipping setup");
         }
 
         // Get settings path (if needed)
@@ -720,6 +736,18 @@ function AppContainer() {
   };
 
   const saveRowOrder = async (beatsToSave: Beat[]) => {
+    if (isSorting && !isRowOrderSort) {
+      const askToUnsort = await confirm('Reorder disabled while sorting by column.  Would you like to unsort?', {
+        title: 'Beatbank',
+        cancelLabel: 'Cancel',
+        okLabel: 'Unsort'
+      });
+      if (askToUnsort) {
+        setSorting([]);
+        fetchData();
+      }
+      return;
+    }
     // Don't try to save if we have no beats
     if (!beatsToSave.length) return;
 
@@ -730,6 +758,7 @@ function AppContainer() {
 
     try {
       await invoke("save_row_order", { rowOrder });
+      fetchData();
     } catch (error) {
       // Could add a toast notification here
       console.error("Error saving row order:", error);
@@ -811,6 +840,8 @@ function AppContainer() {
                             showEditColumnsDialog={showEditColumnsDialog}
                             setShowEditColumnsDialog={setShowEditColumnsDialog}
                             handleRefresh={handleRefresh}
+                            sorting={sorting}
+                            setSorting={setSorting}
                           />
                         </>
                       }
@@ -836,6 +867,8 @@ function AppContainer() {
                           showEditColumnsDialog={showEditColumnsDialog}
                           setShowEditColumnsDialog={setShowEditColumnsDialog}
                           handleRefresh={handleRefresh}
+                          sorting={sorting}
+                          setSorting={setSorting}
                         />}
                     />
                   </Routes>
@@ -1005,7 +1038,7 @@ function App() {
   return (
     <TourProvider steps={steps} styles={styles} scrollSmooth>
       <Router>
-        <AppContainer/>
+        <AppContainer />
       </Router>
     </TourProvider>
   );
