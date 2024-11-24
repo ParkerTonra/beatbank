@@ -481,8 +481,10 @@ fn main() {
         
         // First check if it's first time setup
         match rt.block_on(store::check_is_first_time()) {
+            
             Ok(is_first_time) => {
                 if is_first_time {
+                    println!("First time setup needed");
                     // Only run first_time_setup if check_is_first_time returns true
                     if let Err(e) = rt.block_on(store::first_time_setup()) {
                         error!("Failed to complete first time setup: {}", e);
@@ -537,6 +539,7 @@ fn main() {
             store::check_is_first_time,
             store::first_time_setup,
             store::force_first_time_setup,
+            store::set_not_first_time,
             
         ])
         .setup(|app| {

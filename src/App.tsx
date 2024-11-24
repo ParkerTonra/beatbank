@@ -109,16 +109,26 @@ function AppContainer() {
 
   useEffect(() => {
     const initializeApp = async () => {
+      console.log("Initializing app...");
       try {
         // First load settings
         const settings = await loadSettings();
+        console.log("Settings loaded:", settings);
         setTheme(settings.theme);
 
         // Check if it's first time
         if (settings.is_first_time) {
           // Show welcome message and complete setup
-          await message('Welcome to beatbank!');
           await invoke('first_time_setup');
+          await message('Welcome to beatbank!'); // TODO: trigger tutorial
+          await invoke('set_not_first_time')
+            .catch(err => {
+              console.error('Failed to update first time settings:', err);
+              // Handle error appropriately
+            });
+
+        } else {
+          console.log("Not first time, skipping setup");
         }
 
         // Get settings path (if needed)
@@ -828,7 +838,7 @@ function AppContainer() {
                             showEditColumnsDialog={showEditColumnsDialog}
                             setShowEditColumnsDialog={setShowEditColumnsDialog}
                             handleRefresh={handleRefresh}
-                            sorting={sorting} 
+                            sorting={sorting}
                             setSorting={setSorting}
                           />
                         </>
@@ -1026,7 +1036,7 @@ function App() {
   return (
     <TourProvider steps={steps} styles={styles} scrollSmooth>
       <Router>
-        <AppContainer/>
+        <AppContainer />
       </Router>
     </TourProvider>
   );

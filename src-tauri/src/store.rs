@@ -170,8 +170,6 @@ pub async fn first_time_setup() -> Result<(), String> {
     } else {
         Settings::default()
     };
-
-    settings.set_first_time(false);
     
     let contents = serde_json::to_string(&settings)
         .map_err(|e| format!("Failed to serialize settings: {}", e))?;
@@ -209,3 +207,29 @@ pub async fn get_settings_path() -> Result<String, String> {
     Ok(settings_path.to_string_lossy().into_owned())
 }
 
+#[tauri::command]
+pub async fn set_not_first_time() -> Result<(), String> {
+    let settings_path = resolve_project_root_path("settings.json")
+        .map_err(|e| format!("Failed to resolve settings path: {}", e))?;
+    
+    // Load existing settings
+    let mut settings = if settings_path.exists() {
+        let contents = read_to_string(&settings_path)
+            .map_err(|e| format!("Failed to read settings file: {}", e))?;
+        
+        serde_json::from_str(&contents)
+            .map_err(|e| format!("Failed to parse settings: {}", e))?
+    } else {
+        Settings::default()
+    };
+
+    // Update first_time flag
+    settings.set_first_time(false);
+    
+    // Save updated settings
+    let contents = serde_json::to_string(&settings)
+        .map_err(|e| format!("Failed to serialize settings: {}", e))?;
+    
+    write(&settings_path, contents)
+        .map_err(|e| format!("Failed to save settings: {}", e))
+}
