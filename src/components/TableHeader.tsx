@@ -78,7 +78,7 @@ export const TableHeader = ({
 
 
   return (
-    <div className="w-full flex">
+    <div className="w-full flex mt-[60px] xl:mt-0">
       <button
         onClick={() => setShowEditColumnsDialog(true)}
         className="mr-2 mb-2"

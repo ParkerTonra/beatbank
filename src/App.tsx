@@ -443,12 +443,16 @@ function AppContainer() {
         const batchResults = await Promise.all(batch.map(async (filePath) => {
           try {
             // Just add to database, don't analyze yet
-            const beatId = await invoke('add_beat', { filePath }) as number;
+            const beatId = await invoke('add_beat', { filePath, collectionId }) as number;
 
             setProcessingProgress(prev => ({
               ...prev,
               filesProcessed: Math.min(prev.filesProcessed + 1, prev.totalFiles)
             }));
+
+            if (collectionId) {
+              await fetchSetData(collectionId);
+            }
 
             const extension = filePath.split('.').pop()?.toLowerCase() || '';
             if (isTempoDetectionSupported(extension)) {
@@ -739,8 +743,6 @@ function AppContainer() {
 
   if (error) return <div className="flex items-center justify-center h-screen">Error: {error.message}</div>;
 
-  // Add global CSS to prevent text selection/dragging
-  document.body.classList.add('select-none');
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
       <div className="flex bg-slate-900 justify-center h-screen overflow-x-hidden">
@@ -787,7 +789,7 @@ function AppContainer() {
                         <>
                           <div className="w-full flex items-center justify-between px-4 min-h-[64px] bg-gray-700 rounded-xl my-4 bg-opacity-80 backdrop-blur-3xl shadow-sm">
                             <h2 className="text-2xl font-bold text-white truncate max-w-[300px] flex items-center m-0 p-0">
-                              All beats
+                              All Beats
                             </h2>
                           </div>
                           <BeatTable
