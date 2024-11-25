@@ -4,6 +4,7 @@ import { useDraggable, DragOverlay } from '@dnd-kit/core';
 import { Beat } from '../bindings';
 import GhostRow from './GhostDragRow';
 import { RefObject } from "react";
+import { snapCenterToCursor } from '@dnd-kit/modifiers';
 
 interface DraggableRowProps {
   row: Row<Beat>;
@@ -58,6 +59,9 @@ function DraggableRow({ row, onRowSelection, selectedBeats, tBodyRef}: Draggable
 
   const selectedBeatIds = selectedBeats.map(b => b.id);
 
+  
+
+
   return (
   <>
     {isDragging && (
@@ -66,6 +70,7 @@ function DraggableRow({ row, onRowSelection, selectedBeats, tBodyRef}: Draggable
           style={{
             cursor: 'grabbing',
           }}
+          modifiers={[snapCenterToCursor]}
         >
           <GhostRow 
             title={

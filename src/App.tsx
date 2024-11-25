@@ -11,7 +11,7 @@ import 'primeicons/primeicons.css';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { useBeats } from "./hooks/useBeats";
 import { loadSettings, getSettingsPath, forceFirstTimeSetup } from './store';
-import { DndContext, DragEndEvent, DragStartEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { CollisionDetection, DndContext, DragEndEvent, DragStartEvent, MouseSensor, rectIntersection, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { invoke } from "@tauri-apps/api/tauri";
 import { confirm, message } from "@tauri-apps/api/dialog";
 import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -765,6 +765,28 @@ function AppContainer() {
       setBeats(beats);
     }
   };
+  const fixCursorSnapOffset: CollisionDetection = (args) => {
+    // Bail out if keyboard activated
+    if (!args.pointerCoordinates) {
+      return rectIntersection(args);
+    }
+    const { x, y } = args.pointerCoordinates;
+    const { width, height } = args.collisionRect;
+    const updated = {
+      ...args,
+      // The collision rectangle is broken when using snapCenterToCursor. Reset
+      // the collision rectangle based on pointer location and overlay size.
+      collisionRect: {
+        width,
+        height,
+        bottom: y + height / 2,
+        left: x - width / 2,
+        right: x + width / 2,
+        top: y - height / 2,
+      },
+    };
+    return rectIntersection(updated);
+  };
 
   if (showSplashScreen) {
     return <SplashScreen closeSplashScreen={() => setShowSplashScreen(false)} />;
@@ -773,7 +795,7 @@ function AppContainer() {
   if (error) return <div className="flex items-center justify-center h-screen">Error: {error.message}</div>;
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd} onDragStart={handleDragStart} collisionDetection={fixCursorSnapOffset}>
       <div className="flex bg-slate-900 justify-center h-screen overflow-x-hidden">
         <Sidebar
           beatCollections={beatCollections}
