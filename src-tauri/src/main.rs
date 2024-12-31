@@ -149,7 +149,8 @@ async fn add_beat(state: State<'_, AppState>, file_path: String, collection_id: 
     };
 
     if collection_id.is_some() {
-        add_beat_to_collection(state, collection_id.unwrap(), inserted_beat.id);
+        add_beat_to_collection(state, collection_id.unwrap(), inserted_beat.id)
+            .map_err(|e| e.to_string())?;
     }
 
 

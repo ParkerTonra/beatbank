@@ -158,7 +158,7 @@ pub async fn first_time_setup() -> Result<(), String> {
     let settings_path = resolve_project_root_path("settings.json")
         .map_err(|e| format!("Failed to resolve settings path: {}", e))?;
 
-    let mut settings = if settings_path.exists() {
+    let settings = if settings_path.exists() {
         read_to_string(&settings_path)
             .map_err(|e| format!("Failed to read settings file: {}", e))
             .and_then(|contents| {
