@@ -627,6 +627,7 @@ fn main() {
                     tauri::WindowEvent::Focused(_) => {},
                     tauri::WindowEvent::Moved(_) => {},
                     tauri::WindowEvent::ScaleFactorChanged { .. } => {},
+                    tauri::WindowEvent::Resized(_) => {},
                     // Log only important window events
                     tauri::WindowEvent::CloseRequested { .. } => {
                         info!("Window '{}' close requested", label);

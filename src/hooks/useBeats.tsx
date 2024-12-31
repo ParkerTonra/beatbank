@@ -2,7 +2,43 @@ import { useState, useCallback, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { Beat, BeatCollection } from "./../bindings";
 import { VisibilityState } from "@tanstack/react-table";
-
+/**
+ * Custom hook for managing the beat library and collections state
+ * IMPORTANT: This hook's return values must be consistently used throughout the
+ * entire table component hierarchy to ensure proper state updates and re-renders.
+ * Breaking this pattern (e.g., using different state instances for the same data)
+ * will cause table updates to fail or become inconsistent.
+ * 
+ * For example:
+ * - ✅ Pass the same {beats, setBeats} to all child components
+ * - ❌ Don't create new state instances in child components
+ * 
+ * Manages:
+ * - Beats library (individual tracks)
+ * - Beat collections (playlists/sets)
+ * - Column visibility preferences for the beats table
+ * - Loading and error states
+ * 
+ * Features:
+ * - Fetches and caches beats, collections, and column visibility settings
+ * - Provides methods to fetch specific collection data
+ * - Handles error states and loading indicators
+ * - Maintains column visibility state with fallback defaults
+ * 
+ * @returns {Object} Contains:
+ *   - beats: Array of all beats in the library
+ *   - collectionBeats: Array of beats in the current collection
+ *   - beatCollections: Array of all beat collections
+ *   - currentCollection: Currently selected collection
+ *   - loading: Loading state indicator
+ *   - error: Error state
+ *   - columnVisibility: Column visibility preferences
+ *   - fetchData: Function to fetch all library data
+ *   - fetchSetData: Function to fetch specific collection data
+ *   - fetchColumnVisibility: Function to fetch column visibility settings
+ * 
+ * 
+ */
 
 const defaultColumnVisibility = {
   title: true,
