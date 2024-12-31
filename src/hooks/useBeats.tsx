@@ -83,6 +83,7 @@ export const useBeats = () => {
     } catch (error) {
       console.error("Error fetching column visibility:", error);
       // Fallback to default visibility on error
+      console.log("Falling back to default column visibility");
       setColumnVisibility(defaultColumnVisibility);
     }
   }, []);

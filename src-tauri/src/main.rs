@@ -542,8 +542,11 @@ fn main() {
             store::get_settings_path,
             store::check_is_first_time,
             store::first_time_setup,
-            store::force_first_time_setup,
+            store::get_column_settings,
+            store::get_all_column_settings,
             store::set_not_first_time,
+            store::update_column_visibility,
+            store::update_column_width,
             
         ])
         .setup(|app| {
