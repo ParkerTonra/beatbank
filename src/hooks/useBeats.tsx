@@ -3,34 +3,47 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { Beat, BeatCollection } from "./../bindings";
 import { VisibilityState } from "@tanstack/react-table";
 
-
-const defaultColumnVisibility = {
-  title: true,
-  bpm: true,
-  musical_key: true,
-  duration: true,
-  artist: false,
-  date_added: false,
-  file_path: false,
-  id: false,
-  genre: true,
-};
-
+/**
+ * Custom hook for managing the beat library and collections state
+ * IMPORTANT: This hook's return values must be consistently used throughout the
+ * entire table component hierarchy to ensure proper state updates and re-renders.
+ * Breaking this pattern (e.g., using different state instances for the same data)
+ * will cause table updates to fail or become inconsistent.
+ * 
+ * For example:
+ * - ✅ Pass the same {beats, setBeats} to all child components
+ * - ❌ Don't create new state instances in child components
+ * 
+ * Manages:
+ * - Beats library (individual tracks)
+ * - Beat collections (playlists/sets)
+ * - Column visibility preferences for the beats table
+ * - Loading and error states
+ * 
+ * Features:
+ * - Fetches and caches beats, collections, and column visibility settings
+ * - Provides methods to fetch specific collection data
+ * - Handles error states and loading indicators
+ * - Maintains column visibility state with fallback defaults
+ * 
+ * @returns {Object} Contains:
+ *   - beats: Array of all beats in the library
+ *   - collectionBeats: Array of beats in the current collection
+ *   - beatCollections: Array of all beat collections
+ *   - currentCollection: Currently selected collection
+ *   - loading: Loading state indicator
+ *   - error: Error state
+ *   - columnVisibility: Column visibility preferences
+ *   - fetchData: Function to fetch all library data
+ *   - fetchSetData: Function to fetch specific collection data
+ *   - fetchColumnVisibility: Function to fetch column visibility settings
+ * 
+ * 
+ */
 export const useBeats = () => {
   const [beats, setBeats] = useState<Beat[]>([]);
   const [collectionBeats, setCollectionBeats] = useState<Beat[]>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    title: true,
-    bpm: true,
-    musical_key: true,
-    duration: true,
-    artist: true,
-    date_added: true,
-    file_path: true,
-    id: true,
-    genre: true,
-    row_order: true,
-  });
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [beatCollections, setBeatCollections] = useState<BeatCollection[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -38,16 +51,15 @@ export const useBeats = () => {
 
   const fetchColumnVisibility = useCallback(async () => {
     try {
-      const columnVisResult = await invoke<string>("fetch_column_vis");
-      let columnVis = JSON.parse(columnVisResult);
-      if (columnVis && typeof columnVis === "object" && "0" in columnVis) {
-        columnVis = columnVis[0];
-      }
-      setColumnVisibility({ ...defaultColumnVisibility, ...columnVis });
+      const settings = await invoke<Record<string, { visible: boolean; width: number }>>("get_all_column_settings");
+      // Convert settings format to VisibilityState
+      const visibilityState = Object.entries(settings).reduce((acc, [columnId, setting]) => ({
+        ...acc,
+        [columnId]: setting.visible
+      }), {});
+      setColumnVisibility(visibilityState);
     } catch (error) {
       console.error("Error fetching column visibility:", error);
-      // Fallback to default visibility on error
-      setColumnVisibility(defaultColumnVisibility);
     }
   }, []);
 
@@ -61,14 +73,17 @@ export const useBeats = () => {
     setError(null);
     console.log("Fetching data...");
     try {
-      const [beatsResult, collectionsResult] = await Promise.all([
+      const [beatsResult, collectionsResult, columnVisibility] = await Promise.all([
         invoke<string>("fetch_beats"),
-        //invoke<string>("fetch_column_vis"),
         invoke<string>("fetch_collections"),
+        loadColumnVisibility()
       ]);
+      if (columnVisibility) {
+        setColumnVisibility(columnVisibility);
+      }
       const myBeats = JSON.parse(beatsResult);
       setBeats(myBeats);
-      
+
       let myBeatCollections = JSON.parse(collectionsResult);
       setBeatCollections(myBeatCollections);
     } catch (error) {
@@ -79,6 +94,23 @@ export const useBeats = () => {
     }
   }, []);
 
+  const loadColumnVisibility = async (): Promise<VisibilityState | undefined> => {
+    try {
+      const settings = await invoke<Record<string, { visible: boolean; width: number }>>("get_all_column_settings");
+
+      if (settings) {
+        // Convert settings to VisibilityState format
+        const visibilityState = Object.entries(settings).reduce((acc, [columnId, setting]) => ({
+          ...acc,
+          [columnId]: setting.visible
+        }), {});
+        return visibilityState;
+      }
+    } catch (error) {
+      console.error("Failed to load column settings:", error);
+    }
+  };
+
   const fetchSetData = useCallback(async (setId: number) => {
     console.log("Fetching set data for ID:", setId);
     setLoading(true);
@@ -88,11 +120,11 @@ export const useBeats = () => {
       const collectionResponse = await invoke<BeatCollection>('get_beat_collection', { id: setId });
       console.log("Collection response:", collectionResponse);
       setCurrentCollection(collectionResponse);
-     
+
       // Fetch beats in the collection
       const beatsResponse = await invoke<Beat[]>('get_beats_in_collection', { id: setId });
       console.log("Beats response:", beatsResponse);
-      
+
       if (Array.isArray(beatsResponse)) {
         setCollectionBeats(beatsResponse);
       } else {

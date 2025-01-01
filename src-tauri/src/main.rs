@@ -149,7 +149,8 @@ async fn add_beat(state: State<'_, AppState>, file_path: String, collection_id: 
     };
 
     if collection_id.is_some() {
-        add_beat_to_collection(state, collection_id.unwrap(), inserted_beat.id);
+        add_beat_to_collection(state, collection_id.unwrap(), inserted_beat.id)
+            .map_err(|e| e.to_string())?;
     }
 
 
@@ -541,9 +542,11 @@ fn main() {
             store::get_settings_path,
             store::check_is_first_time,
             store::first_time_setup,
-            store::force_first_time_setup,
+            store::get_column_settings,
+            store::get_all_column_settings,
             store::set_not_first_time,
-            
+            store::update_column_visibility,
+            store::update_column_width,
         ])
         .setup(|app| {
 
@@ -626,6 +629,7 @@ fn main() {
                     tauri::WindowEvent::Focused(_) => {},
                     tauri::WindowEvent::Moved(_) => {},
                     tauri::WindowEvent::ScaleFactorChanged { .. } => {},
+                    tauri::WindowEvent::Resized(_) => {},
                     // Log only important window events
                     tauri::WindowEvent::CloseRequested { .. } => {
                         info!("Window '{}' close requested", label);

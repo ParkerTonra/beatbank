@@ -7,7 +7,7 @@
   },
   "package": {
     "productName": "beatbank",
-    "version": "0.9.0"
+    "version": "0.9.1"
   },
   "tauri": {
     "allowlist": {
@@ -36,7 +36,7 @@
     "windows": [
       {
         "title": "beatbank",
-        "width": 1280,
+        "width": 1440,
         "height": 800
       }
     ],

@@ -28,88 +28,78 @@ const formatDate = (datetime: string): string => {
 
 export const createColumnDef = (
   onBeatPlay: (beat: Beat) => void,
-): ColumnDef<Beat>[] => { return [
+): ColumnDef<Beat>[] => {
+  return [
     {
       accessorKey: "drag-handle",
       id: "drag-handle",
       header: () => (
-        <div className="flex justify-center items-center w-full h-full"
+        <div
+          className="flex justify-center items-center w-full h-full py-1"
           tabIndex={0}
           data-pr-tooltip="Currently sorted? Click to return to manual order. Otherwise, drag handles to reorder tracks"
           data-pr-position="top"
         >
-            <span className="pi pi-sort-alt" />
-            <Tooltip target="[data-pr-tooltip]"   />
+          <span className="pi pi-sort-alt" />
+          <Tooltip target="[data-pr-tooltip]" />
         </div>
       ),
       sortUndefined: 1,
       accessorFn: (row) => row.row_order,
       cell: ({ row }: { row: Row }) => (
-        <div className="flex justify-center">
+        <div className="flex items-center justify-center w-full h-full">
           <RowDragHandleCell row={row.original} />
         </div>
       ),
       enableHiding: false,
       enableResizing: false,
-      maxSize: 50,
-      minSize: 50,
-      enableSorting: false,
     },
     {
       accessorKey: "row_order",
       header: () => (
-        <div className="flex justify-center items-center w-full gap-1">
+        <div className="flex justify-center items-center w-full">
           <span>#</span>
         </div>
       ),
-      size: 60,
+      cell: ({ getValue }) => (
+        <div className="flex items-center justify-center w-full h-full">
+          {getValue() as number}
+        </div>
+      ),
       enableResizing: false,
     },
     {
       accessorKey: "id",
       header: "ID",
-      maxSize: 60,
-      minSize: 60,
-      size: 60,
+      enableResizing: false,
     },
     {
       accessorKey: "title",
       header: "Title",
-      size: 450,
       cell: ({ cell }) => <div className="truncate">{cell.getValue() as string}</div>,
     },
     {
       accessorKey: "bpm",
       id: "bpm",
       header: "BPM",
-      minSize: 80,
-      size: 80,
       cell: ({ cell }) => <div className="truncate">{formatBpm(cell.getValue() as number)}</div>,
     },
     {
       accessorKey: "musical_key",
       header: "Key",
-      minSize: 80,
-      size: 80,
     },
     {
       accessorKey: "duration",
       header: "Duration",
-      minSize: 100,
-      size: 100,
       cell: ({ row }) => formatSecs(row.original.duration),
     },
     {
       accessorKey: "artist",
       header: "Artist",
-      minSize: 100,
-      size: 100,
     },
     {
       accessorKey: "date_created",
       header: "Date Added",
-      minSize: 130,
-      size: 130,
       cell: ({ cell }) => formatDate(cell.getValue() as string),
     },
     {
@@ -119,12 +109,13 @@ export const createColumnDef = (
     {
       accessorKey: "genre",
       header: "Genre",
-      minSize: 100,
-      size: 100,
     },
     {
       accessorKey: "play-handle",
-      header: "Play",
+      header: () => (
+        <div className="hidden">
+        </div>
+      ),
       cell: ({ row }) => (
         <div className="flex justify-center">
           <RowPlayHandleCell
@@ -133,15 +124,9 @@ export const createColumnDef = (
           />
         </div>
       ),
-      size: 70,
       enableResizing: false,
+      enableSorting: false,
     }
   ] as ColumnDef<Beat>[]
 };
-// function setAudioSrc(src: string): void {
-//   // Implement the function here
-//   // For example, you can set the audio source to the provided src
-//   const audioElement = document.getElementById("audio") as HTMLAudioElement;
-//   audioElement.src = src;
-// }
 

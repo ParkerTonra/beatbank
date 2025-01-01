@@ -7,6 +7,11 @@ import { MenuItem } from "primereact/menuitem";
 
 import { useTableContext } from "../contexts/TableContext";
 import { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api";
+
+interface ColumnVisibility {
+  visible: boolean;
+}
 
 interface TableHeaderProps {
   selectedBeats: Beat[];
@@ -27,8 +32,7 @@ interface TableHeaderProps {
 
 export const TableHeader = ({
   selectedBeats,
-  //@ts-ignore
-  setIsEditingBeat,
+  //setIsEditingBeat,
   beatActionItems,
   addBeatItems,
   uploadStatus,
@@ -43,8 +47,43 @@ export const TableHeader = ({
 }: TableHeaderProps) => {
   const { tableInstance } = useTableContext();
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Update visibility state when columns change
+  useEffect(() => {
+    const loadColumnVisibility = async () => {
+      try {
+        const settings = await invoke<Record<string, ColumnVisibility>>("get_all_column_settings");
+        
+        if (tableInstance && settings) {
+          // Apply saved visibility settings to table
+          const columns = tableInstance.getAllLeafColumns();
+          columns.forEach(column => {
+            const savedSettings = settings[column.id];
+            if (savedSettings) {
+              column.toggleVisibility(savedSettings.visible);
+            }
+          });
+
+          // Update local state
+          const visibilityState = columns.reduce((acc, column) => ({
+            ...acc,
+            [column.id]: column.getIsVisible()
+          }), {});
+          setColumnVisibility(visibilityState);
+        }
+        setIsInitialized(true);
+      } catch (error) {
+        console.error("Failed to load column visibility:", error);
+        setIsInitialized(true);
+      }
+    };
+
+    if (tableInstance && !isInitialized) {
+      loadColumnVisibility();
+    }
+  }, [tableInstance, isInitialized]);
+
   useEffect(() => {
     if (tableInstance && showEditColumnsDialog) {
       const visibilityState = tableInstance.getAllLeafColumns()
@@ -56,7 +95,18 @@ export const TableHeader = ({
     }
   }, [tableInstance, showEditColumnsDialog]);
 
-  const handleToggleAll = () => {
+  const saveColumnVisibility = async (columnId: string, isVisible: boolean) => {
+    try {
+      await invoke("update_column_visibility", {
+        columnId,
+        visible: isVisible,
+      });
+    } catch (error) {
+      console.error("Failed to save column visibility:", error);
+    }
+  };
+
+  const handleToggleAll = async () => {
     if (!tableInstance) return;
 
     const newValue = !tableInstance.getIsAllColumnsVisible();
@@ -68,12 +118,20 @@ export const TableHeader = ({
         [column.id]: newValue
       }), {});
     setColumnVisibility(newVisibility);
+
+    // Save visibility for all columns
+    for (const column of tableInstance.getAllLeafColumns()) {
+      await saveColumnVisibility(column.id, newValue);
+    }
   };
 
-  const handleToggleColumn = (column: any) => {
+  const handleToggleColumn = async (column: any) => {
     const newValue = !column.getIsVisible();
     column.toggleVisibility();
     setColumnVisibility(prev => ({ ...prev, [column.id]: newValue }));
+    
+    // Save the new visibility
+    await saveColumnVisibility(column.id, newValue);
   };
 
 

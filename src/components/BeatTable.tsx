@@ -39,7 +39,7 @@ interface BeatTableProps {
   collectionId?: number;
   handleRefresh: () => void;
   sorting: SortingState;
-  setSorting:(sorting: SortingState) => void;
+  setSorting: (sorting: SortingState) => void;
 }
 
 function BeatTable({
@@ -69,6 +69,29 @@ function BeatTable({
 
 
   const [searchValue, setSearchValue] = useState("");
+  const [columnSizing, setColumnSizing] = useState<Record<string, number>>({});
+  const [isLoadingWidths, setIsLoadingWidths] = useState(true);
+  
+  const loadColumnWidths = async () => {
+    try {
+      const settings = await invoke<Record<string, { visible: boolean; width: number }>>("get_all_column_settings");
+      if (settings) {
+        const widths = Object.entries(settings).reduce((acc, [columnId, setting]) => ({
+          ...acc,
+          [columnId]: setting.width
+        }), {});
+        setColumnSizing(widths);
+      }
+    } catch (error) {
+      console.error("Failed to load column widths:", error);
+    } finally {
+      setIsLoadingWidths(false);
+    }
+  };
+
+  useEffect(() => {
+    loadColumnWidths();
+  }, []);
 
   const finalColumnDef = useMemo(
     () => createColumnDef(onBeatPlay),
@@ -82,16 +105,35 @@ function BeatTable({
     }
   }, [collectionId, fetchData]);
 
+  const saveColumnWidth = async (columnId: string, width: number) => {
+    try {
+      const roundedWidth = Math.round(width);
+
+      await invoke("update_column_width", {
+        columnId: columnId,
+        width: roundedWidth,
+      });
+    } catch (error) {
+      console.error("Failed to save column width:", {
+        error,
+        columnId,
+        width,
+        roundedWidth: Math.round(width)
+      });
+    }
+  };
   const tableInstance = useReactTable<Beat>({
     columns: finalColumnDef,
     data: beats || [],
     getCoreRowModel: getCoreRowModel(),
     enableColumnResizing: true,
     columnResizeMode: 'onChange' as ColumnResizeMode,
+    onColumnSizingChange: setColumnSizing,
     getRowId: (row) => row.id.toString(),
     state: {
       columnVisibility,
       sorting,
+      columnSizing,
     },
     enableRowSelection: true,
     enableMultiRowSelection: true,
@@ -101,7 +143,7 @@ function BeatTable({
       const newSortingState = typeof updater === 'function'
         ? updater(sorting)
         : updater;
-      
+
       setSorting(newSortingState);
     },
     getSortedRowModel: getSortedRowModel(),
@@ -111,6 +153,17 @@ function BeatTable({
   useEffect(() => {
     setTableInstance(tableInstance as Table<Beat>);
   }, [tableInstance, setTableInstance]);
+
+  useEffect(() => {
+    setColumnVisibility(columnVisibility);
+  }, [columnVisibility, setColumnVisibility]);
+
+  useEffect(() => {
+    console.log("Saving column widths...");
+    Object.entries(columnSizing).forEach(([columnId, width]) => {
+      saveColumnWidth(columnId, width);
+    });
+  }, [columnSizing]);
 
   if (!tableInstance || !beats || columnVisibility === undefined) {
     return <div></div>;
@@ -146,11 +199,8 @@ function BeatTable({
         setSelectedBeats([]);
       }
     };
-
-    // Add the event listener
     document.addEventListener('keydown', handleKeyDown);
-    
-    // Clean up
+
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
@@ -201,14 +251,16 @@ function BeatTable({
     lastSelectedIndex.current = row.index.toString();
   };
 
-  if (columnVisibility === undefined) {
-    return <div></div>;
+  if (!tableInstance || !beats || columnVisibility === undefined || isLoadingWidths) {
+    return <div>Loading...</div>;
   }
 
   const handleSearchChange = (value: string) => {
     setSearchValue(value);
     tableInstance.setGlobalFilter(value);
   }
+
+
 
   return (
     <div className="w-full h-full flex flex-col overflow-x-auto max-w-full" id="beat-table">
@@ -222,25 +274,33 @@ function BeatTable({
       </div>
       {/* Main table container with fixed height and scroll */}
       <div className="flex-1 min-h-0"> {/* This ensures the container can shrink */}
-        <div className="h-full relative">
+        <div className="h-full overflow-auto">
           {/* Header wrapper - fixed position */}
-          <div className="sticky top-0 z-10">
+          <div className="sticky top-0 z-50 shadow-md">
             <table className="w-full min-h-full pr-12">
               <thead className="bg-gray-600 pt-2">
                 {tableInstance.getHeaderGroups().map((headerGroup) => (
                   <tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
                       <th
-                        key={header.id}
-                        id={`table-header-${header.id}`}
-                        className="relative pr-4 text-left border-gray-800 border-b-4 cursor-pointer mr-2"
-                        style={{
-                          width: header.getSize(),
-                          maxWidth: header.getSize(),
-                          minWidth: header.getSize(),
-                        }}
-                      >
-                        <button className="flex items-center truncate w-full justify-between bg-transparent"
+                      key={header.id}
+                      id={`table-header-${header.id}`}
+                      className="relative text-left border-gray-800 border-b-4 cursor-pointer"
+                      style={{
+                        width: header.getSize(),
+                        maxWidth: header.getSize(),
+                        minWidth: header.getSize(),
+                      }}
+                    >
+                      {header.column.id === "play-handle" ? (
+                        // For play handle, just render the header content without button wrapper
+                        flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )
+                      ) : (
+                        <button
+                          className="flex items-center truncate w-full justify-between bg-transparent"
                           onClick={() => header.column.id !== "drag-handle"
                             ? header.column.toggleSorting()
                             : setSorting([{ id: 'row_order', desc: false }])
@@ -254,24 +314,25 @@ function BeatTable({
                               header.getContext()
                             )}
                           <div>
-                            {header.column.getIsSorted() === "asc" ? (
-                              <span className="pi pi-arrow-up text-xs ml-1.5" />
-                            ) : header.column.getIsSorted() === "desc" ? (
-                              <span className="pi pi-arrow-down text-xs" />
-                            ) :
-                              null
-                            }
+                            {header.column.id !== "play-handle" && (
+                              header.column.getIsSorted() === "asc" ? (
+                                <span className="pi pi-arrow-up text-xs ml-1.5" />
+                              ) : header.column.getIsSorted() === "desc" ? (
+                                <span className="pi pi-arrow-down text-xs" />
+                              ) : null
+                            )}
                           </div>
                         </button>
-
-                        {header.column.getCanResize() && (
-                          <div
-                            onMouseDown={header.getResizeHandler()}
-                            onTouchStart={header.getResizeHandler()}
-                            className={`resizer ${header.column.getIsResizing() ? "isResizing" : ""}`}
-                          />
-                        )}
-                      </th>
+                      )}
+                      
+                      {header.column.getCanResize() && (
+                        <div
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          className={`resizer ${header.column.getIsResizing() ? "isResizing" : ""}`}
+                        />
+                      )}
+                    </th>
                     ))}
                   </tr>
                 ))}
