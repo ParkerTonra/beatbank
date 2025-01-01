@@ -1,25 +1,55 @@
 use serde::{Deserialize, Serialize};
-use std::fs::{self, read_to_string, write};
+use std::fs::{self};
 use std::path::PathBuf;
 use tauri::api::path;
+use std::collections::HashMap;
+use std::sync::Mutex;
+use std::sync::LazyLock;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Settings {
+    is_first_time: bool,
+    column_settings: HashMap<String, ColumnSettings>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ColumnSettings {
     pub visible: bool,
     pub width: u32,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct Settings {
-    is_first_time: bool,
-    column_settings: std::collections::HashMap<String, ColumnSettings>,
-}
-
 impl Default for Settings {
     fn default() -> Self {
+        let mut column_settings = HashMap::new();
+        
+        // Define default columns and their settings
+        let defaults = [
+            ("drag-handle", (true, 1)),
+            ("row_order", (true, 1)),
+            ("title", (true, 232)),
+            ("bpm", (true, 38)),
+            ("musical_key", (false, 100)),
+            ("duration", (true, 38)),
+            ("artist", (true, 54)),
+            ("date_created", (true, 52)),
+            ("file_path", (false, 100)),
+            ("id", (false, 50)),
+            ("genre", (false, 60)),
+            ("play-handle", (true, 1)),
+
+        ];
+
+        // Initialize column settings with defaults
+        for (column_id, (visible, width)) in defaults {
+            column_settings.insert(
+                column_id.to_string(),
+                ColumnSettings { visible, width }
+            );
+        }
+
         Settings {
             is_first_time: true,
-            column_settings: std::collections::HashMap::new(),
+            column_settings,
         }
     }
 }
@@ -58,64 +88,61 @@ pub fn resolve_project_root_path(file_name: &str) -> Result<PathBuf, String> {
     Ok(beatbank_dir.join(file_name))
 }
 
+static SETTINGS_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+
 #[tauri::command]
 pub async fn load_settings() -> Result<Settings, String> {
+    // Acquire lock for file operations
+    let _lock = SETTINGS_LOCK.lock().map_err(|_| "Failed to acquire settings lock".to_string())?;
+    
     let settings_path = resolve_project_root_path("settings.json")
         .map_err(|e| format!("Failed to resolve settings path: {}", e))?;
 
     if !settings_path.exists() {
         let default_settings = Settings::default();
-        let contents = serde_json::to_string(&default_settings)
-            .map_err(|e| format!("Failed to serialize settings: {}", e))?;
-        write(&settings_path, contents)
-            .map_err(|e| format!("Failed to create settings file: {}", e))?;
+        save_settings_internal(&default_settings, &settings_path)?;
         return Ok(default_settings);
     }
 
-    let contents = read_to_string(&settings_path)
+    let contents = fs::read_to_string(&settings_path)
         .map_err(|e| format!("Failed to read settings file: {}", e))?;
 
-    // Try to parse with current format
     match serde_json::from_str(&contents) {
         Ok(settings) => Ok(settings),
-        Err(_) => {
-            // If parsing fails, try to migrate old settings
-            #[derive(Deserialize)]
-            struct OldSettings {
-                is_first_time: bool,
-            }
-
-            // Try to parse old format
-            let old_settings: OldSettings = serde_json::from_str(&contents)
-                .map_err(|e| format!("Failed to parse settings: {}", e))?;
-
-            // Create new settings with old values plus defaults
-            let new_settings = Settings {
-                is_first_time: old_settings.is_first_time,
-                column_settings: std::collections::HashMap::new(),
-            };
-
-            // Save migrated settings
-            let new_contents = serde_json::to_string(&new_settings)
-                .map_err(|e| format!("Failed to serialize migrated settings: {}", e))?;
-            write(&settings_path, new_contents)
-                .map_err(|e| format!("Failed to save migrated settings: {}", e))?;
-
-            Ok(new_settings)
+        Err(e) => {
+            println!("Invalid settings file detected, resetting to default: {}", e);
+            let default_settings = Settings::default();
+            save_settings_internal(&default_settings, &settings_path)?;
+            Ok(default_settings)
         }
     }
 }
 
+fn save_settings_internal(settings: &Settings, path: &PathBuf) -> Result<(), String> {
+    let contents = serde_json::to_string_pretty(settings)
+        .map_err(|e| format!("Failed to serialize settings: {}", e))?;
+    
+    // Write to temporary file first
+    let temp_path = path.with_extension("json.tmp");
+    fs::write(&temp_path, &contents)
+        .map_err(|e| format!("Failed to write temporary settings file: {}", e))?;
+    
+    // Atomically rename temporary file to actual settings file
+    fs::rename(&temp_path, path)
+        .map_err(|e| format!("Failed to save settings: {}", e))?;
+    
+    Ok(())
+}
+
+
 #[tauri::command]
 pub async fn save_settings(settings: Settings) -> Result<(), String> {
+    let _lock = SETTINGS_LOCK.lock().map_err(|_| "Failed to acquire settings lock".to_string())?;
+    
     let settings_path = resolve_project_root_path("settings.json")
         .map_err(|e| format!("Failed to resolve settings path: {}", e))?;
     
-    let contents = serde_json::to_string(&settings)
-        .map_err(|e| format!("Failed to serialize settings: {}", e))?;
-    
-    write(settings_path, contents)
-        .map_err(|e| format!("Failed to save settings: {}", e))
+    save_settings_internal(&settings, &settings_path)
 }
 
 #[tauri::command]
@@ -175,7 +202,9 @@ pub async fn update_column_width(
     column_id: String,
     width: u32,
 ) -> Result<(), String> {
-    let mut settings = load_settings().await?;
+    let mut settings = load_settings().await
+        .map_err(|e| format!("Failed to load settings: {}", e))?;
+
     let current = settings.get_column_settings(&column_id)
         .cloned()
         .unwrap_or(ColumnSettings { visible: true, width: 100 });
@@ -184,7 +213,9 @@ pub async fn update_column_width(
         visible: current.visible,
         width 
     });
+
     save_settings(settings).await
+        .map_err(|e| format!("Failed to save settings: {}", e))
 }
 
 #[tauri::command]

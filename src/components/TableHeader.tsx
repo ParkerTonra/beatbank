@@ -32,7 +32,7 @@ interface TableHeaderProps {
 
 export const TableHeader = ({
   selectedBeats,
-  setIsEditingBeat,
+  //setIsEditingBeat,
   beatActionItems,
   addBeatItems,
   uploadStatus,

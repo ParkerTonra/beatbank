@@ -34,7 +34,6 @@ import { dialog } from "@tauri-apps/api";
 import { Tooltip } from "primereact/tooltip";
 import { StepType, TourProvider, useTour } from "@reactour/tour";
 
-
 function AppContainer() {
   // state
   const [showSplashScreen, setShowSplashScreen] = useState(true);
@@ -120,7 +119,8 @@ function AppContainer() {
         if (settings.is_first_time) {
           // Show welcome message and complete setup
           await invoke('first_time_setup');
-          await message('Welcome to beatbank!'); // TODO: trigger tutorial
+          setShowSplashScreen(false);
+          setIsTourOpen(true);
           await invoke('set_not_first_time')
             .catch(err => {
               console.error('Failed to update first time settings:', err);
@@ -838,10 +838,7 @@ function AppContainer() {
                       path="/"
                       element={
                         <>
-                          <div className="w-full flex items-center justify-between px-4 min-h-[64px] bg-gray-700 rounded-xl my-4 bg-opacity-80 backdrop-blur-3xl shadow-sm">
-                            <h2 className="text-2xl font-bold text-white truncate max-w-[300px] flex items-center m-0 p-0">
-                              All Beats
-                            </h2>
+                          <div className="my-1">
                           </div>
                           <BeatTable
                             beats={beats}
@@ -1007,12 +1004,12 @@ function AppContainer() {
 const steps: StepType[] = [
   {
     selector: "#beatbank-title",
-    content: "Welcome to BeatBank!",
+    content: "Welcome to BeatBank! This tutorial will help you get started. You can click outside of this window to close it. To return at any time, click the logo in the top right.",
     position: [100, 90]
   },
   {
     selector: "#beat-table",
-    content: "Here is where all your beats will display after adding them to Beatbank.",
+    content: "Here is where all of your beats will display after adding them to Beatbank.",
     position: "center"
   },
   {
@@ -1027,7 +1024,7 @@ const steps: StepType[] = [
   },
   {
     selector: "#beat-table",
-    content: "You can also drag and drop your audio files onto the table to add them.",
+    content: "You can also drag and drop audio files onto the table to add them.",
     position: "center"
   },
   {
@@ -1038,7 +1035,7 @@ const steps: StepType[] = [
   {
     selector: "#beat-jockey",
     content: "The Beat Jockey is your simplified listening experience. Use the controls on the bottom footer to maximize your audio enjoyment",
-    position: "center"
+    position: [800, 585],
   },
   {
     selector: "#icon-tutorial",

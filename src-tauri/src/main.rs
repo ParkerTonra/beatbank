@@ -547,7 +547,6 @@ fn main() {
             store::set_not_first_time,
             store::update_column_visibility,
             store::update_column_width,
-            
         ])
         .setup(|app| {
 

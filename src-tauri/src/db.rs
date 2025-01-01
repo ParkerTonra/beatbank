@@ -2,7 +2,7 @@ use diesel::result::Error as DieselError;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use log::info;
 use tauri::{api::path::app_data_dir, Config};
-use std::{error::Error, path::PathBuf};
+use std::error::Error;
 use chrono::Utc;
 use diesel::prelude::*;
 
@@ -51,13 +51,7 @@ fn initialize_database(connection: &mut SqliteConnection) -> Result<(), Box<dyn 
     Ok(())
 }
 
-pub fn get_app_data_dir() -> Result<PathBuf, Box<dyn std::error::Error>> {
-    let app_dir = app_data_dir(&Config::default())
-        .ok_or("Failed to get app data directory")?;
-    let app_specific_dir = app_dir.join("beatbank");
-    Ok(app_specific_dir)
-}
-
+#[allow(unused)]
 pub fn clear_database(connection: &mut SqliteConnection) -> Result<(), Box<dyn std::error::Error>> {
     use crate::schema::*;
     
